@@ -2,7 +2,7 @@ package main
 
 
 import (
-	"fmt"
+
 	"github.com/intel/cndp_device_plugin/pkg/bpf"
 )
 
