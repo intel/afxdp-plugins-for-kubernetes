@@ -20,9 +20,9 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
-	"log"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -62,13 +62,13 @@ func init() {
 	// must ensure that the goroutine does not jump from OS thread to thread
 	runtime.LockOSThread()
 	file, err := os.OpenFile("Paulina-logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
-    if err != nil {
-        log.Fatal(err)
-    }
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    log.SetOutput(file)
+	log.SetOutput(file)
 
-    log.Println("Hello from the init function!")
+	log.Println("Hello from the init function!")
 }
 
 func loadConf(bytes []byte) (*NetConf, error) {

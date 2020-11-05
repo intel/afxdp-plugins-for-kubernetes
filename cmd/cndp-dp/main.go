@@ -1,16 +1,55 @@
 package main
 
-
 import (
-
-	"github.com/intel/cndp_device_plugin/pkg/bpf"
+	"flag"
+	"github.com/golang/glog"
+	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
-
-func main() {
-	bpf.LoadBpfProgram()
+type CndpDp struct {
+	pools map[string]PoolManager
 }
 
-//TODO main should read some config to determine the devices and device pools
-//	The main device plugin code should go into another file, because we may need to run multiple instances for different pools
-//	Sililar to SRIOV-DP or the userspace device plugin POC where we have different pools - requirement from Maryam
+func main() {
+
+	//TODO log to stderr for now, change later
+	flag.Parse()
+	flag.Lookup("logtostderr").Value.Set("true")
+
+	dp := CndpDp{
+		pools: make(map[string]PoolManager),
+	}
+
+	//TODO this needs to go in a loop when we add multiple pools
+	pm := PoolManager{
+		Name:         "cndp/poc",
+		Devices:      make(map[string]*pluginapi.Device),
+		Socket:       pluginapi.DevicePluginPath + "cndp-poc.sock",
+		Endpoint:     "cndp-poc.sock",
+		UpdateSignal: make(chan bool),
+	}
+
+	err := pm.Init()
+	if err != nil {
+		glog.Error("Error initializing pool: " + pm.Name)
+		glog.Fatal(err)
+	}
+
+	dp.pools["cndp-poc"] = pm
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	select {
+	case s := <-sigs:
+		glog.Infof("Received signal \"%v\"", s)
+		for _, pm := range dp.pools {
+			glog.Infof("Terminating " + pm.Name)
+			pm.Terminate()
+		}
+		return
+	}
+}
