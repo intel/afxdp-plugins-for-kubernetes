@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  generateName: uds-test-
+spec:
+  containers:
+  - name: uds
+    image: alpine-uds-test:latest
+    imagePullPolicy: Never
+    resources:
+      limits:
+        cndp/poc: 1
+    command: ["tail", "-f", "/dev/null"]
+  restartPolicy: Never
