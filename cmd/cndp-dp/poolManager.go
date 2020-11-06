@@ -21,9 +21,12 @@ type PoolManager struct {
 	Socket       string
 	Endpoint     string
 	UpdateSignal chan bool
+	Cndp         cndp.CndpInterface
 }
 
 func (pm *PoolManager) Init() error {
+	pm.Cndp = cndp.NewCndp()
+
 	err := pm.registerWithKubelet()
 	if err != nil {
 		return err
@@ -77,27 +80,28 @@ func (pm *PoolManager) ListAndWatch(emtpy *pluginapi.Empty,
 
 func (pm *PoolManager) Allocate(ctx context.Context,
 	rqt *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
-
 	response := pluginapi.AllocateResponse{}
-	sockAddr := cndp.CreateUdsSocket()
+	sockAddr := pm.Cndp.CreateUdsSocket()
 
 	//loop each container
 	for _, crqt := range rqt.ContainerRequests {
 		cresp := new(pluginapi.ContainerAllocateResponse)
+
+		cresp.Mounts = append(cresp.Mounts, &pluginapi.Mount{
+			HostPath:      sockAddr,
+			ContainerPath: "/tmp/cndp.sock",
+			ReadOnly:      false,
+		})
+
 		//loop each device request per container
 		for _, dev := range crqt.DevicesIDs {
-			cresp.Mounts = append(cresp.Mounts, &pluginapi.Mount{
-				HostPath:      sockAddr,
-				ContainerPath: "/tmp/cndp.sock",
-				ReadOnly:      false,
-			})
 			glog.Info("Allocating device " + dev)
 			bpf.LoadBpfProgram() //TODO - temporary dummy call to CGo
 		}
 		response.ContainerResponses = append(response.ContainerResponses, cresp)
 	}
 
-	go cndp.StartSocketServer(sockAddr)
+	go pm.Cndp.StartSocketServer(sockAddr)
 	return &response, nil
 }
 
