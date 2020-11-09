@@ -1,7 +1,10 @@
 set -e
 
-echo "Go format running on the following files:"
+echo "Runing Go Format on the following files:"
 go fmt github.com/intel/cndp_device_plugin/...
+
+echo "Running unit tests:"
+go test -v github.com/intel/cndp_device_plugin/...
 
 echo "Building Device Plugin"
 go build -o ./bin/cndp-dp ./cmd/cndp-dp

@@ -7,10 +7,18 @@ import (
 	"strings"
 )
 
+type CndpInterface interface {
+	StartSocketServer(SockAddr string)
+	CreateUdsSocket() string
+}
+
+type CNDP struct {
+	CndpInterface
+}
 
 //TODO currently rough sample code, update this to provide the FD to xdpsock, proper error and socket handeling
 //TODO later update with protocol for interacting with cndp
-func StartSocketServer(SockAddr string) {
+func (c *CNDP) StartSocketServer(SockAddr string) {
 
 	glog.Info("Listening on socket " + SockAddr)
 
@@ -52,7 +60,7 @@ func StartSocketServer(SockAddr string) {
 	l.Close()
 }
 
-func CreateUdsSocket() string {
+func (c *CNDP) CreateUdsSocket() string {
 
 	sockName, err := uuid.NewV4() //TODO check if it exists
 
@@ -61,4 +69,9 @@ func CreateUdsSocket() string {
 	}
 
 	return "/tmp/" + sockName.String() + ".sock"
+}
+
+//TODO also return error?
+func NewCndp() CndpInterface {
+	return &CNDP{}
 }
