@@ -9,7 +9,11 @@ import (
 	"syscall"
 )
 
-type CndpDp struct {
+/*
+DP represents the overall device plugin.
+It contains a list of poolManagers.
+*/
+type DP struct {
 	pools map[string]PoolManager
 }
 
@@ -19,7 +23,7 @@ func main() {
 	flag.Parse()
 	flag.Lookup("logtostderr").Value.Set("true")
 
-	dp := CndpDp{
+	dp := DP{
 		pools: make(map[string]PoolManager),
 	}
 

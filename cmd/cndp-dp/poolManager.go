@@ -14,6 +14,10 @@ import (
 	"time"
 )
 
+/*
+PoolManager represents an manages the pool of devices.
+Each PoolManager registers with Kubernetes as a different device type.
+*/
 type PoolManager struct {
 	Name         string
 	Devices      map[string]*pluginapi.Device
@@ -21,9 +25,12 @@ type PoolManager struct {
 	Socket       string
 	Endpoint     string
 	UpdateSignal chan bool
-	Cndp         cndp.CndpInterface
+	Cndp         cndp.Interface
 }
 
+/*
+Init is called it initialise the PoolManager.
+*/
 func (pm *PoolManager) Init() error {
 	pm.Cndp = cndp.NewCndp()
 
@@ -47,6 +54,9 @@ func (pm *PoolManager) Init() error {
 	return nil
 }
 
+/*
+Terminate is called it terminate the PoolManager.
+*/
 func (pm *PoolManager) Terminate() error {
 	pm.stopGRPC()
 	pm.cleanup()
@@ -55,6 +65,11 @@ func (pm *PoolManager) Terminate() error {
 	return nil
 }
 
+/*
+ListAndWatch is part of the device plugin API.
+Returns a stream list of Devices. Whenever a device state changes,
+ListAndWatch should return the new list.
+*/
 func (pm *PoolManager) ListAndWatch(emtpy *pluginapi.Empty,
 	stream pluginapi.DevicePlugin_ListAndWatchServer) error {
 
@@ -78,6 +93,12 @@ func (pm *PoolManager) ListAndWatch(emtpy *pluginapi.Empty,
 	}
 }
 
+/*
+Allocate is part of the device plugin API.
+Called during container creation so that the Device Plugin can run
+device specific operations and instruct Kubelet of the steps to make
+the Device available in the container.
+*/
 func (pm *PoolManager) Allocate(ctx context.Context,
 	rqt *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
 	response := pluginapi.AllocateResponse{}
@@ -105,14 +126,26 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 	return &response, nil
 }
 
+/*
+GetDevicePluginOptions is part of the device plugin API.
+Unused.
+*/
 func (pm *PoolManager) GetDevicePluginOptions(context.Context, *pluginapi.Empty) (*pluginapi.DevicePluginOptions, error) {
 	return &pluginapi.DevicePluginOptions{}, nil
 }
 
+/*
+PreStartContainer is part of the device plugin API.
+Unused.
+*/
 func (pm *PoolManager) PreStartContainer(context.Context, *pluginapi.PreStartContainerRequest) (*pluginapi.PreStartContainerResponse, error) {
 	return &pluginapi.PreStartContainerResponse{}, nil
 }
 
+/*
+GetPreferredAllocation is part of the device plugin API.
+Unused.
+*/
 func (pm *PoolManager) GetPreferredAllocation(context.Context, *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
 	return &pluginapi.PreferredAllocationResponse{}, nil
 }

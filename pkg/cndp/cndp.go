@@ -7,18 +7,31 @@ import (
 	"strings"
 )
 
-type CndpInterface interface {
+/*
+Interface is the interface to the cndp package, representing CNDP to the rest of device plugin.
+All interactions with CNDP should be done with an object implementing this interface.
+*/
+type Interface interface {
 	StartSocketServer(SockAddr string)
 	CreateUdsSocket() string
 }
 
+/*
+CNDP implements cndp.Interface.
+We use this object to interact with CNDP over a Unix Domain Socket.
+*/
 type CNDP struct {
-	CndpInterface
+	Interface
 }
 
-//TODO currently rough sample code, update this to provide the FD to xdpsock, proper error and socket handeling
-//TODO later update with protocol for interacting with cndp
+/*
+StartSocketServer starts listening on the UDS socket for calls from CNDP.
+*/
 func (c *CNDP) StartSocketServer(SockAddr string) {
+
+	//TODO currently rough sample code, update this to provide the FD to xdpsock, proper error and socket handeling
+	//TODO later update with protocol for interacting with cndp
+	//TODO the go routine should be in here, not out in poolManager
 
 	glog.Info("Listening on socket " + SockAddr)
 
@@ -60,6 +73,10 @@ func (c *CNDP) StartSocketServer(SockAddr string) {
 	l.Close()
 }
 
+/*
+CreateUdsSocket creates a Unix Domain Socket that will be mounted into the pod.
+This UDS is used for interacting with CNDP.
+*/
 func (c *CNDP) CreateUdsSocket() string {
 
 	sockName, err := uuid.NewV4() //TODO check if it exists
@@ -71,7 +88,10 @@ func (c *CNDP) CreateUdsSocket() string {
 	return "/tmp/" + sockName.String() + ".sock"
 }
 
-//TODO also return error?
-func NewCndp() CndpInterface {
+/*
+NewCndp returns a CNPD object of type cndp.Interface.
+*/
+func NewCndp() Interface {
+	//TODO also return error?
 	return &CNDP{}
 }

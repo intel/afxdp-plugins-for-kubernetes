@@ -104,10 +104,10 @@ func TestAllocate(t *testing.T) {
 			}
 
 			//TODO error
-			expectedJson, _ := json.Marshal(expectedResponse)
-			responseJson, _ := json.Marshal(response)
+			expectedJSON, _ := json.Marshal(expectedResponse)
+			responseJSON, _ := json.Marshal(response)
 
-			assert.Equal(t, string(expectedJson), string(responseJson), "Unexpected AllocateResponse")
+			assert.Equal(t, string(expectedJSON), string(responseJSON), "Unexpected AllocateResponse")
 
 		})
 	}
