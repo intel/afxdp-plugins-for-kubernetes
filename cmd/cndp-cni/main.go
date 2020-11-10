@@ -1,4 +1,4 @@
-// Copyright 2015 CNI authors
+// Copyright 2020 CNI authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,19 +15,14 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"log"
-	"net"
-	"os"
-	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/vishvananda/netlink"
+
+	"github.com/golang/glog"
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
@@ -44,13 +39,10 @@ const (
 	sysBusPCI = "/sys/bus/pci/devices"
 )
 
-//NetConf for host-device config, look the README to learn how to use those parameters
+// set the device ID
 type NetConf struct {
 	types.NetConf
-	Device        string `json:"device"`     // Device-Name, something like eth0 or can0 etc.
-	HWAddr        string `json:"hwaddr"`     // MAC Address of target network interface
-	KernelPath    string `json:"kernelpath"` // Kernelpath of the device
-	PCIAddr       string `json:"pciBusID"`   // PCI Address of target network device
+	Device        string `json:"device"` 
 	RuntimeConfig struct {
 		DeviceID string `json:"deviceID,omitempty"`
 	} `json:"runtimeConfig,omitempty"`
@@ -61,32 +53,28 @@ func init() {
 	// since namespace ops (unshare, setns) are done for a single thread, we
 	// must ensure that the goroutine does not jump from OS thread to thread
 	runtime.LockOSThread()
-	file, err := os.OpenFile("Paulina-logs.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.SetOutput(file)
-
-	log.Println("Hello from the init function!")
+	glog.Info("Initializing CNDP CNI device plugin...")
+	log.Println("inside the init function")
 }
 
 func loadConf(bytes []byte) (*NetConf, error) {
 	n := &NetConf{}
 	if err := json.Unmarshal(bytes, n); err != nil {
-		return nil, fmt.Errorf("failed to load netconf: %v", err)
+		return nil, fmt.Errorf("loadConf(): loading network configuration unsuccessful : %v", err)
 	}
 
 	if n.RuntimeConfig.DeviceID != "" {
-		// Override PCI device with the standardized DeviceID provided in Runtime Config.
-		n.PCIAddr = n.RuntimeConfig.DeviceID
+		n.Device = n.RuntimeConfig.DeviceID
+		return nil, fmt.Errorf(`loadConf(): failure specify a "device" ID for CNDP CNI`)
 	}
 
-	if n.Device == "" && n.HWAddr == "" && n.KernelPath == "" && n.PCIAddr == "" {
-		return nil, fmt.Errorf(`specify either "device", "hwaddr", "kernelpath" or "pciBusID"`)
+	if n.Device == "" {
+		return nil, fmt.Errorf(`loadConf(): specify a "device" - field blank`)
 	}
 
+	glog.Info("loadConf(): Device Name was successfully given")
 	return n, nil
+
 }
 
 func cmdAdd(args *skel.CmdArgs) error {
@@ -96,18 +84,18 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 	containerNs, err := ns.GetNS(args.Netns)
 	if err != nil {
-		return fmt.Errorf("failed to open netns %q: %v", args.Netns, err)
+		return fmt.Errorf("cmdAdd(): failed to open netns %q: %v and load configuration file ", args.Netns, err)
 	}
 	defer containerNs.Close()
 
-	hostDev, err := getLink(cfg.Device, cfg.HWAddr, cfg.KernelPath, cfg.PCIAddr)
+	hostDev, err := getLink(cfg.Device)
 	if err != nil {
-		return fmt.Errorf("failed to find host device: %v", err)
+		return fmt.Errorf("cmdAdd(): failed to find host device: %v", err)
 	}
 
 	contDev, err := moveLinkIn(hostDev, containerNs, args.IfName)
-	if err != nil {
-		return fmt.Errorf("failed to move link %v", err)
+	if err != nil && args.IfName == " " {
+		return fmt.Errorf("cmdAdd(): failed to move link %v to host container namespace from host namespace", err)
 	}
 
 	var result *current.Result
@@ -173,7 +161,7 @@ func cmdDel(args *skel.CmdArgs) error {
 	}
 	containerNs, err := ns.GetNS(args.Netns)
 	if err != nil {
-		return fmt.Errorf("failed to open netns %q: %v", args.Netns, err)
+		return fmt.Errorf("cmdDel(): failed to open netns %q: %v", args.Netns, err)
 	}
 	defer containerNs.Close()
 
@@ -200,24 +188,24 @@ func moveLinkIn(hostDev netlink.Link, containerNs ns.NetNS, ifName string) (netl
 		var err error
 		contDev, err = netlink.LinkByName(hostDev.Attrs().Name)
 		if err != nil {
-			return fmt.Errorf("failed to find %q: %v", hostDev.Attrs().Name, err)
+			return fmt.Errorf("moveLinkIn(): failed to find %q: %v", hostDev.Attrs().Name, err)
 		}
 		// Devices can be renamed only when down
 		if err = netlink.LinkSetDown(contDev); err != nil {
-			return fmt.Errorf("failed to set %q down: %v", hostDev.Attrs().Name, err)
+			return fmt.Errorf("moveLinkIn(): failed to set %q down: %v", hostDev.Attrs().Name, err)
 		}
 		// Save host device name into the container device's alias property
 		if err := netlink.LinkSetAlias(contDev, hostDev.Attrs().Name); err != nil {
-			return fmt.Errorf("failed to set alias to %q: %v", hostDev.Attrs().Name, err)
+			return fmt.Errorf("moveLinkIn(): failed to set alias to %q: %v", hostDev.Attrs().Name, err)
 		}
 		// Rename container device to respect args.IfName
 		if err := netlink.LinkSetName(contDev, ifName); err != nil {
-			return fmt.Errorf("failed to rename device %q to %q: %v", hostDev.Attrs().Name, ifName, err)
+			return fmt.Errorf("moveLinkIn(): failed to rename device %q to %q: %v", hostDev.Attrs().Name, ifName, err)
 		}
 		// Retrieve link again to get up-to-date name and attributes
 		contDev, err = netlink.LinkByName(ifName)
 		if err != nil {
-			return fmt.Errorf("failed to find %q: %v", ifName, err)
+			return fmt.Errorf("moveLinkIn(): failed to find %q: %v", ifName, err)
 		}
 		return nil
 	}); err != nil {
@@ -237,28 +225,27 @@ func moveLinkOut(containerNs ns.NetNS, ifName string) error {
 	return containerNs.Do(func(_ ns.NetNS) error {
 		dev, err := netlink.LinkByName(ifName)
 		if err != nil {
-			return fmt.Errorf("failed to find %q: %v", ifName, err)
+			return fmt.Errorf("moveLinkOut(): failed to find %q: %v", ifName, err)
 		}
 
 		// Devices can be renamed only when down
 		if err = netlink.LinkSetDown(dev); err != nil {
-			return fmt.Errorf("failed to set %q down: %v", ifName, err)
+			return fmt.Errorf("moveLinkOut(): failed to set %q down: %v", ifName, err)
 		}
 
 		// Rename device to it's original name
 		if err = netlink.LinkSetName(dev, dev.Attrs().Alias); err != nil {
-			return fmt.Errorf("failed to restore %q to original name %q: %v", ifName, dev.Attrs().Alias, err)
+			return fmt.Errorf("moveLinkOut(): failed to restore %q to original name %q: %v", ifName, dev.Attrs().Alias, err)
 		}
 		defer func() {
 			if err != nil {
-				// if moving device to host namespace fails, we should revert device name
-				// to ifName to make sure that device can be found in retries
+			
 				_ = netlink.LinkSetName(dev, ifName)
 			}
 		}()
 
 		if err = netlink.LinkSetNsFd(dev, int(defaultNs.Fd())); err != nil {
-			return fmt.Errorf("failed to move %q to host netns: %v", dev.Attrs().Alias, err)
+			return fmt.Errorf("moveLinkOut(): failed to move %q to host netns: %v", dev.Attrs().Alias, err)
 		}
 		return nil
 	})
@@ -278,69 +265,18 @@ func printLink(dev netlink.Link, cniVersion string, containerNs ns.NetNS) error 
 	return types.PrintResult(&result, cniVersion)
 }
 
-func getLink(devname, hwaddr, kernelpath, pciaddr string) (netlink.Link, error) {
-	links, err := netlink.LinkList()
-	if err != nil {
-		return nil, fmt.Errorf("failed to list node links: %v", err)
-	}
+func getLink(devname string) (netlink.Link, error) { 
+
 
 	if len(devname) > 0 {
 		return netlink.LinkByName(devname)
-	} else if len(hwaddr) > 0 {
-		hwAddr, err := net.ParseMAC(hwaddr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse MAC address %q: %v", hwaddr, err)
-		}
-
-		for _, link := range links {
-			if bytes.Equal(link.Attrs().HardwareAddr, hwAddr) {
-				return link, nil
-			}
-		}
-	} else if len(kernelpath) > 0 {
-		if !filepath.IsAbs(kernelpath) || !strings.HasPrefix(kernelpath, "/sys/devices/") {
-			return nil, fmt.Errorf("kernel device path %q must be absolute and begin with /sys/devices/", kernelpath)
-		}
-		netDir := filepath.Join(kernelpath, "net")
-		files, err := ioutil.ReadDir(netDir)
-		if err != nil {
-			return nil, fmt.Errorf("failed to find network devices at %q", netDir)
-		}
-
-		// Grab the first device from eg /sys/devices/pci0000:00/0000:00:19.0/net
-		for _, file := range files {
-			// Make sure it's really an interface
-			for _, l := range links {
-				if file.Name() == l.Attrs().Name {
-					return l, nil
-				}
-			}
-		}
-	} else if len(pciaddr) > 0 {
-		netDir := filepath.Join(sysBusPCI, pciaddr, "net")
-		if _, err := os.Lstat(netDir); err != nil {
-			virtioNetDir := filepath.Join(sysBusPCI, pciaddr, "virtio*", "net")
-			matches, err := filepath.Glob(virtioNetDir)
-			if matches == nil || err != nil {
-				return nil, fmt.Errorf("no net directory under pci device %s", pciaddr)
-			}
-			netDir = matches[0]
-		}
-		fInfo, err := ioutil.ReadDir(netDir)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read net directory %s: %q", netDir, err)
-		}
-		if len(fInfo) > 0 {
-			return netlink.LinkByName(fInfo[0].Name())
-		}
-		return nil, fmt.Errorf("failed to find device name for pci address %s", pciaddr)
 	}
 
-	return nil, fmt.Errorf("failed to find physical interface")
+	return nil, fmt.Errorf("getLink(): failed to find physical interface")
 }
 
 func main() {
-	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, version.All, bv.BuildString("host-device"))
+	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, version.All, bv.BuildString("host-device1"))
 }
 
 func cmdCheck(args *skel.CmdArgs) error {
@@ -351,7 +287,7 @@ func cmdCheck(args *skel.CmdArgs) error {
 	}
 	netns, err := ns.GetNS(args.Netns)
 	if err != nil {
-		return fmt.Errorf("failed to open netns %q: %v", args.Netns, err)
+		return fmt.Errorf("cmdCheck(): failed to open netns %q: %v", args.Netns, err)
 	}
 	defer netns.Close()
 
@@ -365,7 +301,7 @@ func cmdCheck(args *skel.CmdArgs) error {
 
 	// Parse previous result.
 	if cfg.NetConf.RawPrevResult == nil {
-		return fmt.Errorf("Required prevResult missing")
+		return fmt.Errorf("cmdCheck(): Required prevResult missing")
 	}
 
 	if err := version.ParsePrevResult(&cfg.NetConf); err != nil {
@@ -390,7 +326,7 @@ func cmdCheck(args *skel.CmdArgs) error {
 
 	// The namespace must be the same as what was configured
 	if args.Netns != contMap.Sandbox {
-		return fmt.Errorf("Sandbox in prevResult %s doesn't match configured netns: %s",
+		return fmt.Errorf("cmdCheck(): Sandbox in prevResult %s doesn't match configured netns: %s",
 			contMap.Sandbox, args.Netns)
 	}
 
@@ -428,19 +364,19 @@ func validateCniContainerInterface(intf current.Interface) error {
 	var err error
 
 	if intf.Name == "" {
-		return fmt.Errorf("Container interface name missing in prevResult: %v", intf.Name)
+		return fmt.Errorf("validateCniContainerInterface(): Container interface name missing in prevResult: %v", intf.Name)
 	}
 	link, err = netlink.LinkByName(intf.Name)
 	if err != nil {
-		return fmt.Errorf("Container Interface name in prevResult: %s not found", intf.Name)
+		return fmt.Errorf("validateCniContainerInterface(): Container Interface name in prevResult: %s not found", intf.Name)
 	}
 	if intf.Sandbox == "" {
-		return fmt.Errorf("Error: Container interface %s should not be in host namespace", link.Attrs().Name)
+		return fmt.Errorf("Error: validateCniContainerInterface(): Container interface %s should not be in host namespace", link.Attrs().Name)
 	}
 
 	if intf.Mac != "" {
 		if intf.Mac != link.Attrs().HardwareAddr.String() {
-			return fmt.Errorf("Interface %s Mac %s doesn't match container Mac: %s", intf.Name, intf.Mac, link.Attrs().HardwareAddr)
+			return fmt.Errorf("validateCniContainerInterface(): Interface %s Mac %s doesn't match container Mac: %s", intf.Name, intf.Mac, link.Attrs().HardwareAddr)
 		}
 	}
 
