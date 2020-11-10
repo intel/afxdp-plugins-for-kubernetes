@@ -39,10 +39,10 @@ const (
 	sysBusPCI = "/sys/bus/pci/devices"
 )
 
-// set the device ID
+// NetConf describes the network.
 type NetConf struct {
 	types.NetConf
-	Device        string `json:"device"` 
+	Device        string `json:"device"`
 	RuntimeConfig struct {
 		DeviceID string `json:"deviceID,omitempty"`
 	} `json:"runtimeConfig,omitempty"`
@@ -54,7 +54,6 @@ func init() {
 	// must ensure that the goroutine does not jump from OS thread to thread
 	runtime.LockOSThread()
 	glog.Info("Initializing CNDP CNI device plugin...")
-	log.Println("inside the init function")
 }
 
 func loadConf(bytes []byte) (*NetConf, error) {
@@ -239,7 +238,7 @@ func moveLinkOut(containerNs ns.NetNS, ifName string) error {
 		}
 		defer func() {
 			if err != nil {
-			
+
 				_ = netlink.LinkSetName(dev, ifName)
 			}
 		}()
@@ -265,8 +264,7 @@ func printLink(dev netlink.Link, cniVersion string, containerNs ns.NetNS) error 
 	return types.PrintResult(&result, cniVersion)
 }
 
-func getLink(devname string) (netlink.Link, error) { 
-
+func getLink(devname string) (netlink.Link, error) {
 
 	if len(devname) > 0 {
 		return netlink.LinkByName(devname)
