@@ -6,10 +6,10 @@ Bash script to run an e2e test of deceive plugin and CNI.
 - Kubernetes installed and running
 - Multus installed
 ## Run Test
+- Run `build.sh` in the root directory of the repo.
 - cd to this directory, script must be run from here
 - `./e2e-test.sh`
 ## What Happens
-- CNI and DP are build from scratch. The build script in the root of the repo is used.
 - The CNI binary is moved to /opt/cni/bin. The binary is uniquely named for this test so it will not impact an existing install.
 - A network attachment definition is created. The NAD is uniquely named for this test so it will not impact an existing NAD.
 - A sample app is built.
