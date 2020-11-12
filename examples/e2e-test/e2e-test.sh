@@ -27,7 +27,7 @@ build() {
 	echo "*****************************************************"
 	echo "*               Build and Install                   *"
 	echo "*****************************************************"
-	./../../build.sh
+	echo
 	echo "***** CNI Install *****"
 	cp ../../bin/cndp /opt/cni/bin/cndp-e2e
 	echo "***** Network Attachment Definition *****"
