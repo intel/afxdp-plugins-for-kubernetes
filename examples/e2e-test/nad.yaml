@@ -1,0 +1,11 @@
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: cndp-e2e-test
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: cndp/poc
+spec:
+  config: '{
+      "cniVersion": "0.3.0",
+      "type": "cndp-e2e"
+    }'
