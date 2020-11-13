@@ -10,7 +10,6 @@ import (
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"net"
 	"os"
-	"strconv"
 	"time"
 )
 
@@ -31,7 +30,7 @@ type PoolManager struct {
 /*
 Init is called it initialise the PoolManager.
 */
-func (pm *PoolManager) Init() error {
+func (pm *PoolManager) Init(config poolConfig) error {
 	pm.Cndp = cndp.NewCndp()
 
 	err := pm.registerWithKubelet()
@@ -46,7 +45,7 @@ func (pm *PoolManager) Init() error {
 	}
 	glog.Infof("Starting to serve on %s", pm.Socket)
 
-	err = pm.discoverResources()
+	err = pm.discoverResources(config)
 	if err != nil {
 		return err
 	}
@@ -150,13 +149,11 @@ func (pm *PoolManager) GetPreferredAllocation(context.Context, *pluginapi.Prefer
 	return &pluginapi.PreferredAllocationResponse{}, nil
 }
 
-func (pm *PoolManager) discoverResources() error {
+func (pm *PoolManager) discoverResources(config poolConfig) error {
 
-	for i := 1; i <= 5; i++ {
-		devName := "dev_" + strconv.Itoa(i)
-		glog.Info("Discovered Resource " + devName)
-		newdev := pluginapi.Device{ID: devName, Health: pluginapi.Healthy}
-		pm.Devices[devName] = &newdev
+	for _, device := range config.Devices {
+		newdev := pluginapi.Device{ID: device, Health: pluginapi.Healthy}
+		pm.Devices[device] = &newdev
 	}
 
 	if len(pm.Devices) > 0 {
@@ -180,7 +177,7 @@ func (pm *PoolManager) registerWithKubelet() error {
 	reqt := &pluginapi.RegisterRequest{
 		Version:      pluginapi.Version,
 		Endpoint:     pm.Endpoint,
-		ResourceName: pm.Name,
+		ResourceName: devicePrefix + "/" + pm.Name,
 	}
 
 	_, err = client.Register(context.Background(), reqt)
