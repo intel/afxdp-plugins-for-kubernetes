@@ -3,7 +3,7 @@ kind: NetworkAttachmentDefinition
 metadata:
   name: cndp-e2e-test
   annotations:
-    k8s.v1.cni.cncf.io/resourceName: cndp/poc
+    k8s.v1.cni.cncf.io/resourceName: cndp/e2e
 spec:
   config: '{
       "cniVersion": "0.3.0",

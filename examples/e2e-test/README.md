@@ -7,8 +7,11 @@ Bash script to run an e2e test of deceive plugin and CNI.
 - Multus installed
 ## Run Test
 - Run `build.sh` in the root directory of the repo.
-- cd to this directory, script must be run from here
-- `./e2e-test.sh`
+- cd to this directory, script must be run from here.
+- Place a `config.json` file here that includes the name of actual netdev(s) that you would like to attach to the test pod.
+	- A sample config can be found in `examples/sample-config/`
+	- For this test there must be a pool named `e2e` with real netdev(s).
+- Run the test script `./e2e-test.sh`
 ## What Happens
 - The CNI binary is moved to /opt/cni/bin. The binary is uniquely named for this test so it will not impact an existing install.
 - A network attachment definition is created. The NAD is uniquely named for this test so it will not impact an existing NAD.
@@ -16,7 +19,7 @@ Bash script to run an e2e test of deceive plugin and CNI.
 	- Currently an echo server to test the UDS.
 	- This will be updated to xdpsock and later CNDP.
 - Sample app is built into an Docker image. The image is uniquely tagged for this test so it will not overwrite existing images.
-- The Device Plugin is started.
+- The Device Plugin is started, devices in `config.json` are advertised to Kubernetes.
 - A pod is created, a single container running the Docker image. The pod is uniquely named for this test.
 - `ip a` is run in the pod to show attached interfaces.
 - The sample app in the pod is run:
