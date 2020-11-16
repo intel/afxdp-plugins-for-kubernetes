@@ -11,7 +11,7 @@ require (
 	github.com/vishvananda/netlink v1.1.0
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/net v0.0.0-20201021035429-f5854403a974
-	golang.org/x/tools v0.0.0-20201110124207-079ba7bd75cd // indirect
+	golang.org/x/tools v0.0.0-20201116002733-ac45abd4c88c // indirect
 	google.golang.org/grpc v1.27.0
 	k8s.io/kubelet v0.19.3
 )
