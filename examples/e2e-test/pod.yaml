@@ -12,7 +12,7 @@ spec:
     command: ["tail", "-f", "/dev/null"]
     resources:
       requests:
-        cndp/poc: '1'
+        cndp/e2e: '1'
       limits:
-        cndp/poc: '1'
+        cndp/e2e: '1'
   restartPolicy: Never
