@@ -1,0 +1,12 @@
+{
+	"pools" : [
+		{
+			"name" : "pool1",
+			"devices" : [ "dev_1", "dev_2" ]
+		},
+		{
+			"name" : "pool2",
+			"devices" : [ "dev_3", "dev_4", "dev_5" ]
+		}
+	]
+}
