@@ -39,13 +39,11 @@ const (
 	sysBusPCI = "/sys/bus/pci/devices"
 )
 
-// NetConf describes the network.
+//NetConf for host-device config
 type NetConf struct {
 	types.NetConf
-	Device        string `json:"device"`
-	RuntimeConfig struct {
-		DeviceID string `json:"deviceID,omitempty"`
-	} `json:"runtimeConfig,omitempty"`
+	Device        string `json:"deviceID"` 
+
 }
 
 func init() {
@@ -62,10 +60,6 @@ func loadConf(bytes []byte) (*NetConf, error) {
 		return nil, fmt.Errorf("loadConf(): loading network configuration unsuccessful : %v", err)
 	}
 
-	if n.RuntimeConfig.DeviceID != "" {
-		n.Device = n.RuntimeConfig.DeviceID
-		return nil, fmt.Errorf(`loadConf(): failure specify a "device" ID for CNDP CNI`)
-	}
 
 	if n.Device == "" {
 		return nil, fmt.Errorf(`loadConf(): specify a "device" - field blank`)
