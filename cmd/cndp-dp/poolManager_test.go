@@ -16,7 +16,7 @@ func TestAllocate(t *testing.T) {
 	containerAllocateResponse := &pluginapi.ContainerAllocateResponse{
 		Envs: map[string]string{},
 		Mounts: []*pluginapi.Mount{
-			&pluginapi.Mount{
+			{
 				ContainerPath: "/tmp/cndp.sock",
 				HostPath:      "/tmp/fake-socket.sock",
 				ReadOnly:      false,

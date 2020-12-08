@@ -18,12 +18,12 @@ func TestGetConfig(t *testing.T) {
 		{
 			name:       "load good config 1",
 			configFile: `{"pools":[{"name":"pool1","devices":[ "dev_1", "dev_2" ]}]}`,
-			expConfig:  &config{Pools: []poolConfig{poolConfig{Name: "pool1", Devices: []string{"dev_1", "dev_2"}}}},
+			expConfig:  &config{Pools: []poolConfig{{Name: "pool1", Devices: []string{"dev_1", "dev_2"}}}},
 		},
 		{
 			name:       "load good config 2",
 			configFile: `{"pools":[{"name":"pool1","devices":[ "dev_1", "dev_2" ]},{"name":"pool2","devices":["dev_3","dev_4"]}]}`,
-			expConfig:  &config{Pools: []poolConfig{poolConfig{Name: "pool1", Devices: []string{"dev_1", "dev_2"}}, poolConfig{Name: "pool2", Devices: []string{"dev_3", "dev_4"}}}},
+			expConfig:  &config{Pools: []poolConfig{{Name: "pool1", Devices: []string{"dev_1", "dev_2"}}, {Name: "pool2", Devices: []string{"dev_3", "dev_4"}}}},
 		},
 		{
 			name:       "load no config",

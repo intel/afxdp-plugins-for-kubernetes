@@ -42,8 +42,7 @@ const (
 //NetConf for host-device config
 type NetConf struct {
 	types.NetConf
-	Device        string `json:"deviceID"` 
-
+	Device string `json:"deviceID"`
 }
 
 func init() {
@@ -59,7 +58,6 @@ func loadConf(bytes []byte) (*NetConf, error) {
 	if err := json.Unmarshal(bytes, n); err != nil {
 		return nil, fmt.Errorf("loadConf(): loading network configuration unsuccessful : %v", err)
 	}
-
 
 	if n.Device == "" {
 		return nil, fmt.Errorf(`loadConf(): specify a "device" - field blank`)

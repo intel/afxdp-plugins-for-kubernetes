@@ -1,7 +1,5 @@
 package cndp
 
-import ()
-
 type fakeCNDP struct {
 	Interface
 }
