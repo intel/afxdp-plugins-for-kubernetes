@@ -9,9 +9,9 @@ require (
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/stretchr/testify v1.4.0
 	github.com/vishvananda/netlink v1.1.0
-	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
+	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
 	golang.org/x/net v0.0.0-20201021035429-f5854403a974
-	golang.org/x/tools v0.0.0-20201208062317-e652b2f42cc7 // indirect
+	golang.org/x/tools v0.0.0-20201208233053-a543418bbed2 // indirect
 	google.golang.org/grpc v1.27.0
 	k8s.io/kubelet v0.19.3
 )
