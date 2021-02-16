@@ -116,7 +116,7 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 		//loop each device request per container
 		for _, dev := range crqt.DevicesIDs {
 			glog.Info("Allocating device " + dev)
-		 bpf.Load_bpf_send_xsk_map("ens786f3") //TODO - temporary dummy call to CGo
+		 bpf.Load_bpf_send_xsk_map(dev) // makes call to wrapper.c
 		}
 		response.ContainerResponses = append(response.ContainerResponses, cresp)
 	}
