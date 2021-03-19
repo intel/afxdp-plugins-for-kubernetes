@@ -24,6 +24,7 @@ import (
 
 	"github.com/golang/glog"
 
+	"github.com/intel/cndp_device_plugin/pkg/bpf"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/types/current"
@@ -166,6 +167,7 @@ func cmdDel(args *skel.CmdArgs) error {
 		}
 	}
 
+	bpf.Cleanbpf(args.IfName)
 	return nil
 }
 
