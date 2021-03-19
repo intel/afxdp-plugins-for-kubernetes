@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 int load_bpf_send_xsk_map (char *ifname);
+void cleanbpf (char *ifname);
 
 #endif
 
