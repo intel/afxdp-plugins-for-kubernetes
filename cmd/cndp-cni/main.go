@@ -24,11 +24,11 @@ import (
 
 	"github.com/golang/glog"
 
-	"github.com/intel/cndp_device_plugin/pkg/bpf"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	"github.com/containernetworking/cni/pkg/types/current"
 	"github.com/containernetworking/cni/pkg/version"
+	"github.com/intel/cndp_device_plugin/pkg/bpf"
 
 	"github.com/containernetworking/plugins/pkg/ip"
 	"github.com/containernetworking/plugins/pkg/ipam"

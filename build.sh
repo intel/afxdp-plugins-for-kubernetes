@@ -22,6 +22,8 @@ echo
 
 echo "***** Build *****"
 echo "Building Device Plugin"
+gcc ./pkg/bpf/wrapper.c -lbpf -c -o ./pkg/bpf/wrapper.o
+ar rs ./pkg/bpf/libwrapper.a ./pkg/bpf/wrapper.o  &> /dev/null
 go build -o ./bin/cndp-dp ./cmd/cndp-dp
 echo "Building CNI"
 go build -o ./bin/cndp ./cmd/cndp-cni
