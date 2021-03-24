@@ -339,7 +339,7 @@ func TestValidateCniContainerInterface(t *testing.T) {
 			intfMac:     "Mac",
 			intfSandbox: "Sandbox",
 			expintf:     intf,
-			expErr:      errors.New("validateCniContainerInterface(): Container interface name missing in prevResult:"),
+			expErr:      errors.New("validateCniContainerInterface(): Container interface name missing in prevResult"),
 		},
 		{
 			name:        "failure to find container interface - missing intf: incomplete brace",
