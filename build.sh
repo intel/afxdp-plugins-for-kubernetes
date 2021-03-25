@@ -3,7 +3,12 @@
 echo "***** Go Format *****"
 echo "Runing Go Format on the following files:"
 go fmt github.com/intel/cndp_device_plugin/...
-echo 
+echo
+
+echo "***** Clang Format *****"
+echo "Runing C Formatter on the following files:"
+clang-format -i ./pkg/bpf/wrapper.c
+echo
 
 echo "***** Go Lint *****"
 #install golint if needed, suppress output to keep output clean
