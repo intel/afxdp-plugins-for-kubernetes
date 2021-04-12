@@ -2,7 +2,7 @@
 	"pools" : [
 		{
 			"name" : "e2e",
-			"devices" : [ "ens785f0", "ens785f1"]
+			"devices" : ["ens801f0", "ens801f1"]
 		}
 	]
 }
