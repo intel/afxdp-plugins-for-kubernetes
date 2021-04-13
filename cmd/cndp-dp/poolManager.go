@@ -10,6 +10,7 @@ import (
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"net"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -116,7 +117,8 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 		//loop each device request per container
 		for _, dev := range crqt.DevicesIDs {
 			glog.Info("Allocating device " + dev)
-			bpf.LoadBpfSendXskMap(dev) // makes call to wrapper.c
+			fd := bpf.LoadBpfSendXskMap(dev) // makes call to wrapper.c
+			glog.Info("File descriptor for " + dev + ": " + strconv.Itoa(fd))
 		}
 		response.ContainerResponses = append(response.ContainerResponses, cresp)
 	}
