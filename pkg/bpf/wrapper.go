@@ -37,9 +37,10 @@ var logError = int(C.Get_log_error())
 /*
 LoadBpfSendXskMap is the GoLang wrapper for the C function Load_bpf_send_xsk_map
 */
-func LoadBpfSendXskMap(ifname string) {
+func LoadBpfSendXskMap(ifname string) int {
 	cs := C.CString(ifname)
-	C.Load_bpf_send_xsk_map(cs)
+	fd := int(C.Load_bpf_send_xsk_map(cs))
+	return fd
 }
 
 /*
