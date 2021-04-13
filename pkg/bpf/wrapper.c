@@ -41,27 +41,23 @@ int Load_bpf_send_xsk_map(char *ifname) {
   } else {
     snprintf(log_buf, sizeof log_buf, "%s%s%s%d",
              "func Load_bpf_send_xsk_map: disovering if_index for interface  ",
-             ifname, ", If_index for interface is: ", if_index);
+             ifname, ", if_index for interface is: ", if_index);
     Log(log_buf, LOG_INFO);
   }
 
-  Log("Starting setup of XDP program", LOG_INFO);
+  Log("starting setup of XDP program", LOG_INFO);
+
   ret = xsk_setup_xdp_prog(if_index, &fd);
   if (ret) {
     snprintf(log_buf, sizeof log_buf, "%s%d",
-             "func Load_bpf_send_xsk_map: if_index not valid: ", if_index);
-    Log(log_buf, LOG_ERROR);
-
-  } else {
-    snprintf(log_buf, sizeof log_buf, "%s%d",
-             "func xsk_setup_xdp_prog: setup of xdp program failed ret= ", ret);
+             "func xsk_setup_xdp_prog: setup of xdp program failed ret: ", ret);
     Log(log_buf, LOG_ERROR);
   }
 
   if (fd > 0) {
     snprintf(log_buf, sizeof log_buf, "%s%s%s%d%s%d",
-             "func Load_bpf_send_xsk_map:loaded XDP program on interface",
-             ifname, "file descriptor :", fd, ",if_index: ", if_index);
+             "func Load_bpf_send_xsk_map:loaded XDP program on interface: ",
+             ifname, "file descriptor: ", fd, ",if_index: ", if_index);
     Log(log_buf, LOG_INFO);
   }
 
@@ -83,7 +79,7 @@ void Clean_bpf(char *ifname) {
              ifname, ", if_index is: ", if_index);
     Log(log_buf, LOG_INFO);
   }
-  Log("Starting removal of XDP program", LOG_INFO);
+  Log("starting removal of XDP program", LOG_INFO);
 
   ret = bpf_set_link_xdp_fd(if_index, fd, XDP_FLAGS_UPDATE_IF_NOEXIST);
   if (ret) {
