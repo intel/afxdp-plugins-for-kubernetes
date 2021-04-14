@@ -16,11 +16,8 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
-	"fmt"
 	"github.com/intel/cndp_device_plugin/pkg/logging"
-	"io/ioutil"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"os"
 	"os/signal"
@@ -36,15 +33,6 @@ type devicePlugin struct {
 	pools map[string]PoolManager
 }
 
-type poolConfig struct {
-	Name    string   `json:"name"`
-	Devices []string `json:"devices"`
-}
-
-type config struct {
-	Pools []poolConfig `json:"pools"`
-}
-
 func main() {
 	var configFile string
 
@@ -55,20 +43,14 @@ func main() {
 	logging.SetLogLevel("debug")
 	logging.SetPluginName("CNDP-DP")
 
+	logging.Infof("Starting CNDP Device Plugin")
+	cfg, err := GetConfig(configFile)
+	if err != nil {
+		logging.Errorf("Error getting device plugin config %s" + configFile)
+		logging.Errorf("%v", err)
+	}
 	dp := devicePlugin{
 		pools: make(map[string]PoolManager),
-	}
-
-	logging.Infof("Reading config file %s", configFile)
-	raw, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		logging.Errorf("Error reading config file %s", configFile)
-	}
-
-	cfg, err := getConfig(raw)
-	if err != nil {
-		logging.Warningf("Error parsing config file %s", configFile)
-		logging.Errorf("%v", err)
 	}
 
 	for _, poolConfig := range cfg.Pools {
@@ -102,17 +84,4 @@ func main() {
 		}
 		return
 	}
-}
-
-func getConfig(raw []byte) (*config, error) {
-	cfg := &config{}
-
-	err := json.Unmarshal(raw, &cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	logging.Infof("Config: " + fmt.Sprintf("%+v", cfg))
-
-	return cfg, nil
 }

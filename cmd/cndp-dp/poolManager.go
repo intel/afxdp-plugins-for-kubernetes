@@ -46,9 +46,8 @@ type PoolManager struct {
 /*
 Init is called it initialise the PoolManager.
 */
-func (pm *PoolManager) Init(config poolConfig) error {
+func (pm *PoolManager) Init(config *PoolConfig) error {
 	pm.ServerFactory = cndp.NewServerFactory()
-
 	err := pm.registerWithKubelet()
 	if err != nil {
 		return err
@@ -61,9 +60,13 @@ func (pm *PoolManager) Init(config poolConfig) error {
 	}
 	logging.Infof(devicePrefix + "/" + pm.Name + " serving on " + pm.DpAPISocket)
 
-	err = pm.discoverResources(config)
-	if err != nil {
-		return err
+	for _, device := range config.Devices {
+		newdev := pluginapi.Device{ID: device, Health: pluginapi.Healthy}
+		pm.Devices[device] = &newdev
+	}
+
+	if len(pm.Devices) > 0 {
+		pm.UpdateSignal <- true
 	}
 
 	return nil
@@ -169,20 +172,6 @@ Unused.
 */
 func (pm *PoolManager) GetPreferredAllocation(context.Context, *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
 	return &pluginapi.PreferredAllocationResponse{}, nil
-}
-
-func (pm *PoolManager) discoverResources(config poolConfig) error {
-
-	for _, device := range config.Devices {
-		newdev := pluginapi.Device{ID: device, Health: pluginapi.Healthy}
-		pm.Devices[device] = &newdev
-	}
-
-	if len(pm.Devices) > 0 {
-		pm.UpdateSignal <- true
-	}
-
-	return nil
 }
 
 func (pm *PoolManager) registerWithKubelet() error {
