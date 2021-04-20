@@ -8,14 +8,14 @@ cleanup() {
 	echo "*****************************************************"
 	echo "*                     Cleanup                       *"
 	echo "*****************************************************"
+	echo "Delete Pod"
+	kubectl delete pod cndp-e2e-test &> /dev/null
 	echo "Delete Sample App"
 	rm -f uds-client &> /dev/null
 	echo "Delete CNI"
 	rm -f /opt/cni/bin/cndp-e2e &> /dev/null
 	echo "Delete Network Attachment Definition"
 	kubectl delete network-attachment-definition cndp-e2e-test &> /dev/null
-	echo "Delete Pod"
-	kubectl delete pod cndp-e2e-test &> /dev/null
 	echo "Delete Docker Image"
 	docker rmi cndp-e2e-test &> /dev/null
 	echo "Stop Device Plugin"
@@ -58,13 +58,13 @@ run() {
 	echo "*****************************************************"
 	echo "*              Netdevs attached to pod              *"
 	echo "*****************************************************"
-	kubectl exec -i cndp-e2e-test ip a
+	kubectl exec -i cndp-e2e-test -- ip a
 	sleep 2
 	echo
 	echo "*****************************************************"
 	echo "*                     UDS Test                      *"
 	echo "*****************************************************"
-	kubectl exec -i cndp-e2e-test /cndp/uds-client <<< $'end to end test\nexit\n'
+	kubectl exec -i cndp-e2e-test -- /cndp/uds-client <<< $'end to end test\nexit\n'
 	sleep 2
 }
 
