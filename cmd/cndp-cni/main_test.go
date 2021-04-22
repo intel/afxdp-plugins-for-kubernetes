@@ -26,13 +26,13 @@ func TestGetConfig(t *testing.T) {
 	testCases := []struct {
 		name      string
 		config    string
-		expConfig *NetConf
+		expConfig *netConfig
 		expErr    error
 	}{
 		{
 			name:      "load good config 1",
 			config:    `{"cniVersion":"0.3.0","deviceID":"dev_1","name":"test-network","pciBusID":"","type":"cndp"}`,
-			expConfig: &NetConf{NetConf: netConf, Device: "dev_1"},
+			expConfig: &netConfig{NetConf: netConf, Device: "dev_1"},
 		},
 
 		{

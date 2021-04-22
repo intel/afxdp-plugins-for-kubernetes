@@ -33,7 +33,7 @@ import (
 	"github.com/containernetworking/plugins/pkg/utils/buildversion"
 )
 
-type NetConf struct {
+type netConfig struct {
 	types.NetConf
 	Device string `json:"deviceID"`
 }
@@ -42,8 +42,8 @@ func init() {
 	runtime.LockOSThread()
 }
 
-func loadConf(bytes []byte) (*NetConf, error) {
-	n := &NetConf{}
+func loadConf(bytes []byte) (*netConfig, error) {
+	n := &netConfig{}
 	if err := json.Unmarshal(bytes, n); err != nil {
 		return nil, fmt.Errorf("loadConf(): failed to load network configuration: %v", err)
 	}
@@ -171,7 +171,7 @@ func printLink(dev netlink.Link, cniVersion string, containerNs ns.NetNS) error 
 	return types.PrintResult(&result, cniVersion)
 }
 
-func configureIPAM(args *skel.CmdArgs, cfg *NetConf, device netlink.Link, netns ns.NetNS) (*current.Result, error) {
+func configureIPAM(args *skel.CmdArgs, cfg *netConfig, device netlink.Link, netns ns.NetNS) (*current.Result, error) {
 	var result *current.Result
 
 	//get IPAM
