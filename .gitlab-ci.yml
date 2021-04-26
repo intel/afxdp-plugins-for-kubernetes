@@ -1,0 +1,16 @@
+variables:
+  REPO_NAME: gitlab.devtools.intel.com/OrchSW/CNO/containers_afxdp_network_device_plugin-.git
+
+build-job:
+  stage: build
+  script:
+    - echo "***** Go Lint *****"
+    - /usr/local/go/bin/golint -set_exit_status ./...
+    - echo "***** Build *****"
+    - gcc ./pkg/bpf/wrapper.c -lbpf -c -o ./pkg/bpf/wrapper.o
+    - ar rs ./pkg/bpf/libwrapper.a ./pkg/bpf/wrapper.o
+    - go build -o ./bin/cndp-dp ./cmd/cndp-dp
+    - go build -o ./bin/cndp ./cmd/cndp-cni
+    - echo "***** Test *****"
+    - go test github.com/intel/cndp_device_plugin/...
+
