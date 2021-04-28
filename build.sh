@@ -20,11 +20,6 @@ echo "The following files have linting issues:"
 eval "$golint ./..."
 echo
 
-echo "***** Unit Tests *****"
-echo "Running unit tests:"
-go test github.com/intel/cndp_device_plugin/...
-echo
-
 echo "***** Build *****"
 echo "Building Device Plugin"
 gcc ./pkg/bpf/wrapper.c -lbpf -c -o ./pkg/bpf/wrapper.o
@@ -32,6 +27,11 @@ ar rs ./pkg/bpf/libwrapper.a ./pkg/bpf/wrapper.o  &> /dev/null
 go build -o ./bin/cndp-dp ./cmd/cndp-dp
 echo "Building CNI"
 go build -o ./bin/cndp ./cmd/cndp-cni
+echo
+
+echo "***** Unit Tests *****"
+echo "Running unit tests:"
+go test github.com/intel/cndp_device_plugin/...
 echo
 
 echo "Build complete!"
