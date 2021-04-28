@@ -19,11 +19,11 @@ type fakeCNDP struct {
 	Interface
 }
 
-func (c *fakeCNDP) StartSocketServer(SockAddr string) {
-	return
+func (c *fakeCNDP) StartUdsServer(server UdsServer) {
+
 }
 
-func (c *fakeCNDP) CreateUdsSocket() string {
+func (c *fakeCNDP) CreateUdsSocketPath() string {
 	return "/tmp/fake-socket.sock"
 }
 

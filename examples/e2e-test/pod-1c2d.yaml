@@ -3,7 +3,7 @@ kind: Pod
 metadata:
   name: cndp-e2e-test
   annotations:
-    k8s.v1.cni.cncf.io/networks: cndp-e2e-test
+    k8s.v1.cni.cncf.io/networks: cndp-e2e-test, cndp-e2e-test
 spec:
   containers:
   - name: cndp
@@ -12,7 +12,7 @@ spec:
     command: ["tail", "-f", "/dev/null"]
     resources:
       requests:
-        cndp/e2e: '1'
+        cndp/e2e: '2'
       limits:
-        cndp/e2e: '1'
+        cndp/e2e: '2'
   restartPolicy: Never

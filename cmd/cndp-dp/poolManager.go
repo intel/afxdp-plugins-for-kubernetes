@@ -53,13 +53,13 @@ func (pm *PoolManager) Init(config poolConfig) error {
 	if err != nil {
 		return err
 	}
-	glog.Infof(pm.Name + " registered with Kubelet")
+	glog.Info(devicePrefix + "/" + pm.Name + " registered with Kubelet")
 
 	err = pm.startGRPC()
 	if err != nil {
 		return err
 	}
-	glog.Infof("Starting to serve on %s", pm.Socket)
+	glog.Info(devicePrefix + "/" + pm.Name + " serving on " + pm.Socket)
 
 	err = pm.discoverResources(config)
 	if err != nil {
@@ -75,7 +75,7 @@ Terminate is called it terminate the PoolManager.
 func (pm *PoolManager) Terminate() error {
 	pm.stopGRPC()
 	pm.cleanup()
-	glog.Infof(pm.Name + " terminated")
+	glog.Infof(devicePrefix + "/" + pm.Name + " terminated")
 
 	return nil
 }
@@ -88,13 +88,13 @@ ListAndWatch should return the new list.
 func (pm *PoolManager) ListAndWatch(emtpy *pluginapi.Empty,
 	stream pluginapi.DevicePlugin_ListAndWatchServer) error {
 
-	glog.Info(pm.Name + " ListAndWatch started")
+	glog.Info(devicePrefix + "/" + pm.Name + " ListAndWatch started")
 
 	for {
 		select {
 		case <-pm.UpdateSignal:
 			resp := new(pluginapi.ListAndWatchResponse)
-			glog.Infof(pm.Name + " device list:")
+			glog.Infof(devicePrefix + "/" + pm.Name + " device list:")
 
 			for _, dev := range pm.Devices {
 				glog.Infof("\t" + dev.ID + ", " + dev.Health)
@@ -116,8 +116,16 @@ the Device available in the container.
 */
 func (pm *PoolManager) Allocate(ctx context.Context,
 	rqt *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
+	glog.Info("New allocate request. Generating UDS socket path")
+	sockAddr := pm.Cndp.CreateUdsSocketPath()
+	glog.Info("UDS socket path: " + sockAddr)
 	response := pluginapi.AllocateResponse{}
-	sockAddr := pm.Cndp.CreateUdsSocket()
+
+	server := cndp.UdsServer{
+		Socket:     sockAddr,
+		DeviceType: devicePrefix + "/" + pm.Name,
+		Devices:    make(map[string]string),
+	}
 
 	//loop each container
 	for _, crqt := range rqt.ContainerRequests {
@@ -131,14 +139,16 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 
 		//loop each device request per container
 		for _, dev := range crqt.DevicesIDs {
-			glog.Info("Allocating device " + dev)
-			fd := bpf.LoadBpfSendXskMap(dev) // makes call to wrapper.c
-			glog.Info("File descriptor for " + dev + ": " + strconv.Itoa(fd))
+			glog.Info("Loading BPF program on device: " + dev)
+			fd := bpf.LoadBpfSendXskMap(dev) //TODO Load BPF should return an error
+			glog.Info("BPF program loaded on: " + dev + " File descriptor: " + strconv.Itoa(fd))
+			server.Devices[dev] = strconv.Itoa(fd)
 		}
 		response.ContainerResponses = append(response.ContainerResponses, cresp)
 	}
 
-	go pm.Cndp.StartSocketServer(sockAddr)
+	pm.Cndp.StartUdsServer(server)
+
 	return &response, nil
 }
 

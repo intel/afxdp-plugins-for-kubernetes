@@ -1,2 +1,3 @@
 FROM golang
-COPY uds-client /cndp/
+COPY uds-client-auto /cndp/
+COPY uds-client-manual /cndp/
