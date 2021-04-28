@@ -51,6 +51,9 @@ func Cleanbpf(ifname string) {
 	C.Clean_bpf(cs)
 }
 
+/*
+GoLogger is exported to C, so C code can write logs back to our main log
+*/
 //export GoLogger
 func GoLogger(cString *C.char, level int) {
 	goString := C.GoString(cString)

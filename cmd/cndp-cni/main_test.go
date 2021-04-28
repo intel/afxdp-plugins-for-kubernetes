@@ -19,7 +19,6 @@ import (
 	"errors"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
-	"github.com/containernetworking/plugins/pkg/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -157,12 +156,6 @@ func TestCmdAdd(t *testing.T) {
 			netNS:      "B@dN%eTNS",
 			expError:   "cmdAdd(): failed to open container netns \"B@dN%eTNS\": failed to Statfs \"B@dN%eTNS\": no such file or directory",
 		},
-		{
-			name:       "fail to parse netConf - generate netns",
-			netConfStr: `{"cniVersion":"0.3.0","deviceID":"dev_1","name":"test-network","pciBusID":"","type":"cndp"}`,
-			netNS:      "generate",
-			expError:   "cmdAdd(): failed to open container netns \"generate\": failed to Statfs \"generate\": no such file or directory",
-		},
 	}
 
 	for _, tc := range testCases {
@@ -172,15 +165,6 @@ func TestCmdAdd(t *testing.T) {
 			args.StdinData = []byte(tc.netConfStr)
 			args.Netns = tc.netNS
 			err := cmdAdd(args)
-
-			if tc.netNS == "generate" {
-				netNS, nsErr := testutils.NewNS()
-				require.NoError(t, nsErr, "Can't create NewNS")
-				defer testutils.UnmountNS(netNS)
-				args.Netns = netNS.Path()
-			} else {
-				args.Netns = tc.netNS
-			}
 
 			if tc.expError == " " {
 				require.Error(t, err, "Unexpected error")
@@ -228,12 +212,6 @@ func TestCmdDel(t *testing.T) {
 			args.StdinData = []byte(tc.netConfStr)
 			args.Netns = tc.netNS
 			err := cmdDel(args)
-
-			netNS, nsErr := testutils.NewNS()
-			require.NoError(t, nsErr, "Can't create NewNS")
-			defer testutils.UnmountNS(netNS)
-			args.Netns = netNS.Path()
-			args.Netns = tc.netNS
 
 			if tc.expError == " " {
 				require.Error(t, err, "Unexpected error")
