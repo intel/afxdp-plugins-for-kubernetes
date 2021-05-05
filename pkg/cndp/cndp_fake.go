@@ -15,23 +15,47 @@
 
 package cndp
 
-type fakeCNDP struct {
-	Interface
-}
-
-func (c *fakeCNDP) StartUdsServer(server UdsServer) {
-
-}
-
-func (c *fakeCNDP) CreateUdsSocketPath() string {
-	return "/tmp/fake-socket.sock"
+/*
+fakeCndp implements the Cndp interface.
+*/
+type fakeCndp struct {
+	Cndp
 }
 
 /*
-NewFakeCndp returns a fake CNDP object of type cndp.Interface.
-The functions of the fake CNDP have little functionality. Returns are static and predictable.
-This is used while testing in other areas of the device plugin.
+fakeServer implements the UdsServer interface.
 */
-func NewFakeCndp() Interface {
-	return &fakeCNDP{}
+type fakeServer struct {
+	UdsServer
+}
+
+/*
+NewFakeCndp returns a struct implementing the Cndp interface.
+*/
+func NewFakeCndp() Cndp {
+	return &fakeCndp{}
+}
+
+/*
+CreateUdsServer returns an empty struct implementing the UdsServer interface.
+Also returns a hardcoded UDS filepath.
+*/
+func (c *fakeCndp) CreateUdsServer(deviceType string) (UdsServer, string) {
+	return &fakeServer{}, "/tmp/fake-socket.sock"
+}
+
+/*
+Start is the public facing function for starting the udsServer.
+In this fakeServer it does nothing.
+*/
+func (server *fakeServer) Start() {
+	return
+}
+
+/*
+AddDevice appends a netdev name and its file descriptor to the map of devices in the udsServer.
+In this fakeServer it does nothing.
+*/
+func (server *fakeServer) AddDevice(dev string, fd int) {
+	return
 }

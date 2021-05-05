@@ -34,13 +34,13 @@ PoolManager represents an manages the pool of devices.
 Each PoolManager registers with Kubernetes as a different device type.
 */
 type PoolManager struct {
-	Name         string
-	Devices      map[string]*pluginapi.Device
-	Server       *grpc.Server
-	Socket       string
-	Endpoint     string
-	UpdateSignal chan bool
-	Cndp         cndp.Interface
+	Name          string
+	Devices       map[string]*pluginapi.Device
+	UpdateSignal  chan bool
+	DpAPISocket   string
+	DpAPIEndpoint string
+	DpAPIServer   *grpc.Server
+	Cndp          cndp.Cndp
 }
 
 /*
@@ -59,7 +59,7 @@ func (pm *PoolManager) Init(config poolConfig) error {
 	if err != nil {
 		return err
 	}
-	glog.Info(devicePrefix + "/" + pm.Name + " serving on " + pm.Socket)
+	glog.Info(devicePrefix + "/" + pm.Name + " serving on " + pm.DpAPISocket)
 
 	err = pm.discoverResources(config)
 	if err != nil {
@@ -116,23 +116,18 @@ the Device available in the container.
 */
 func (pm *PoolManager) Allocate(ctx context.Context,
 	rqt *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
-	glog.Info("New allocate request. Generating UDS socket path")
-	sockAddr := pm.Cndp.CreateUdsSocketPath()
-	glog.Info("UDS socket path: " + sockAddr)
 	response := pluginapi.AllocateResponse{}
 
-	server := cndp.UdsServer{
-		Socket:     sockAddr,
-		DeviceType: devicePrefix + "/" + pm.Name,
-		Devices:    make(map[string]string),
-	}
+	glog.Info("New allocate request. Creating new UDS server.")
+	cndpServer, udsPath := pm.Cndp.CreateUdsServer(devicePrefix + "/" + pm.Name)
+	glog.Info("UDS socket path: " + udsPath)
 
 	//loop each container
 	for _, crqt := range rqt.ContainerRequests {
 		cresp := new(pluginapi.ContainerAllocateResponse)
 
 		cresp.Mounts = append(cresp.Mounts, &pluginapi.Mount{
-			HostPath:      sockAddr,
+			HostPath:      udsPath,
 			ContainerPath: "/tmp/cndp.sock",
 			ReadOnly:      false,
 		})
@@ -142,12 +137,12 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 			glog.Info("Loading BPF program on device: " + dev)
 			fd := bpf.LoadBpfSendXskMap(dev) //TODO Load BPF should return an error
 			glog.Info("BPF program loaded on: " + dev + " File descriptor: " + strconv.Itoa(fd))
-			server.Devices[dev] = strconv.Itoa(fd)
+			cndpServer.AddDevice(dev, fd)
 		}
 		response.ContainerResponses = append(response.ContainerResponses, cresp)
 	}
 
-	pm.Cndp.StartUdsServer(server)
+	cndpServer.Start()
 
 	return &response, nil
 }
@@ -203,7 +198,7 @@ func (pm *PoolManager) registerWithKubelet() error {
 
 	reqt := &pluginapi.RegisterRequest{
 		Version:      pluginapi.Version,
-		Endpoint:     pm.Endpoint,
+		Endpoint:     pm.DpAPIEndpoint,
 		ResourceName: devicePrefix + "/" + pm.Name,
 	}
 
@@ -221,16 +216,16 @@ func (pm *PoolManager) startGRPC() error {
 		return err
 	}
 
-	sock, err := net.Listen("unix", pm.Socket)
+	sock, err := net.Listen("unix", pm.DpAPISocket)
 	if err != nil {
 		return err
 	}
 
-	pm.Server = grpc.NewServer([]grpc.ServerOption{}...)
-	pluginapi.RegisterDevicePluginServer(pm.Server, pm)
-	go pm.Server.Serve(sock)
+	pm.DpAPIServer = grpc.NewServer([]grpc.ServerOption{}...)
+	pluginapi.RegisterDevicePluginServer(pm.DpAPIServer, pm)
+	go pm.DpAPIServer.Serve(sock)
 
-	conn, err := grpc.Dial(pm.Socket, grpc.WithInsecure(), grpc.WithBlock(),
+	conn, err := grpc.Dial(pm.DpAPISocket, grpc.WithInsecure(), grpc.WithBlock(),
 		grpc.WithTimeout(5*time.Second),
 		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
 			return net.DialTimeout("unix", addr, timeout)
@@ -246,14 +241,14 @@ func (pm *PoolManager) startGRPC() error {
 }
 
 func (pm *PoolManager) stopGRPC() {
-	if pm.Server != nil {
-		pm.Server.Stop()
-		pm.Server = nil
+	if pm.DpAPIServer != nil {
+		pm.DpAPIServer.Stop()
+		pm.DpAPIServer = nil
 	}
 }
 
 func (pm *PoolManager) cleanup() error {
-	if err := os.Remove(pm.Socket); err != nil && !os.IsNotExist(err) {
+	if err := os.Remove(pm.DpAPISocket); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 	return nil

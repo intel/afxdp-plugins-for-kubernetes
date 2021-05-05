@@ -71,11 +71,11 @@ func main() {
 	for _, poolConfig := range cfg.Pools {
 
 		pm := PoolManager{
-			Name:         poolConfig.Name,
-			Devices:      make(map[string]*pluginapi.Device),
-			Socket:       pluginapi.DevicePluginPath + devicePrefix + "-" + poolConfig.Name + ".sock",
-			Endpoint:     devicePrefix + "-" + poolConfig.Name + ".sock",
-			UpdateSignal: make(chan bool),
+			Name:          poolConfig.Name,
+			Devices:       make(map[string]*pluginapi.Device),
+			DpAPISocket:   pluginapi.DevicePluginPath + devicePrefix + "-" + poolConfig.Name + ".sock",
+			DpAPIEndpoint: devicePrefix + "-" + poolConfig.Name + ".sock",
+			UpdateSignal:  make(chan bool),
 		}
 
 		err = pm.Init(poolConfig)

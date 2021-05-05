@@ -64,9 +64,14 @@ run() {
 	kubectl create -f pod-1c1d.yaml
 	sleep 10
 	echo
-	echo "***** Netdevs attached to pod *****"
+	echo "***** Netdevs attached to pod (ip a) *****"
 	echo
 	kubectl exec -i cndp-e2e-test -- ip a
+	sleep 2
+	echo
+	echo "***** Netdevs attached to pod (ip l) *****"
+	echo
+	kubectl exec -i cndp-e2e-test -- ip l
 	sleep 2
 	echo
 	echo "***** UDS Test *****"
@@ -84,9 +89,14 @@ run() {
 		kubectl create -f pod-1c2d.yaml
 		sleep 10
 		echo
-		echo "***** Netdevs attached to pod *****"
+		echo "***** Netdevs attached to pod (ip a) *****"
 		echo
 		kubectl exec -i cndp-e2e-test -- ip a
+		sleep 2
+		echo
+		echo "***** Netdevs attached to pod (ip l) *****"
+		echo
+		kubectl exec -i cndp-e2e-test -- ip l
 		sleep 2
 		echo
 		echo "***** UDS Test *****"
@@ -102,9 +112,14 @@ run() {
 		kubectl create -f pod-2c2d.yaml
 		sleep 10
 		echo
-		echo "***** Netdevs attached to pod *****"
+		echo "***** Netdevs attached to pod (ip a) *****"
 		echo
 		kubectl exec -i cndp-e2e-test -- ip a
+		sleep 2
+		echo
+		echo "***** Netdevs attached to pod (ip l) *****"
+		echo
+		kubectl exec -i cndp-e2e-test -- ip l
 		sleep 2
 		echo
 		echo "***** UDS Test: Container 1 *****"
