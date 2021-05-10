@@ -20,3 +20,27 @@ By default the device plugin will search for `config.json` in the current direct
 ```bash
 ./bin/cndp-dp -config ./examples/sample-config/config.json
 ```
+
+## CLOC
+Output from CLOC (count lines of code) - github.com/AlDanial/cloc 
+<!---clocstart--->
+```
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+Go                              11            265            230           1146
+Markdown                         3             53              0            197
+Bourne Shell                     2             21              3            179
+YAML                             5              2              0             98
+C                                2             21             26             77
+make                             1              9              4             31
+JSON                             2              0              0             20
+C/C++ Header                     2             14             28             16
+Dockerfile                       1              0              0              3
+-------------------------------------------------------------------------------
+SUM:                            29            385            291           1767
+-------------------------------------------------------------------------------
+
+```
+<!---clocend--->
+
