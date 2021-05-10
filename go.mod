@@ -14,7 +14,7 @@ require (
 	github.com/sirupsen/logrus v1.6.0 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/vishvananda/netlink v1.1.0
-	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
+	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/net v0.0.0-20210224082022-3d97a244fca7
 	golang.org/x/tools v0.1.0 // indirect
 	google.golang.org/grpc v1.27.1
