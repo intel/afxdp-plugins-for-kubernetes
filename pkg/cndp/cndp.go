@@ -23,29 +23,34 @@ import (
 	podresourcesapi "k8s.io/kubelet/pkg/apis/podresources/v1alpha1"
 	"net"
 	"os"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
 /*CNDP UDS*/
 const (
-	requestConnect    = "/connect"
-	requestHostname   = "/host"
-	requestXskMap     = "/xsk_map_"
-	requestXskSock    = "/xsk_sock_"
-	requestFdReceived = "/fd_recvd"
-	requestFin        = "/fin"
+	handshakeVersion = "0.1"
+	requestVersion = "/version"
 
+	requestConnect  = "/connect"
+	responseHostOk  = "/host_ok"
+	responseHostNak = "/host_nak"
+
+	requestFd     = "/xsk_map_fd"
+	responseFdAck = "/fd_ack"
+	responseFdNak = "/fd_nak"
+
+	requestFin     = "/fin"
 	responseFinAck = "/fin_ack"
-	responseHostKv = "\"hostname\":"
-	responseHostOk = "/host_ok"
 
-	errorBadRequest     = "Error: Bad Request"
-	errorNotImplemented = "Error: Not Implemented"
-	errorBadHost        = "Error: Invalid Host"
-	errorHostError      = "Error: Error occurred during host validation"
+	responseBadRequest     = "/nak"
+	responseNotImplemented = "/nak"
+	responseError          = "/error"
 
-	udsBufSize     = 1024
+	udsProtocol    = "unixpacket" // "unix"=SOCK_STREAM, "unixdomain"=SOCK_DGRAM, "unixpacket"=SOCK_SEQPACKET
+	udsBufSize     = 64
 	usdSockDir     = "/tmp/"
 	udsIdleTimeout = 60 * time.Second
 )
@@ -58,89 +63,100 @@ const (
 )
 
 /*
-Interface is the interface to the cndp package, representing CNDP to the rest of device plugin.
-All interactions with CNDP should be done with an object implementing this interface.
+Cndp is the interface to the cndp package.
+Mainly exists for testing purposes, allowing the unit tests to
+test device plugin code against a non-functioning fake cndp.
 */
-type Interface interface {
-	StartUdsServer(server UdsServer)
-	CreateUdsSocketPath() string
+type Cndp interface {
+	CreateUdsServer(deviceType string) (UdsServer, string)
 }
 
 /*
-CNDP implements cndp.Interface.
-We use this object to interact with CNDP over a Unix Domain Socket.
+UdsServer is the interface for the Unix domain socket server.
+Defines the public facing functions of the server.
 */
-type CNDP struct {
-	Interface
+type UdsServer interface {
+	Start()
+	AddDevice(dev string, fd int)
 }
 
 /*
-NewCndp returns a CNPD object of type cndp.Interface.
+cndp implements the Cndp interface.
 */
-func NewCndp() Interface {
-	return &CNDP{}
+type cndp struct {
+	Cndp
 }
 
 /*
-UdsServer is the struct representing the UDS Server.
-The server runs on a Go routine and serves XDP info to the pod.
+udsServer implements the UdsServer interface.
 */
-type UdsServer struct {
-	Socket     string
-	DeviceType string
-	Devices    map[string]string
+type udsServer struct {
+	UdsServer
+	socket     string
+	conn       *net.UnixConn
+	udsFD      int
+	timeout    bool
+	deviceType string
+	devices    map[string]int
 }
 
 /*
-CreateUdsSocketPath generates a unique filename/filepath for the Unix Domain Socket (UDS).
-This UDS will be mounted into the pod and is used for communicating with CNDP.
+NewCndp returns a struct implementing the Cndp interface.
 */
-func (c *CNDP) CreateUdsSocketPath() string {
-	var sockPath string
+func NewCndp() Cndp {
+	return &cndp{}
+}
 
-	for {
-		sockName, err := uuid.NewV4()
-		if err != nil {
-			glog.Error(err)
-		}
+/*
+CreateUdsServer initialises and returns a struct implementing the UdsServer interface.
+Also returns the filepath of the UDS.
+*/
+func (c *cndp) CreateUdsServer(deviceType string) (UdsServer, string) {
+	socket := generateSocketPath()
 
-		sockPath = usdSockDir + sockName.String() + ".sock"
-		if _, err := os.Stat(sockPath); os.IsNotExist(err) {
-			break
-		}
-		glog.Info(sockPath + " already exists. Regenerating.")
+	server := &udsServer{
+		socket:     socket,
+		timeout:    false, // TODO enable, make configurable
+		deviceType: deviceType,
+		devices:    make(map[string]int),
 	}
 
-	return sockPath
+	return server, socket
 }
 
 /*
-StartUdsServer is the public facing function for starting a UDS server
-It runs a private startUdsServer function on a Go Routine
+Start is the public facing function for starting the udsServer.
+It runs the servers private start() function on a Go routine.
 */
-func (c *CNDP) StartUdsServer(server UdsServer) {
-	go startUdsServer(server)
+func (server *udsServer) Start() {
+	go server.start()
 }
 
 /*
-startUdsServer is the a private function, run on a Go Routine from the public StartUdsServer.
-This is the main loop of the UDS server. It listens for and serves only a single connection.
-Across this single connection we validate host and serve file descriptors to the CNDP app.
+AddDevice appends a netdev name and its file descriptor to the map of devices in the udsServer.
 */
-func startUdsServer(server UdsServer) {
-	glog.Info("Initialising UDS server on socket " + server.Socket)
+func (server *udsServer) AddDevice(dev string, fd int) {
+	server.devices[dev] = fd
+}
 
-	//create UDS
-	addr, err := net.ResolveUnixAddr("unix", server.Socket)
+/*
+start is the main loop of the udsServer. It listens for and serves a single connection.
+Across this connection it validates the pod hostname and serves file descriptors to the CNDP app.
+*/
+func (server *udsServer) start() {
+	glog.Info("Initialising UDS server on socket " + server.socket)
+
+	// resolve UDS address
+	addr, err := net.ResolveUnixAddr(udsProtocol, server.socket)
 	if err != nil {
-		glog.Error("Error resolving Unix address "+server.Socket+": ", err)
+		glog.Error("Error resolving Unix address "+server.socket+": ", err)
 		return
 	}
 
-	//create UDS listener
-	listener, err := net.ListenUnix("unix", addr)
+	// create UDS listener
+	listener, err := net.ListenUnix(udsProtocol, addr)
 	if err != nil {
-		glog.Error("Error creating Unix listener for "+server.Socket+": ", err)
+		glog.Error("Error creating Unix listener for "+server.socket+": ", err)
 		return
 	}
 	defer func() {
@@ -148,17 +164,19 @@ func startUdsServer(server UdsServer) {
 		listener.Close()
 	}()
 
-	//set UDS listener timeout
-	err = listener.SetDeadline(time.Now().Add(udsIdleTimeout))
-	if err != nil {
-		glog.Error("Error setting listener timeout: ", err)
-		return
+	// set UDS listener timeout
+	if server.timeout {
+		err = listener.SetDeadline(time.Now().Add(udsIdleTimeout))
+		if err != nil {
+			glog.Error("Error setting listener timeout: ", err)
+			return
+		}
 	}
 
 	glog.Info("UDS server initialised. Listening for new connection.")
 
-	//listen for new connection
-	conn, err := listener.Accept()
+	// listen for new connection
+	server.conn, err = listener.AcceptUnix()
 	if err != nil {
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 			glog.Error("Listener timed out: ", err)
@@ -169,98 +187,156 @@ func startUdsServer(server UdsServer) {
 	}
 	defer func() {
 		glog.Info("Closing connection")
-		conn.Close()
+		server.conn.Close()
 	}()
 
 	glog.Info("New connection. Waiting for requests.")
-	connected := true
-	buf := make([]byte, udsBufSize)
 
-	for connected {
-		//(re)set connection timeout
-		err = conn.SetDeadline(time.Now().Add(udsIdleTimeout))
-		if err != nil {
-			glog.Error("Error setting connection timeout: ", err)
+	// get the UDS socket file descriptor, required for syscall.Recvmsg/Sendmsg
+	socketFile, err := server.conn.File()
+	if err != nil {
+		glog.Error("Error getting socket file descriptor : ", err)
+		return
+	}
+	defer socketFile.Close()
+	server.udsFD = int(socketFile.Fd())
+
+	// read incomming request
+	request, err := server.read()
+	if err != nil {
+		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+			glog.Error("Connection timed out: ", err)
 			return
 		}
+		glog.Error("Connection read error: ", err)
+		return
+	}
 
-		//read incomming requests
-		n, err := conn.Read(buf[:])
+	// first request should validate hostname
+	connected := false
+	if strings.Contains(request, requestConnect) {
+		s := strings.Split(request, ",")
+		hostname := strings.ReplaceAll(s[1], " ", "")
+
+		valid, err := server.validateHost(hostname)
+		if err != nil {
+			glog.Error("Error validating host "+hostname+": ", err)
+			server.write(responseError)
+		}
+
+		if valid {
+			server.write(responseHostOk)
+			connected = true
+		} else {
+			server.write(responseHostNak)
+		}
+	}
+
+	// once valid maintain connection, loop for remaining requests
+	for connected {
+		// read incoming request
+		request, err := server.read()
 		if err != nil {
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 				glog.Error("Connection timed out: ", err)
 				return
 			}
 			glog.Error("Connection read error: ", err)
+			return
 		}
 
-		request := string(buf[0:n])
-		glog.Info("Request: " + request)
-
-		var response string
-
-		//handle request
+		// handle request
 		switch {
-		case request == requestConnect:
-			response = requestHostname
+		case strings.Contains(request, requestFd):
+			err = server.handleXskRequest(request)
 
-		case strings.Contains(request, responseHostKv):
-			response = server.handleHostValidation(request)
-
-		case strings.Contains(request, requestXskMap):
-			response = server.handleXskRequest(request)
-
-		case strings.Contains(request, requestXskSock):
-			response = errorNotImplemented
-
-		case request == requestFdReceived:
-			response = ""
+		case request == requestVersion:
+			err = server.write(handshakeVersion)
 
 		case request == requestFin:
-			response = responseFinAck
+			err = server.write(responseFinAck)
 			connected = false
 
 		default:
-			response = errorBadRequest
+			err = server.write(responseBadRequest)
 		}
 
-		//send response
-		if response != "" {
-			glog.Info("Response: " + response)
-			_, err = conn.Write([]byte(response))
-			if err != nil {
-				glog.Error("Connection write error: ", err)
-				return
-			}
+		if err != nil {
+			glog.Error("Error handling request: ", err)
+			return
 		}
 	}
 }
 
-func (s *UdsServer) handleHostValidation(request string) string {
-	hostname := strings.Trim(strings.TrimPrefix(request, responseHostKv), " \"")
-	valid, err := s.validateHost(hostname)
+func (server *udsServer) read() (string, error) {
+	msgBuf := make([]byte, udsBufSize)
+
+	// set connection timeout
+	if server.timeout {
+		err := server.conn.SetDeadline(time.Now().Add(udsIdleTimeout))
+		if err != nil {
+			glog.Error("Error setting connection timeout: ", err)
+			return "", err
+		}
+	}
+
+	// read request message
+	n, _, _, _, err := syscall.Recvmsg(server.udsFD, msgBuf, nil, 0)
 	if err != nil {
-		glog.Error("Error validating host "+hostname+": ", err)
-		return errorHostError
+		glog.Error("Recvmsg error: ", err)
+		return "", err
 	}
 
-	if valid {
-		return responseHostOk
-	}
-
-	return errorBadHost
+	request := string(msgBuf[0:n])
+	glog.Info("Request: " + request)
+	return request, nil
 }
 
-func (s *UdsServer) handleXskRequest(request string) string {
-	iface := strings.ReplaceAll(request, requestXskMap, "")
-	if descriptor, ok := s.Devices[iface]; ok {
-		return descriptor
+func (server *udsServer) write(response string) error {
+	if err := server.writeWithFD(response, -1); err != nil {
+		return err
 	}
-
-	return "Error: Interface not valid for this pod: " + iface
+	return nil
 }
 
-func (s *UdsServer) validateHost(hostname string) (bool, error) {
+func (server *udsServer) writeWithFD(response string, fd int) error {
+	// write response with or without file descriptor
+	if fd > 0 {
+		glog.Info("Response: " + response + ", FD: " + strconv.Itoa(fd))
+		rights := syscall.UnixRights(fd)
+		if err := syscall.Sendmsg(server.udsFD, []byte(response), rights, nil, 0); err != nil {
+			glog.Error("Sendmsg error: ", err)
+			return err
+		}
+	} else {
+		glog.Info("Response: " + response)
+		if err := syscall.Sendmsg(server.udsFD, []byte(response), nil, nil, 0); err != nil {
+			glog.Error("Sendmsg error: ", err)
+			return err
+		}
+	}
+	return nil
+}
+
+func (server *udsServer) handleXskRequest(request string) error {
+	s := strings.Split(request, ",")
+	iface := strings.ReplaceAll(s[1], " ", "")
+
+	if fd, ok := server.devices[iface]; ok {
+		glog.Info("Device " + iface + " recognised")
+		if err := server.writeWithFD(responseFdAck, fd); err != nil {
+			return err
+		}
+	} else {
+		glog.Error("Device " + iface + " not recognised")
+		if err := server.write(responseFdNak); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (server *udsServer) validateHost(hostname string) (bool, error) {
 	glog.Info("Validating pod hostname: " + hostname)
 
 	resp, err := getPodResources(podResSockPath)
@@ -278,7 +354,7 @@ func (s *UdsServer) validateHost(hostname string) (bool, error) {
 	if _, ok := podResourceMap[hostname]; ok {
 		glog.Info(hostname + " found on node")
 	} else {
-		glog.Info(hostname + " not found on node")
+		glog.Error(hostname + " not found on node")
 		return false, nil
 	}
 
@@ -288,20 +364,20 @@ func (s *UdsServer) validateHost(hostname string) (bool, error) {
 	for _, container := range pod.GetContainers() {
 		for _, device := range container.GetDevices() {
 
-			if device.GetResourceName() != s.DeviceType ||
-				len(device.GetDeviceIds()) != len(s.Devices) {
-				//not the resource we're interested in
-				//or this container has a different number of the resource
+			if device.GetResourceName() != server.deviceType ||
+				len(device.GetDeviceIds()) != len(server.devices) {
+				// not the resource we're interested in
+				// or this container has a different number of the resource
 				continue
 			}
 
-			//compare known devices (from Allocate) vs devices from resource api
+			// compare known devices (from Allocate) vs devices from resource api
 			for _, dev := range device.GetDeviceIds() {
-				if _, exists := s.Devices[dev]; exists {
-					valid = true //valid while devices match
+				if _, exists := server.devices[dev]; exists {
+					valid = true // valid while devices match
 				} else {
 					valid = false
-					continue //not valid if any device does not match
+					continue // not valid if any device does not match
 				}
 			}
 
@@ -345,4 +421,23 @@ func getPodResources(socket string) (*podresourcesapi.ListPodResourcesResponse, 
 	}
 
 	return resp, nil
+}
+
+func generateSocketPath() string {
+	var sockPath string
+
+	for {
+		sockName, err := uuid.NewV4()
+		if err != nil {
+			glog.Error(err)
+		}
+
+		sockPath = usdSockDir + sockName.String() + ".sock"
+		if _, err := os.Stat(sockPath); os.IsNotExist(err) {
+			break
+		}
+		glog.Info(sockPath + " already exists. Regenerating.")
+	}
+
+	return sockPath
 }
