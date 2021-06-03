@@ -8,6 +8,8 @@ spec:
   config: '{
       "cniVersion": "0.3.0",
       "type": "cndp-e2e",
+      "logFile": "/var/log/cndp-cni-e2e.log",
+      "logLevel": "debug",
       "ipam": {
         "type": "host-local",
         "subnet": "192.168.1.0/24",
