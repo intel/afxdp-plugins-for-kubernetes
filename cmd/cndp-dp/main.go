@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/golang/glog"
+	"github.com/intel/cndp_device_plugin/pkg/logging"
 	"io/ioutil"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"os"
@@ -51,21 +51,24 @@ func main() {
 	flag.Lookup("logtostderr").Value.Set("true")
 	flag.StringVar(&configFile, "config", defaultConfigFile, "Location of the device plugin configuration file")
 	flag.Parse()
+	logging.SetLogFile("/var/log/cndp-dp-e2e.log")
+	logging.SetLogLevel("debug")
+	logging.SetPluginName("CNDP-DP")
 
 	dp := devicePlugin{
 		pools: make(map[string]PoolManager),
 	}
 
-	glog.Info("Reading config file " + configFile)
+	logging.Infof("Reading config file %s", configFile)
 	raw, err := ioutil.ReadFile(configFile)
 	if err != nil {
-		glog.Error("Error reading config file " + configFile)
+		logging.Errorf("Error reading config file %s", configFile)
 	}
 
 	cfg, err := getConfig(raw)
 	if err != nil {
-		glog.Error("Error parsing config file " + configFile)
-		glog.Fatal(err)
+		logging.Warningf("Error parsing config file %s", configFile)
+		logging.Errorf("%v", err)
 	}
 
 	for _, poolConfig := range cfg.Pools {
@@ -80,8 +83,8 @@ func main() {
 
 		err = pm.Init(poolConfig)
 		if err != nil {
-			glog.Error("Error initializing pool: " + pm.Name)
-			glog.Fatal(err)
+			logging.Warningf("Error initializing pool: %v", pm.Name)
+			logging.Errorf("%v", err)
 		}
 
 		dp.pools[poolConfig.Name] = pm
@@ -92,9 +95,9 @@ func main() {
 
 	select {
 	case s := <-sigs:
-		glog.Infof("Received signal \"%v\"", s)
+		logging.Infof("Received signal \"%v\"", s)
 		for _, pm := range dp.pools {
-			glog.Infof("Terminating " + pm.Name)
+			logging.Infof("Terminating %v", pm.Name)
 			pm.Terminate()
 		}
 		return
@@ -109,7 +112,7 @@ func getConfig(raw []byte) (*config, error) {
 		return nil, err
 	}
 
-	glog.Info("Config: " + fmt.Sprintf("%+v\n", cfg))
+	logging.Infof("Config: " + fmt.Sprintf("%+v", cfg))
 
 	return cfg, nil
 }

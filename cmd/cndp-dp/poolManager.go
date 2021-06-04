@@ -17,9 +17,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/golang/glog"
 	"github.com/intel/cndp_device_plugin/pkg/bpf"
 	"github.com/intel/cndp_device_plugin/pkg/cndp"
+	"github.com/intel/cndp_device_plugin/pkg/logging"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
@@ -53,13 +53,13 @@ func (pm *PoolManager) Init(config poolConfig) error {
 	if err != nil {
 		return err
 	}
-	glog.Info(devicePrefix + "/" + pm.Name + " registered with Kubelet")
+	logging.Infof(devicePrefix + "/" + pm.Name + " registered with Kubelet")
 
 	err = pm.startGRPC()
 	if err != nil {
 		return err
 	}
-	glog.Info(devicePrefix + "/" + pm.Name + " serving on " + pm.DpAPISocket)
+	logging.Infof(devicePrefix + "/" + pm.Name + " serving on " + pm.DpAPISocket)
 
 	err = pm.discoverResources(config)
 	if err != nil {
@@ -75,7 +75,7 @@ Terminate is called it terminate the PoolManager.
 func (pm *PoolManager) Terminate() error {
 	pm.stopGRPC()
 	pm.cleanup()
-	glog.Infof(devicePrefix + "/" + pm.Name + " terminated")
+	logging.Infof(devicePrefix + "/" + pm.Name + " terminated")
 
 	return nil
 }
@@ -88,21 +88,21 @@ ListAndWatch should return the new list.
 func (pm *PoolManager) ListAndWatch(emtpy *pluginapi.Empty,
 	stream pluginapi.DevicePlugin_ListAndWatchServer) error {
 
-	glog.Info(devicePrefix + "/" + pm.Name + " ListAndWatch started")
+	logging.Infof(devicePrefix + "/" + pm.Name + " ListAndWatch started")
 
 	for {
 		select {
 		case <-pm.UpdateSignal:
 			resp := new(pluginapi.ListAndWatchResponse)
-			glog.Infof(devicePrefix + "/" + pm.Name + " device list:")
+			logging.Infof(devicePrefix + "/" + pm.Name + " device list:")
 
 			for _, dev := range pm.Devices {
-				glog.Infof("\t" + dev.ID + ", " + dev.Health)
+				logging.Infof("\t" + dev.ID + ", " + dev.Health)
 				resp.Devices = append(resp.Devices, dev)
 			}
 
 			if err := stream.Send(resp); err != nil {
-				glog.Errorf("Failed to send stream to kubelet: %v", err)
+				logging.Errorf("Failed to send stream to kubelet: %v", err)
 			}
 		}
 	}
@@ -118,9 +118,9 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 	rqt *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
 	response := pluginapi.AllocateResponse{}
 
-	glog.Info("New allocate request. Creating new UDS server.")
+	logging.Infof("New allocate request. Creating new UDS server.")
 	cndpServer, udsPath := pm.Cndp.CreateUdsServer(devicePrefix + "/" + pm.Name)
-	glog.Info("UDS socket path: " + udsPath)
+	logging.Infof("UDS socket path: " + udsPath)
 
 	//loop each container
 	for _, crqt := range rqt.ContainerRequests {
@@ -134,9 +134,9 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 
 		//loop each device request per container
 		for _, dev := range crqt.DevicesIDs {
-			glog.Info("Loading BPF program on device: " + dev)
+			logging.Infof("Loading BPF program on device: " + dev)
 			fd := bpf.LoadBpfSendXskMap(dev) //TODO Load BPF should return an error
-			glog.Info("BPF program loaded on: " + dev + " File descriptor: " + strconv.Itoa(fd))
+			logging.Infof("BPF program loaded on: " + dev + " File descriptor: " + strconv.Itoa(fd))
 			cndpServer.AddDevice(dev, fd)
 		}
 		response.ContainerResponses = append(response.ContainerResponses, cresp)
