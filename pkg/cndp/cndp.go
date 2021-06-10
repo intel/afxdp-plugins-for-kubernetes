@@ -16,7 +16,7 @@
 package cndp
 
 import (
-	"github.com/golang/glog"
+	"github.com/intel/cndp_device_plugin/pkg/logging"
 	"github.com/nu7hatch/gouuid"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -32,7 +32,7 @@ import (
 /*CNDP UDS*/
 const (
 	handshakeVersion = "0.1"
-	requestVersion = "/version"
+	requestVersion   = "/version"
 
 	requestConnect  = "/connect"
 	responseHostOk  = "/host_ok"
@@ -144,23 +144,23 @@ start is the main loop of the udsServer. It listens for and serves a single conn
 Across this connection it validates the pod hostname and serves file descriptors to the CNDP app.
 */
 func (server *udsServer) start() {
-	glog.Info("Initialising UDS server on socket " + server.socket)
+	logging.Infof("Initialising UDS server on socket " + server.socket)
 
 	// resolve UDS address
 	addr, err := net.ResolveUnixAddr(udsProtocol, server.socket)
 	if err != nil {
-		glog.Error("Error resolving Unix address "+server.socket+": ", err)
+		logging.Errorf("Error resolving Unix address "+server.socket+": ", err)
 		return
 	}
 
 	// create UDS listener
 	listener, err := net.ListenUnix(udsProtocol, addr)
 	if err != nil {
-		glog.Error("Error creating Unix listener for "+server.socket+": ", err)
+		logging.Errorf("Error creating Unix listener for "+server.socket+": ", err)
 		return
 	}
 	defer func() {
-		glog.Info("Closing Unix listener")
+		logging.Infof("Closing Unix listener")
 		listener.Close()
 	}()
 
@@ -168,34 +168,34 @@ func (server *udsServer) start() {
 	if server.timeout {
 		err = listener.SetDeadline(time.Now().Add(udsIdleTimeout))
 		if err != nil {
-			glog.Error("Error setting listener timeout: ", err)
+			logging.Errorf("Error setting listener timeout: %v", err)
 			return
 		}
 	}
 
-	glog.Info("UDS server initialised. Listening for new connection.")
+	logging.Infof("UDS server initialised. Listening for new connection.")
 
 	// listen for new connection
 	server.conn, err = listener.AcceptUnix()
 	if err != nil {
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-			glog.Error("Listener timed out: ", err)
+			logging.Errorf("Listener timed out: %v", err)
 			return
 		}
-		glog.Error("Listener Accept error: ", err)
+		logging.Errorf("Listener Accept error: %v", err)
 		return
 	}
 	defer func() {
-		glog.Info("Closing connection")
+		logging.Infof("Closing connection")
 		server.conn.Close()
 	}()
 
-	glog.Info("New connection. Waiting for requests.")
+	logging.Infof("New connection. Waiting for requests.")
 
 	// get the UDS socket file descriptor, required for syscall.Recvmsg/Sendmsg
 	socketFile, err := server.conn.File()
 	if err != nil {
-		glog.Error("Error getting socket file descriptor : ", err)
+		logging.Errorf("Error getting socket file descriptor : %v", err)
 		return
 	}
 	defer socketFile.Close()
@@ -205,10 +205,10 @@ func (server *udsServer) start() {
 	request, err := server.read()
 	if err != nil {
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-			glog.Error("Connection timed out: ", err)
+			logging.Errorf("Connection timed out: %v", err)
 			return
 		}
-		glog.Error("Connection read error: ", err)
+		logging.Errorf("Connection read error: %v", err)
 		return
 	}
 
@@ -220,7 +220,7 @@ func (server *udsServer) start() {
 
 		valid, err := server.validateHost(hostname)
 		if err != nil {
-			glog.Error("Error validating host "+hostname+": ", err)
+			logging.Errorf("Error validating host "+hostname+": ", err)
 			server.write(responseError)
 		}
 
@@ -238,10 +238,10 @@ func (server *udsServer) start() {
 		request, err := server.read()
 		if err != nil {
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-				glog.Error("Connection timed out: ", err)
+				logging.Errorf("Connection timed out: %v", err)
 				return
 			}
-			glog.Error("Connection read error: ", err)
+			logging.Errorf("Connection read error: %v", err)
 			return
 		}
 
@@ -262,7 +262,7 @@ func (server *udsServer) start() {
 		}
 
 		if err != nil {
-			glog.Error("Error handling request: ", err)
+			logging.Errorf("Error handling request: %v", err)
 			return
 		}
 	}
@@ -275,7 +275,7 @@ func (server *udsServer) read() (string, error) {
 	if server.timeout {
 		err := server.conn.SetDeadline(time.Now().Add(udsIdleTimeout))
 		if err != nil {
-			glog.Error("Error setting connection timeout: ", err)
+			logging.Errorf("Error setting connection timeout: %v", err)
 			return "", err
 		}
 	}
@@ -283,12 +283,12 @@ func (server *udsServer) read() (string, error) {
 	// read request message
 	n, _, _, _, err := syscall.Recvmsg(server.udsFD, msgBuf, nil, 0)
 	if err != nil {
-		glog.Error("Recvmsg error: ", err)
+		logging.Errorf("Recvmsg error: %v", err)
 		return "", err
 	}
 
 	request := string(msgBuf[0:n])
-	glog.Info("Request: " + request)
+	logging.Infof("Request: " + request)
 	return request, nil
 }
 
@@ -302,16 +302,16 @@ func (server *udsServer) write(response string) error {
 func (server *udsServer) writeWithFD(response string, fd int) error {
 	// write response with or without file descriptor
 	if fd > 0 {
-		glog.Info("Response: " + response + ", FD: " + strconv.Itoa(fd))
+		logging.Infof("Response: " + response + ", FD: " + strconv.Itoa(fd))
 		rights := syscall.UnixRights(fd)
 		if err := syscall.Sendmsg(server.udsFD, []byte(response), rights, nil, 0); err != nil {
-			glog.Error("Sendmsg error: ", err)
+			logging.Errorf("Sendmsg error: %v", err)
 			return err
 		}
 	} else {
-		glog.Info("Response: " + response)
+		logging.Infof("Response: " + response)
 		if err := syscall.Sendmsg(server.udsFD, []byte(response), nil, nil, 0); err != nil {
-			glog.Error("Sendmsg error: ", err)
+			logging.Errorf("Sendmsg error: %v", err)
 			return err
 		}
 	}
@@ -323,12 +323,12 @@ func (server *udsServer) handleXskRequest(request string) error {
 	iface := strings.ReplaceAll(s[1], " ", "")
 
 	if fd, ok := server.devices[iface]; ok {
-		glog.Info("Device " + iface + " recognised")
+		logging.Infof("Device " + iface + " recognised")
 		if err := server.writeWithFD(responseFdAck, fd); err != nil {
 			return err
 		}
 	} else {
-		glog.Error("Device " + iface + " not recognised")
+		logging.Errorf("Device " + iface + " not recognised")
 		if err := server.write(responseFdNak); err != nil {
 			return err
 		}
@@ -337,11 +337,11 @@ func (server *udsServer) handleXskRequest(request string) error {
 }
 
 func (server *udsServer) validateHost(hostname string) (bool, error) {
-	glog.Info("Validating pod hostname: " + hostname)
+	logging.Infof("Validating pod hostname: " + hostname)
 
 	resp, err := getPodResources(podResSockPath)
 	if err != nil {
-		glog.Error("Error Getting pod resources: ", err)
+		logging.Errorf("Error Getting pod resources: %v", err)
 		return false, err
 	}
 
@@ -352,9 +352,9 @@ func (server *udsServer) validateHost(hostname string) (bool, error) {
 	}
 
 	if _, ok := podResourceMap[hostname]; ok {
-		glog.Info(hostname + " found on node")
+		logging.Infof("Pod" + hostname + " found on node")
 	} else {
-		glog.Error(hostname + " not found on node")
+		logging.Errorf("Pod" + hostname + " not found on node")
 		return false, nil
 	}
 
@@ -382,13 +382,13 @@ func (server *udsServer) validateHost(hostname string) (bool, error) {
 			}
 
 			if valid {
-				glog.Info(hostname + " is valid for this UDS connection")
+				logging.Infof("Pod" + hostname + " is valid for this UDS connection")
 				return true, nil
 			}
 		}
 	}
 
-	glog.Info(hostname + " could not be validated for this UDS connection")
+	logging.Infof("Pod" + hostname + " could not be validated for this UDS connection")
 	return false, nil
 }
 
@@ -396,27 +396,27 @@ func getPodResources(socket string) (*podresourcesapi.ListPodResourcesResponse, 
 	ctx, cancel := context.WithTimeout(context.Background(), podResTimeout)
 	defer cancel()
 
-	glog.Info("Opening Pod Resource API connection")
+	logging.Infof("Opening Pod Resource API connection")
 	conn, err := grpc.DialContext(ctx, socket, grpc.WithInsecure(), grpc.WithBlock(),
 		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
 			return net.DialTimeout("unix", addr, timeout)
 		}),
 	)
 	if err != nil {
-		glog.Error("Error connecting to Pod Resource API: ", err)
+		logging.Errorf("Error connecting to Pod Resource API: %v", err)
 		return nil, err
 	}
 	defer func() {
-		glog.Info("Closing Pod Resource API connection")
+		logging.Infof("Closing Pod Resource API connection")
 		conn.Close()
 	}()
 
-	glog.Info("Requesting pod resource list")
+	logging.Infof("Requesting pod resource list")
 	client := podresourcesapi.NewPodResourcesListerClient(conn)
 
 	resp, err := client.List(ctx, &podresourcesapi.ListPodResourcesRequest{})
 	if err != nil {
-		glog.Error("Error getting Pod Resource list: ", err)
+		logging.Errorf("Error getting Pod Resource list: %v", err)
 		return nil, err
 	}
 
@@ -429,14 +429,14 @@ func generateSocketPath() string {
 	for {
 		sockName, err := uuid.NewV4()
 		if err != nil {
-			glog.Error(err)
+			logging.Errorf("%v", err)
 		}
 
 		sockPath = usdSockDir + sockName.String() + ".sock"
 		if _, err := os.Stat(sockPath); os.IsNotExist(err) {
 			break
 		}
-		glog.Info(sockPath + " already exists. Regenerating.")
+		logging.Infof(sockPath + " already exists. Regenerating.")
 	}
 
 	return sockPath
