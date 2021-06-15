@@ -69,7 +69,6 @@ func loadConf(bytes []byte) (*netConfig, error) {
 }
 
 func cmdAdd(args *skel.CmdArgs) error {
-	//cmdAdd(): loading config
 	cfg, err := loadConf(args.StdinData)
 	logging.Debugf("cmdAdd(): loaded config: %v", cfg)
 	if err != nil {
@@ -109,7 +108,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 
-	logging.Infof("cmdAdd(): configuring IPAM if required")
+	logging.Infof("cmdAdd(): checking if IPAM is required")
 	if cfg.IPAM.Type != "" {
 		result, err := configureIPAM(args, cfg, device, containerNs)
 		if err != nil {
@@ -122,7 +121,6 @@ func cmdAdd(args *skel.CmdArgs) error {
 }
 
 func cmdDel(args *skel.CmdArgs) error {
-	//cmdDel(): loading config
 	cfg, err := loadConf(args.StdinData)
 	if err != nil {
 		return err
@@ -168,7 +166,7 @@ func cmdDel(args *skel.CmdArgs) error {
 		}
 	}
 
-	logging.Infof("cmdDel(): //cleanup BPF config on device")
+	logging.Infof("cmdDel(): cleanup BPF config on device")
 	bpf.Cleanbpf(cfg.Device) //TODO BPF should return error
 	return nil
 }
@@ -190,27 +188,28 @@ func printLink(dev netlink.Link, cniVersion string, containerNs ns.NetNS) error 
 func configureIPAM(args *skel.CmdArgs, cfg *netConfig, device netlink.Link, netns ns.NetNS) (*current.Result, error) {
 	var result *current.Result
 
-	//get IPAM
+	logging.Infof("configureIPAM(): running IPAM plugin: " + cfg.IPAM.Type)
 	ipamResult, err := ipam.ExecAdd(cfg.IPAM.Type, args.StdinData)
 	if err != nil {
-		return result, err
+		return result, logging.Errorf("configureIPAM(): failed to get IPAM: %v", err)
 	}
 
-	//delete IPAM incase of error, prevent IP leak
 	defer func() {
 		if err != nil {
+			logging.Debugf("configureIPAM(): An error occurred. Deleting IPAM to prevent IP leak.")
 			ipam.ExecDel(cfg.IPAM.Type, args.StdinData)
+
 		}
 	}()
 
-	//convert IPAM result into current result type
+	logging.Infof("configureIPAM(): converting IPAM result into current result type")
 	result, err = current.NewResultFromResult(ipamResult)
 	if err != nil {
-		return result, err
+		return result, logging.Errorf("configureIPAM(): Failed to convert IPAM result into current result type: %v", err)
 	}
-
+	logging.Infof("configureIPAM(): checking IPAM plugin returned IP")
 	if len(result.IPs) == 0 {
-		return result, logging.Errorf("ipamConfig(): IPAM plugin returned no IPs")
+		return result, logging.Errorf("configureIPAM(): IPAM plugin returned no IPs")
 	}
 
 	result.Interfaces = []*current.Interface{{
@@ -219,15 +218,16 @@ func configureIPAM(args *skel.CmdArgs, cfg *netConfig, device netlink.Link, netn
 		Sandbox: netns.Path(),
 	}}
 	for _, ipc := range result.IPs {
+		logging.Debugf("configureIPAM(): setting IPConfig interface")
 		ipc.Interface = current.Int(0)
 	}
 
-	//execute within container netns:
+	logging.Infof("configureIPAM(): executing within container netns")
 	if err := netns.Do(func(_ ns.NetNS) error {
 
-		//set device IP
+		logging.Infof("configureIPAM(): setting device IP")
 		if err := ipam.ConfigureIface(device.Attrs().Name, result); err != nil {
-			return logging.Errorf("ipamConfig(): Error setting IPAM on device %q: %v", device.Attrs().Name, err)
+			return logging.Errorf("configureIPAM(): Error setting IPAM on device %q: %v", device.Attrs().Name, err)
 		}
 
 		return nil
