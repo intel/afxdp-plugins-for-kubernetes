@@ -27,12 +27,14 @@ package bpf
 import "C"
 
 import (
-	"github.com/golang/glog"
+	"github.com/intel/cndp_device_plugin/pkg/logging"
 )
 
+var logDebug = int(C.Get_log_debug())
 var logInfo = int(C.Get_log_info())
 var logWarn = int(C.Get_log_warn())
 var logError = int(C.Get_log_error())
+var logPanic = int(C.Get_log_panic())
 
 /*
 LoadBpfSendXskMap is the GoLang wrapper for the C function Load_bpf_send_xsk_map
@@ -59,13 +61,17 @@ func GoLogger(cString *C.char, level int) {
 	goString := C.GoString(cString)
 
 	switch level {
+	case logDebug:
+		logging.Debugf(goString)
 	case logInfo:
-		glog.Info("INFO: " + goString)
+		logging.Infof(goString)
 	case logWarn:
-		glog.Warning("WARNING: " + goString)
+		logging.Warningf(goString)
 	case logError:
-		glog.Error("ERROR: " + goString)
+		logging.Errorf(goString)
+	case logPanic:
+		logging.Panicf(goString)
 	default:
-		glog.Error("ERROR: Unrecognised log level")
+		logging.Errorf("ERROR: Unrecognised log level")
 	}
 }

@@ -48,9 +48,9 @@ type config struct {
 func main() {
 	var configFile string
 
-	flag.Lookup("logtostderr").Value.Set("true")
 	flag.StringVar(&configFile, "config", defaultConfigFile, "Location of the device plugin configuration file")
 	flag.Parse()
+
 	logging.SetLogFile("/var/log/cndp-dp-e2e.log")
 	logging.SetLogLevel("debug")
 	logging.SetPluginName("CNDP-DP")
