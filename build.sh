@@ -30,8 +30,8 @@ go build -o ./bin/cndp ./cmd/cndp-cni
 echo
 
 echo "***** Unit Tests *****"
-echo "Running unit tests:"
-go test github.com/intel/cndp_device_plugin/...
+echo "Running unit tests:" 
+go test $(go list ./... | grep -v "/examples/e2e-test/" | grep -v "/pkg/resourcesapi")
 echo
 
 echo "***** Update CLOC *****"

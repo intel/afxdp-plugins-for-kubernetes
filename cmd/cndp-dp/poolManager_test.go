@@ -26,7 +26,7 @@ import (
 
 func TestAllocate(t *testing.T) {
 	pm := &PoolManager{}
-	pm.Cndp = cndp.NewFakeCndp()
+	pm.ServerFactory = cndp.NewFakeServerFactory()
 
 	containerAllocateResponse := &pluginapi.ContainerAllocateResponse{
 		Envs: map[string]string{},

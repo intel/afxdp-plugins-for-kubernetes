@@ -16,46 +16,47 @@
 package cndp
 
 /*
-fakeCndp implements the Cndp interface.
-*/
-type fakeCndp struct {
-	Cndp
-}
-
-/*
-fakeServer implements the UdsServer interface.
+fakeServer is a fake implementation the Server interface.
 */
 type fakeServer struct {
-	UdsServer
+	Server
 }
 
 /*
-NewFakeCndp returns a struct implementing the Cndp interface.
+fakeServerFactory is a fake implementation the ServerFactory interface.
 */
-func NewFakeCndp() Cndp {
-	return &fakeCndp{}
+type fakeServerFactory struct {
+	ServerFactory
 }
 
 /*
-CreateUdsServer returns an empty struct implementing the UdsServer interface.
-Also returns a hardcoded UDS filepath.
+NewFakeServerFactory returns a fake implementation of the ServerFactory interface.
 */
-func (c *fakeCndp) CreateUdsServer(deviceType string) (UdsServer, string) {
+func NewFakeServerFactory() ServerFactory {
+	return &fakeServerFactory{}
+}
+
+/*
+CreateServer creates, initialises, and returns an implementation of the Server interface.
+In this fakeServerFactory it returnss an empty fakeServer implementation and a hardcoded
+fake UDS filepath.
+*/
+func (f *fakeServerFactory) CreateServer(deviceType string) (Server, string) {
 	return &fakeServer{}, "/tmp/fake-socket.sock"
 }
 
 /*
-Start is the public facing function for starting the udsServer.
+Start is the public facing method for starting a Server.
 In this fakeServer it does nothing.
 */
-func (server *fakeServer) Start() {
+func (s *fakeServer) Start() {
 	return
 }
 
 /*
-AddDevice appends a netdev name and its file descriptor to the map of devices in the udsServer.
+AddDevice appends a netdev and its associated XSK file descriptor to the Servers map of devices.
 In this fakeServer it does nothing.
 */
-func (server *fakeServer) AddDevice(dev string, fd int) {
+func (s *fakeServer) AddDevice(dev string, fd int) {
 	return
 }

@@ -40,14 +40,14 @@ type PoolManager struct {
 	DpAPISocket   string
 	DpAPIEndpoint string
 	DpAPIServer   *grpc.Server
-	Cndp          cndp.Cndp
+	ServerFactory cndp.ServerFactory
 }
 
 /*
 Init is called it initialise the PoolManager.
 */
 func (pm *PoolManager) Init(config poolConfig) error {
-	pm.Cndp = cndp.NewCndp()
+	pm.ServerFactory = cndp.NewServerFactory()
 
 	err := pm.registerWithKubelet()
 	if err != nil {
@@ -119,7 +119,7 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 	response := pluginapi.AllocateResponse{}
 
 	logging.Infof("New allocate request. Creating new UDS server.")
-	cndpServer, udsPath := pm.Cndp.CreateUdsServer(devicePrefix + "/" + pm.Name)
+	cndpServer, udsPath := pm.ServerFactory.CreateServer(devicePrefix + "/" + pm.Name)
 	logging.Infof("UDS socket path: " + udsPath)
 
 	//loop each container
