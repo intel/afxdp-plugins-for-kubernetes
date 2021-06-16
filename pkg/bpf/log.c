@@ -17,11 +17,26 @@
 #include "_cgo_export.h"
 
 // log function definitions, a wrapper for GoLogger
-void Log(char msg[], int lvl) {
-  GoLogger(msg, lvl);
+void Log_Debug(char msg[]) {
+    GoLogger(msg, LOG_DEBUG);
+}
+void Log_Info(char msg[]) {
+    GoLogger(msg, LOG_INFO);
+}
+void Log_Warning(char msg[]) {
+    GoLogger(msg, LOG_WARN);
+}
+void Log_Error(char msg[]) {
+    GoLogger(msg, LOG_ERROR);
+}
+void Log_Panic(char msg[]) {
+    GoLogger(msg, LOG_PANIC);
 }
 
+
 // log level getters definitions
+int Get_log_debug() { return LOG_DEBUG; }
 int Get_log_info() { return LOG_INFO; }
 int Get_log_warn() { return LOG_WARN; }
 int Get_log_error() { return LOG_ERROR; }
+int Get_log_panic() { return LOG_PANIC; }

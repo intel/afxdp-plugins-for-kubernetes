@@ -19,16 +19,24 @@
 #include <stdio.h>
 
 // log level constants
-static const int LOG_INFO = 0;
-static const int LOG_WARN = 1;
-static const int LOG_ERROR = 2;
+static const int LOG_DEBUG = 0;
+static const int LOG_INFO = 1;
+static const int LOG_WARN = 2;
+static const int LOG_ERROR = 3;
+static const int LOG_PANIC = 4;
 
 // log level getter declarations
+int Get_log_debug();
 int Get_log_info();
 int Get_log_warn();
 int Get_log_error();
+int Get_log_panic();
 
 // log function declaration
-void Log(char msg[], int lvl);
+void Log_Debug(char msg[]);
+void Log_Info(char msg[]);
+void Log_Warning(char msg[]);
+void Log_Error(char msg[]);
+void Log_Panic(char msg[]);
 
 #endif
