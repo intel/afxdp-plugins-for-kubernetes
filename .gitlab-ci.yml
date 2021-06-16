@@ -10,8 +10,8 @@ cache:
     - bin/cndp
 
 .build-c-wrappers: &build-c-wrappers
-  - gcc ./pkg/bpf/wrapper.c -lbpf -c -o ./pkg/bpf/wrapper.o
-  - ar rs ./pkg/bpf/libwrapper.a ./pkg/bpf/wrapper.o
+  - gcc ./pkg/bpf/bpfWrapper.c -lbpf -c -o ./pkg/bpf/bpfWrapper.o
+  - ar rs ./pkg/bpf/libwrapper.a ./pkg/bpf/bpfWrapper.o
 
 .publish-image:
   stage: publish

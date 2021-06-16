@@ -19,6 +19,7 @@ import (
 	"errors"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
+	"github.com/intel/cndp_device_plugin/pkg/bpf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -209,6 +210,7 @@ func TestCmdDel(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 
+			bpfHanfler = bpf.NewFakeHandler()
 			args.StdinData = []byte(tc.netConfStr)
 			args.Netns = tc.netNS
 			err := cmdDel(args)

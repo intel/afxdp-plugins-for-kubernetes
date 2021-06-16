@@ -42,9 +42,7 @@ type Handler interface {
 /*
 handler implements the Handler interface.
 */
-type handler struct {
-	Handler
-}
+type handler struct{}
 
 /*
 NewHandler returns an implementation of the Handler interface.

@@ -39,6 +39,7 @@ func main() {
 	flag.StringVar(&configFile, "config", defaultConfigFile, "Location of the device plugin configuration file")
 	flag.Parse()
 
+	logging.SetPluginName("CNDP-DP")
 	logging.SetLogLevel("info")
 
 	logging.Infof("Starting CNDP Device Plugin")
@@ -48,21 +49,22 @@ func main() {
 		logging.Errorf("Device plugin will exit")
 		os.Exit(1)
 	}
-	dp := devicePlugin{
-		pools: make(map[string]PoolManager),
-	}
-	if cfg.LogFile != "" {
-		logging.SetLogFile(cfg.LogFile)
-	}
 
 	if cfg.LogLevel != "" {
+		logging.Infof("Setting log level to %s", cfg.LogLevel)
 		logging.SetLogLevel(cfg.LogLevel)
 	}
 
-	logging.SetPluginName("CNDP-DP")
+	if cfg.LogFile != "" {
+		logging.Infof("Setting log file to %s", cfg.LogFile)
+		logging.SetLogFile(cfg.LogFile)
+	}
+
+	dp := devicePlugin{
+		pools: make(map[string]PoolManager),
+	}
 
 	for _, poolConfig := range cfg.Pools {
-
 		pm := PoolManager{
 			Name:          poolConfig.Name,
 			Devices:       make(map[string]*pluginapi.Device),

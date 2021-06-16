@@ -16,10 +16,12 @@
 package cndp
 
 import (
+	"github.com/intel/cndp_device_plugin/pkg/bpf"
 	"github.com/intel/cndp_device_plugin/pkg/logging"
 	"github.com/intel/cndp_device_plugin/pkg/resourcesapi"
-	"github.com/intel/cndp_device_plugin/pkg/udshandler"
+	"github.com/intel/cndp_device_plugin/pkg/uds"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -36,6 +38,10 @@ const (
 	responseFdAck = "/fd_ack"
 	responseFdNak = "/fd_nak"
 
+	requestBusyPoll     = "/config_busy_poll"
+	responseBusyPollAck = "/config_busy_poll_ack"
+	responseBusyPollNak = "/config_busy_poll_nak"
+
 	requestFin     = "/fin"
 	responseFinAck = "/fin_ack"
 
@@ -44,7 +50,8 @@ const (
 	responseError          = "/error"
 
 	udsProtocol    = "unixpacket" // "unix"=SOCK_STREAM, "unixdomain"=SOCK_DGRAM, "unixpacket"=SOCK_SEQPACKET
-	udsBufSize     = 64
+	udsMsgBufSize  = 64
+	udsCtlBufSize  = 4
 	usdSockDir     = "/tmp/"
 	udsIdleTimeout = 0 * time.Second //TODO make configurable
 )
@@ -72,11 +79,11 @@ type ServerFactory interface {
 server implements the Server interface. It is the main type for this package.
 */
 type server struct {
-	Server
-	deviceType   string
-	devices      map[string]int
-	uds          udshandler.Handler
-	podResources resourcesapi.Handler
+	deviceType string
+	devices    map[string]int
+	uds        uds.Handler
+	bpf        bpf.Handler
+	podRes     resourcesapi.Handler
 }
 
 /*
@@ -99,10 +106,11 @@ It also returns the filepath of the UDS being served.
 */
 func (f *serverFactory) CreateServer(deviceType string) (Server, string) {
 	server := &server{
-		deviceType:   deviceType,
-		devices:      make(map[string]int),
-		uds:          udshandler.NewHandler(usdSockDir),
-		podResources: resourcesapi.NewHandler(),
+		deviceType: deviceType,
+		devices:    make(map[string]int),
+		uds:        uds.NewHandler(usdSockDir),
+		bpf:        bpf.NewHandler(),
+		podRes:     resourcesapi.NewHandler(),
 	}
 
 	return server, server.uds.GetSocketPath()
@@ -132,7 +140,7 @@ func (s *server) start() {
 	logging.Infof("Initialising Unix domain socket: " + s.uds.GetSocketPath())
 
 	// init
-	closeListener, err := s.uds.Init(udsProtocol, udsBufSize, udsIdleTimeout) //TODO error
+	closeListener, err := s.uds.Init(udsProtocol, udsMsgBufSize, udsCtlBufSize, udsIdleTimeout)
 	if err != nil {
 		logging.Errorf("Error Initialising UDS: %v", err)
 		closeListener()
@@ -158,7 +166,7 @@ func (s *server) start() {
 	logging.Infof("New connection accepted. Waiting for requests.")
 
 	// read incomming request
-	request, err := s.read()
+	request, _, err := s.read()
 	if err != nil {
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 			logging.Errorf("Connection timed out: %v", err)
@@ -190,7 +198,7 @@ func (s *server) start() {
 	// once valid, maintain connection and loop for remaining requests
 	for connected {
 		// read incoming request
-		request, err := s.read()
+		request, fd, err := s.read()
 		if err != nil {
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 				logging.Errorf("Connection timed out: %v", err)
@@ -208,6 +216,9 @@ func (s *server) start() {
 		case request == requestVersion:
 			err = s.write(handshakeVersion)
 
+		case strings.Contains(request, requestBusyPoll):
+			err = s.handleBusyPollRequest(request, fd)
+
 		case request == requestFin:
 			err = s.write(responseFinAck)
 			connected = false
@@ -223,15 +234,15 @@ func (s *server) start() {
 	}
 }
 
-func (s *server) read() (string, error) {
-	request, err := s.uds.Read()
+func (s *server) read() (string, int, error) {
+	request, fd, err := s.uds.Read()
 	if err != nil {
 		logging.Errorf("Read error: %v", err)
-		return "", err
+		return "", 0, err
 	}
 
 	logging.Infof("Request: " + request)
-	return request, nil
+	return request, fd, nil
 }
 
 func (s *server) write(response string) error {
@@ -265,7 +276,7 @@ func (s *server) handleFdRequest(request string) error {
 			return err
 		}
 	} else {
-		logging.Errorf("Device " + iface + " not recognised")
+		logging.Warningf("Device " + iface + " not recognised")
 		if err := s.write(responseFdNak); err != nil {
 			return err
 		}
@@ -273,12 +284,57 @@ func (s *server) handleFdRequest(request string) error {
 	return nil
 }
 
+func (s *server) handleBusyPollRequest(request string, fd int) error {
+	if fd <= 0 {
+		logging.Errorf("Invalid file descriptor")
+		if err := s.write(responseBusyPollNak); err != nil {
+			return err
+		}
+	}
+
+	words := strings.Split(request, ",")
+	if len(words) != 3 || words[0] != requestBusyPoll {
+		if err := s.write(responseBadRequest); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	timeoutString := strings.ReplaceAll(words[1], " ", "")
+	budgetString := strings.ReplaceAll(words[2], " ", "")
+
+	timeout, err := strconv.Atoi(timeoutString)
+	if err != nil {
+		logging.Errorf("Error converting busy timeout to int: %v", err)
+		return err
+	}
+
+	budget, err := strconv.Atoi(budgetString)
+	if err != nil {
+		logging.Errorf("Error converting busy budget to int: %v", err)
+		return err
+	}
+
+	logging.Infof("Configuring busy poll, FD: " + strconv.Itoa(fd) + ", Timeout: " + timeoutString + ", Budget: " + budgetString)
+
+	err = s.bpf.ConfigureBusyPoll(fd, timeout, budget)
+	if err != nil {
+		logging.Errorf("Error configuring busy poll: %v", err)
+		s.write(responseBusyPollNak)
+		return err
+	}
+
+	s.write(responseBusyPollAck)
+
+	return nil
+}
+
 func (s *server) validateHost(hostname string) (bool, error) {
 	logging.Infof("Validating pod hostname: " + hostname)
-	podResourceMap, _ := s.podResources.GetPodResources() //TODO error
+	podResourceMap, _ := s.podRes.GetPodResources() //TODO error
 
 	if _, ok := podResourceMap[hostname]; ok {
-		logging.Infof("Pod" + hostname + " found on node")
+		logging.Infof("Pod " + hostname + " found on node")
 	} else {
 		logging.Errorf(hostname + " not found on node")
 		return false, nil
@@ -308,12 +364,12 @@ func (s *server) validateHost(hostname string) (bool, error) {
 			}
 
 			if valid {
-				logging.Infof("Pod" + hostname + " is valid for this UDS connection")
+				logging.Infof("Pod " + hostname + " is valid for this UDS connection")
 				return true, nil
 			}
 		}
 	}
 
-	logging.Infof("Pod" + hostname + " could not be validated for this UDS connection")
+	logging.Infof("Pod " + hostname + " could not be validated for this UDS connection")
 	return false, nil
 }

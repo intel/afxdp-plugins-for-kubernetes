@@ -34,6 +34,8 @@ import (
 	"github.com/containernetworking/plugins/pkg/utils/buildversion"
 )
 
+var bpfHanfler = bpf.NewHandler()
+
 type netConfig struct {
 	types.NetConf
 	Device   string `json:"deviceID"`
@@ -166,8 +168,12 @@ func cmdDel(args *skel.CmdArgs) error {
 		}
 	}
 
-	logging.Infof("cmdDel(): cleanup BPF config on device")
-	bpf.Cleanbpf(cfg.Device) //TODO BPF should return error
+	logging.Infof("cmdDel(): removing BPF program from device")
+	err = bpfHanfler.Cleanbpf(cfg.Device)
+	if err != nil {
+		return logging.Errorf("cmdDel(): error removing BPF program from device: %v", err)
+	}
+
 	return nil
 }
 

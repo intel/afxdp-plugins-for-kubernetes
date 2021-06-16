@@ -17,7 +17,7 @@ package cndp
 
 import (
 	"github.com/intel/cndp_device_plugin/pkg/resourcesapi"
-	"github.com/intel/cndp_device_plugin/pkg/udshandler"
+	"github.com/intel/cndp_device_plugin/pkg/uds"
 	"gotest.tools/assert"
 	"testing"
 )
@@ -35,10 +35,10 @@ func TestCreateNewServer(t *testing.T) {
 			testName:   "Create UDS Server",
 			deviceType: "cndp/device",
 			expectedServer: &server{
-				deviceType:   "cndp/device",
-				devices:      make(map[string]int),
-				uds:          udshandler.NewHandler("/tmp/fake-socket.sock"),
-				podResources: resourcesapi.NewHandler(),
+				deviceType: "cndp/device",
+				devices:    make(map[string]int),
+				uds:        uds.NewHandler("/tmp/fake-socket.sock"),
+				podRes:     resourcesapi.NewHandler(),
 			},
 		},
 	}
@@ -46,7 +46,7 @@ func TestCreateNewServer(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			//TODO compare individual elements
 			//receivedServer, _ := cndp.CreateServer(tc.deviceType)
-			//assert.DeepEqual(t, tc.expectedServer, receivedServer, cmp.AllowUnexported(server{}, udshandler.udsHandler{}))
+			//assert.DeepEqual(t, tc.expectedServer, receivedServer, cmp.AllowUnexported(server{}, uds.udsHandler{}))
 		})
 	}
 }
@@ -88,7 +88,7 @@ func TestAddDevice(t *testing.T) {
 }
 
 func TestStart(t *testing.T) {
-	fakeUDS := udshandler.NewFakeHandler()
+	fakeUDS := uds.NewFakeHandler()
 	fakeResAPI := resourcesapi.NewFakeHandler()
 
 	testCases := []struct {
@@ -1602,10 +1602,10 @@ func TestStart(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			// make a new server each time to clear things like device list
 			server := &server{
-				deviceType:   tc.cndpServerDevType,
-				devices:      make(map[string]int),
-				uds:          fakeUDS,
-				podResources: fakeResAPI,
+				deviceType: tc.cndpServerDevType,
+				devices:    make(map[string]int),
+				uds:        fakeUDS,
+				podRes:     fakeResAPI,
 			}
 
 			fakeResAPI.CreateFakePod(tc.fakePodName, tc.fakePodNamespace, tc.fakeResourceName, tc.fakePodDevices)
@@ -1627,7 +1627,7 @@ func TestStart(t *testing.T) {
 }
 
 func TestRead(t *testing.T) {
-	fakeUDS := udshandler.NewFakeHandler()
+	fakeUDS := uds.NewFakeHandler()
 
 	server := &server{
 		devices: make(map[string]int),
@@ -1700,7 +1700,7 @@ func TestRead(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			fakeUDS.SetRequests(tc.fakeRequests)
-			request, err := server.read()
+			request, _, err := server.read()
 			assert.Equal(t, err, tc.expectedError)
 			assert.Equal(t, request, tc.expectedRequest)
 		})
