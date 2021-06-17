@@ -19,9 +19,16 @@ compilation:
 	golint ./...
 	#need to add a watcher anytime a string changes 
 
+format:
+	echo "***** Format CNDP files *****"
+	echo "Runing C Formatter..."
+	clang-format -i ./pkg/bpf/wrapper.c
+
 build:
 	echo "***** Build  CNDP files *****"
 	echo "Building Device Plugin"
+	gcc ./pkg/bpf/wrapper.c -lbpf -c -o ./pkg/bpf/wrapper.o
+	ar rs ./pkg/bpf/libwrapper.a ./pkg/bpf/wrapper.o  &> /dev/null
 	go build -o ./bin/cndp-dp ./cmd/cndp-dp
 	echo "Building CNI"
 	go build -o ./bin/cndp ./cmd/cndp-cni
@@ -29,6 +36,7 @@ build:
 test: 
 	echo "***** Testing CNDP files *****"	
 	go test ./... -v *_test.go
+	go test github.com/intel/cndp_device_plugin/...
 run:
 	cd ./bin && ./cndp
 	cd ./bin && ./cndp-dp
