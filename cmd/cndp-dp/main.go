@@ -46,8 +46,9 @@ func main() {
 	logging.Infof("Starting CNDP Device Plugin")
 	cfg, err := GetConfig(configFile)
 	if err != nil {
-		logging.Errorf("Error getting device plugin config %s" + configFile)
-		logging.Errorf("%v", err)
+		logging.Errorf("Error getting device plugin config: %v", err)
+		logging.Errorf("Device plugin will exit")
+		os.Exit(1)
 	}
 	dp := devicePlugin{
 		pools: make(map[string]PoolManager),

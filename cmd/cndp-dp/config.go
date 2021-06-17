@@ -47,17 +47,17 @@ GetConfig returns the overall config for the device plugin. Host devices are dis
 */
 func GetConfig(configFile string) (Config, error) {
 	var cfg Config
+
 	glog.Info("Reading config file", configFile)
 	raw, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		glog.Error("Error reading config file: ", err)
-		return cfg, err
-	}
-
-	err = json.Unmarshal(raw, &cfg)
-	if err != nil {
-		glog.Error("Error unmarshalling config data: ", err)
-		return cfg, err
+	} else {
+		err = json.Unmarshal(raw, &cfg)
+		if err != nil {
+			glog.Error("Error unmarshalling config data: ", err)
+			return cfg, err
+		}
 	}
 
 	if len(cfg.Pools) == 0 {
