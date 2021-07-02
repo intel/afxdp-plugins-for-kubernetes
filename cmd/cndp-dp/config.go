@@ -17,7 +17,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/golang/glog"
+	"github.com/intel/cndp_device_plugin/pkg/logging"
 	"github.com/safchain/ethtool"
 	"io/ioutil"
 	"net"
@@ -48,34 +48,34 @@ GetConfig returns the overall config for the device plugin. Host devices are dis
 func GetConfig(configFile string) (Config, error) {
 	var cfg Config
 
-	glog.Info("Reading config file", configFile)
+	logging.Infof("Reading config file: %s", configFile)
 	raw, err := ioutil.ReadFile(configFile)
 	if err != nil {
-		glog.Error("Error reading config file: ", err)
+		logging.Errorf("Error reading config file: %v", err)
 	} else {
 		err = json.Unmarshal(raw, &cfg)
 		if err != nil {
-			glog.Error("Error unmarshalling config data: ", err)
+			logging.Errorf("Error unmarshalling config data: %v", err)
 			return cfg, err
 		}
 	}
 
 	if len(cfg.Pools) == 0 {
-		glog.Error("No pools configured, discovering devices on node")
+		logging.Errorf("No pools configured, discovering devices on node")
 		e, err := ethtool.NewEthtool()
 		if err != nil {
-			glog.Error("Error setting up Ethtool: ", err)
+			logging.Errorf("Error setting up Ethtool: %v", err)
 			return cfg, err
 		}
 		defer e.Close()
 
 		interfaces, err := net.Interfaces()
 		if err != nil {
-			glog.Error("Error setting up Interfaces: ", err)
+			logging.Errorf("Error setting up Interfaces: %v", err)
 			return cfg, err
 		}
 
-		glog.Info("Searching for devices on node...")
+		logging.Infof("Searching for devices on node...")
 		poolConfigs := make(map[string]*PoolConfig)
 
 		for _, driver := range driversTypes {
@@ -85,21 +85,21 @@ func GetConfig(configFile string) (Config, error) {
 
 		for _, intf := range interfaces {
 			if containsPrefix(excludedInfs, intf.Name) {
-				glog.Info(intf.Name + " is an excluded device, skipping")
+				logging.Infof("%s is an excluded device, skipping", intf.Name)
 				continue
 			}
 			driver, err := e.DriverName(intf.Name)
 			if err != nil {
-				glog.Errorf(err.Error())
+				logging.Errorf("%v", err.Error())
 			}
 			if contains(driversTypes, driver) {
 				addrs, err := intf.Addrs()
 				if err != nil {
-					glog.Errorf(err.Error())
+					logging.Errorf("%v", err.Error())
 				}
 
 				if len(addrs) > 0 {
-					glog.Info(intf.Name + " has an assigned IP address, skipping")
+					logging.Infof("%s has an assigned IP address, skipping", intf.Name)
 					continue
 				}
 				poolConfigs[driver].Devices = append(poolConfigs[driver].Devices, intf.Name)
