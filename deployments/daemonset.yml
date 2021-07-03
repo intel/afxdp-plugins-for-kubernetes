@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cndp-dp-config
+  namespace: kube-system
+data:
+  config.json: |
+    {
+    	"pools" : []
+    }
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cndp-device-plugin
+  namespace: kube-system
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-cndp-device-plugin-amd64
+  namespace: kube-system
+  labels:
+    tier: node
+    app: cndp
+spec:
+  selector:
+    matchLabels:
+      name: cndp-device-plugin
+  template:
+    metadata:
+      labels:
+        name: cndp-device-plugin
+        tier: node
+        app: cndp
+    spec:
+      hostNetwork: true
+      nodeSelector:
+        beta.kubernetes.io/arch: amd64
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+      serviceAccountName: cndp-device-plugin
+      containers:
+        - name: kube-cndp
+          image: ger-registry.caas.intel.com/amd64/cndp-device-plugin:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "40Mi"
+            limits:
+              cpu: 1
+              memory: "200Mi"
+          volumeMounts:
+            - name: unixsock
+              mountPath: /tmp
+            - name: devicesock
+              mountPath: /var/lib/kubelet/
+              readOnly: false
+            - name: config-volume
+              mountPath: /cndp/config
+            - name: log
+              mountPath: /var/log
+      volumes:
+        - name: unixsock
+          hostPath:
+            path: /tmp
+        - name: devicesock
+          hostPath:
+            path: /var/lib/kubelet/
+        - name: config-volume
+          configMap:
+            name: cndp-dp-config
+            items:
+              - key: config.json
+                path: config.json
+        - name: log
+          hostPath:
+            path: /var/log
