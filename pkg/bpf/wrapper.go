@@ -30,48 +30,45 @@ import (
 	"github.com/intel/cndp_device_plugin/pkg/logging"
 )
 
-var logDebug = int(C.Get_log_debug())
-var logInfo = int(C.Get_log_info())
-var logWarn = int(C.Get_log_warn())
-var logError = int(C.Get_log_error())
-var logPanic = int(C.Get_log_panic())
-
-/*
-LoadBpfSendXskMap is the GoLang wrapper for the C function Load_bpf_send_xsk_map
-*/
+//LoadBpfSendXskMap is the GoLang wrapper for the C function Load_bpf_send_xsk_map
 func LoadBpfSendXskMap(ifname string) int {
 	cs := C.CString(ifname)
 	fd := int(C.Load_bpf_send_xsk_map(cs))
 	return fd
 }
 
-/*
-Cleanbpf is the GoLang wrapper for the C function Clean_bpf
-*/
+//Cleanbpf is the GoLang wrapper for the C function Clean_bpf
 func Cleanbpf(ifname string) {
 	cs := C.CString(ifname)
 	C.Clean_bpf(cs)
 }
 
-/*
-GoLogger is exported to C, so C code can write logs back to our main log
-*/
-//export GoLogger
-func GoLogger(cString *C.char, level int) {
-	goString := C.GoString(cString)
+//Debugf is exported to C, so C code can write logs to the Golang logging package
+//export Debugf
+func Debugf(msg *C.char) {
+	logging.Debugf(C.GoString(msg))
+}
 
-	switch level {
-	case logDebug:
-		logging.Debugf(goString)
-	case logInfo:
-		logging.Infof(goString)
-	case logWarn:
-		logging.Warningf(goString)
-	case logError:
-		logging.Errorf(goString)
-	case logPanic:
-		logging.Panicf(goString)
-	default:
-		logging.Errorf("ERROR: Unrecognised log level")
-	}
+//Infof is exported to C, so C code can write logs to the Golang logging package
+//export Infof
+func Infof(msg *C.char) {
+	logging.Infof(C.GoString(msg))
+}
+
+//Warningf is exported to C, so C code can write logs to the Golang logging package
+//export Warningf
+func Warningf(msg *C.char) {
+	logging.Warningf(C.GoString(msg))
+}
+
+//Errorf is exported to C, so C code can write logs to the Golang logging package
+//export Errorf
+func Errorf(msg *C.char) {
+	logging.Errorf(C.GoString(msg))
+}
+
+//Panicf is exported to C, so C code can write logs to the Golang logging package
+//export Panicf
+func Panicf(msg *C.char) {
+	logging.Panicf(C.GoString(msg))
 }
