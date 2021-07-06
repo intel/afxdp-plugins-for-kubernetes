@@ -16,27 +16,61 @@
 #include "log.h"
 #include "_cgo_export.h"
 
-// log function definitions, a wrapper for GoLogger
-void Log_Debug(char msg[]) {
-    GoLogger(msg, LOG_DEBUG);
-}
-void Log_Info(char msg[]) {
-    GoLogger(msg, LOG_INFO);
-}
-void Log_Warning(char msg[]) {
-    GoLogger(msg, LOG_WARN);
-}
-void Log_Error(char msg[]) {
-    GoLogger(msg, LOG_ERROR);
-}
-void Log_Panic(char msg[]) {
-    GoLogger(msg, LOG_PANIC);
+#define LOG_SIZE 256
+
+// log function definitions, wrappers for Loglevel functions
+void Log_Debug(char *fmt, ...) {
+    char msg[LOG_SIZE];
+    va_list args;
+
+    va_start(args, fmt);
+    vsprintf(msg, fmt, args);
+    va_end(args);
+
+    Debugf(msg);
 }
 
+void Log_Info(char *fmt, ...) {
+    char msg[LOG_SIZE];
+    va_list args;
 
-// log level getters definitions
-int Get_log_debug() { return LOG_DEBUG; }
-int Get_log_info() { return LOG_INFO; }
-int Get_log_warn() { return LOG_WARN; }
-int Get_log_error() { return LOG_ERROR; }
-int Get_log_panic() { return LOG_PANIC; }
+    va_start(args, fmt);
+    vsprintf(msg, fmt, args);
+    va_end(args);
+
+    Infof(msg);
+}
+
+void Log_Warning(char *fmt, ...) {
+    char msg[LOG_SIZE];
+    va_list args;
+
+    va_start(args, fmt);
+    vsprintf(msg, fmt, args);
+    va_end(args);
+
+    Warningf(msg);
+}
+
+void Log_Error(char *fmt, ...) {
+   char msg[LOG_SIZE];
+   va_list args;
+
+   va_start(args, fmt);
+   vsprintf(msg, fmt, args);
+   va_end(args);
+
+   Errorf(msg);
+}
+
+void Log_Panic(char *fmt, ...) {
+   char msg[LOG_SIZE];
+   va_list args;
+
+   va_start(args, fmt);
+   vsprintf(msg, fmt, args);
+   va_end(args);
+
+   Panicf(msg);
+}
+
