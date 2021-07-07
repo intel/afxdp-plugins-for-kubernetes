@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"path/filepath"
+	"runtime"
 )
 
 // Level type
@@ -50,6 +52,8 @@ var loggingFp *os.File
 var loggingLevel Level
 var pluginName string
 
+//callDepth sets the number of function calls to retrieve the stack trace for filepath.
+const callDepth = 2
 const defaultTimestampFormat = time.RFC3339
 
 func (l Level) String() string {
@@ -74,6 +78,14 @@ func Printf(level Level, format string, a ...interface{}) {
 	t := time.Now()
 	if level > loggingLevel {
 		return
+	}
+
+	if loggingLevel == DebugLevel {
+		_, path, line, ok := runtime.Caller(callDepth)
+		if ok {
+			file := filepath.Base(path)
+			format = fmt.Sprintf("%s:%d %s", file, line, format)
+		}
 	}
 
 	if loggingStderr {

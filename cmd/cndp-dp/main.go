@@ -39,9 +39,7 @@ func main() {
 	flag.StringVar(&configFile, "config", defaultConfigFile, "Location of the device plugin configuration file")
 	flag.Parse()
 
-	logging.SetLogFile("/var/log/cndp-dp-e2e.log")
-	logging.SetLogLevel("debug")
-	logging.SetPluginName("CNDP-DP")
+	logging.SetLogLevel("info")
 
 	logging.Infof("Starting CNDP Device Plugin")
 	cfg, err := GetConfig(configFile)
@@ -53,6 +51,15 @@ func main() {
 	dp := devicePlugin{
 		pools: make(map[string]PoolManager),
 	}
+	if cfg.LogFile != "" {
+		logging.SetLogFile(cfg.LogFile)
+	}
+
+	if cfg.LogLevel != "" {
+		logging.SetLogLevel(cfg.LogLevel)
+	}
+
+	logging.SetPluginName("CNDP-DP")
 
 	for _, poolConfig := range cfg.Pools {
 
