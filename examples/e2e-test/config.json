@@ -1,4 +1,6 @@
 {
+	"logLevel": "debug",
+	"logFile": "/var/log/cndp-dp-e2e.log",
 	"pools" : [
 		{
 			"name" : "e2e",

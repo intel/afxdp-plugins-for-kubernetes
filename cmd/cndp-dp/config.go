@@ -39,7 +39,9 @@ type PoolConfig struct {
 Config contains the overall configuration for the device plugin
 */
 type Config struct {
-	Pools []*PoolConfig `json:"pools"`
+	Pools    []*PoolConfig `json:"pools"`
+	LogFile  string        `json:"logFile,omitempty"`
+	LogLevel string        `json:"logLevel,omitempty"`
 }
 
 /*
