@@ -3,3 +3,4 @@ bin
 *.a
 examples/e2e-test/uds-client-auto
 examples/e2e-test/uds-client-manual
+.idea
