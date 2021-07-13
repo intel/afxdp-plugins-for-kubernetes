@@ -1,16 +1,64 @@
-variables:
-  REPO_NAME: gitlab.devtools.intel.com/OrchSW/CNO/containers_afxdp_network_device_plugin-.git
+stages:
+  - build
+  - qa
+  - publish
 
-build-job:
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - bin/cndp-dp
+    - bin/cndp
+
+.build-c-wrappers: &build-c-wrappers
+  - gcc ./pkg/bpf/wrapper.c -lbpf -c -o ./pkg/bpf/wrapper.o
+  - ar rs ./pkg/bpf/libwrapper.a ./pkg/bpf/wrapper.o
+
+.publish-image:
+  stage: publish
+  before_script:
+    - export AMD64_DOCKER_FILE=${CI_PROJECT_DIR}/images/amd64.dockerfile
+    - export AMD64_IMAGE_NAME=${DOCKER_REGISTRY}/cno/cndp/amd64/cndp-device-plugin
+    - export AMD64_DEV_IMAGE=${AMD64_IMAGE_NAME}:${CI_COMMIT_REF_SLUG}-${CI_COMMIT_SHA}
+    - export AMD64_PROD_IMAGE=${AMD64_IMAGE_NAME}:latest
+    - docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD} ${DOCKER_REGISTRY}
+
+.push-docker-image: &push-docker-image
+  - docker build -t ${DOCKER_IMAGE} -f ${DOCKER_FILE} ${CI_PROJECT_DIR}
+  - docker push ${DOCKER_IMAGE}
+
+compile:
   stage: build
   script:
-    - echo "***** Go Lint *****"
-    - /usr/local/go/bin/golint -set_exit_status ./...
-    - echo "***** Build *****"
-    - gcc ./pkg/bpf/wrapper.c -lbpf -c -o ./pkg/bpf/wrapper.o
-    - ar rs ./pkg/bpf/libwrapper.a ./pkg/bpf/wrapper.o
+    - *build-c-wrappers
     - go build -o ./bin/cndp-dp ./cmd/cndp-dp
     - go build -o ./bin/cndp ./cmd/cndp-cni
-    - echo "***** Test *****"
+
+test:
+  stage: qa
+  script:
+    - *build-c-wrappers
     - go test github.com/intel/cndp_device_plugin/...
 
+lint:
+  stage: qa
+  script:
+    - /.${HOME}/go/bin/golint -set_exit_status ./...
+
+# Publish amd64 image
+publish-image-dev-amd64:
+  extends: .publish-image
+  script:
+    - export DOCKER_FILE=${AMD64_DOCKER_FILE}
+    - export DOCKER_IMAGE=${AMD64_DEV_IMAGE}
+    - *push-docker-image
+  except:
+    - master
+
+publish-image-prod-amd64:
+  extends: .publish-image
+  script:
+    - export DOCKER_FILE=${AMD64_DOCKER_FILE}
+    - export DOCKER_IMAGE=${AMD64_PROD_IMAGE}
+    - *push-docker-image
+  only:
+    - master
