@@ -4,7 +4,8 @@
 	"pools" : [
 		{
 			"name" : "e2e",
-			"devices" : ["ens801f0", "ens801f1"]
+			"devices" : ["ens801f0", "ens801f1"],
+			"drivers" : ["i40e", "E810"]
 		}
 	]
 }

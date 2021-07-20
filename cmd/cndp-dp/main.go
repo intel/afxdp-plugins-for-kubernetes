@@ -39,7 +39,7 @@ func main() {
 	flag.StringVar(&configFile, "config", defaultConfigFile, "Location of the device plugin configuration file")
 	flag.Parse()
 
-	logging.SetLogLevel("info")
+	logging.SetLogLevel("debug")
 
 	logging.Infof("Starting CNDP Device Plugin")
 	cfg, err := GetConfig(configFile)
