@@ -6,8 +6,10 @@ metadata:
 data:
   config.json: |
     {
+        "logFile": "/var/log/cndp/cndp-dp.log",
     	"pools" : []
     }
+
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -44,7 +46,8 @@ spec:
       serviceAccountName: cndp-device-plugin
       containers:
         - name: kube-cndp
-          image: ger-registry.caas.intel.com/amd64/cndp-device-plugin:latest
+          # ger-is-registry.caas.intel.com is pre-production.
+          image: ger-is-registry.caas.intel.com/cno/cndp/amd64/cndp-device-plugin:latest
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true
@@ -53,18 +56,17 @@ spec:
               cpu: "250m"
               memory: "40Mi"
             limits:
-              cpu: 1
+              cpu: "1"
               memory: "200Mi"
           volumeMounts:
             - name: unixsock
               mountPath: /tmp
             - name: devicesock
               mountPath: /var/lib/kubelet/
-              readOnly: false
             - name: config-volume
               mountPath: /cndp/config
             - name: log
-              mountPath: /var/log
+              mountPath: /var/log/cndp
       volumes:
         - name: unixsock
           hostPath:
@@ -80,4 +82,4 @@ spec:
                 path: config.json
         - name: log
           hostPath:
-            path: /var/log
+            path: /var/log/cndp
