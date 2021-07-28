@@ -16,6 +16,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/intel/cndp_device_plugin/pkg/bpf"
 	"github.com/intel/cndp_device_plugin/pkg/cndp"
@@ -26,8 +27,11 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
+
+const envVarDevs = "CNDP_DEVICES"
 
 /*
 PoolManager represents an manages the pool of devices.
@@ -55,13 +59,13 @@ func (pm *PoolManager) Init(config *PoolConfig) error {
 	if err != nil {
 		return err
 	}
-	logging.Infof(devicePrefix + "/" + pm.Name + " registered with Kubelet")
+	logging.Infof(devicePrefix + "/%s registered with Kubelet", pm.Name)
 
 	err = pm.startGRPC()
 	if err != nil {
 		return err
 	}
-	logging.Infof(devicePrefix + "/" + pm.Name + " serving on " + pm.DpAPISocket)
+	logging.Infof(devicePrefix + "/%s serving on %s", pm.Name ,pm.DpAPISocket)
 
 	for _, device := range config.Devices {
 		newdev := pluginapi.Device{ID: device, Health: pluginapi.Healthy}
@@ -91,16 +95,16 @@ ListAndWatch is part of the device plugin API.
 Returns a stream list of Devices. Whenever a device state changes,
 ListAndWatch should return the new list.
 */
-func (pm *PoolManager) ListAndWatch(emtpy *pluginapi.Empty,
+func (pm *PoolManager) ListAndWatch(empty *pluginapi.Empty,
 	stream pluginapi.DevicePlugin_ListAndWatchServer) error {
 
-	logging.Infof(devicePrefix + "/" + pm.Name + " ListAndWatch started")
+	logging.Infof(devicePrefix + "/%s ListAndWatch started", pm.Name)
 
 	for {
 		select {
 		case <-pm.UpdateSignal:
 			resp := new(pluginapi.ListAndWatchResponse)
-			logging.Infof(devicePrefix + "/" + pm.Name + " device list:")
+			logging.Infof(devicePrefix + "/%s device list:", pm.Name)
 
 			for _, dev := range pm.Devices {
 				logging.Infof("\t" + dev.ID + ", " + dev.Health)
@@ -126,11 +130,12 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 
 	logging.Infof("New allocate request. Creating new UDS server.")
 	cndpServer, udsPath := pm.ServerFactory.CreateServer(devicePrefix + "/" + pm.Name)
-	logging.Infof("UDS socket path: " + udsPath)
+	logging.Infof("UDS socket path: %s", udsPath)
 
 	//loop each container
 	for _, crqt := range rqt.ContainerRequests {
 		cresp := new(pluginapi.ContainerAllocateResponse)
+		envs := make(map[string]string)
 
 		cresp.Mounts = append(cresp.Mounts, &pluginapi.Mount{
 			HostPath:      udsPath,
@@ -140,15 +145,25 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 
 		//loop each device request per container
 		for _, dev := range crqt.DevicesIDs {
-			logging.Infof("Loading BPF program on interface " + dev)
+			logging.Infof("Loading BPF program on device: %s", dev)
 			fd, err := pm.BpfHandler.LoadBpfSendXskMap(dev)
 			if err != nil {
-				logging.Errorf("Error loading BPF Program on interface "+dev+": %v", err)
+				logging.Errorf("Error loading BPF Program on interface %s: %v", dev, err)
 				return &response, err
 			}
-			logging.Infof("BPF program loaded on interface " + dev + ", file descriptor " + strconv.Itoa(fd))
+			logging.Infof("BPF program loaded on: %s File descriptor: %s", dev, strconv.Itoa(fd))
+
 			cndpServer.AddDevice(dev, fd)
 		}
+		envs[envVarDevs] = strings.Join(crqt.DevicesIDs, " ")
+		envsJSON, err := json.MarshalIndent(envs, "", " ")
+		if err != nil {
+			logging.Errorf("error while marshalling envs: %v", err)
+		}
+		logging.Infof("Setting environment variables: %s", string(envsJSON))
+
+		cresp.Envs = envs
+
 		response.ContainerResponses = append(response.ContainerResponses, cresp)
 	}
 

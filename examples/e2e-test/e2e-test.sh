@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -e
 
 pids=( )
 run_dp="./../../bin/cndp-dp"
@@ -11,18 +12,23 @@ cleanup() {
 	echo "*                     Cleanup                       *"
 	echo "*****************************************************"
 	echo "Delete Pod"
-	kubectl delete pod cndp-e2e-test &> /dev/null
+	kubectl delete pod --ignore-not-found=true cndp-e2e-test &> /dev/null
 	echo "Delete Sample Apps"
 	rm -f uds-client-auto &> /dev/null
 	rm -f uds-client-manual &> /dev/null
 	echo "Delete CNI"
 	rm -f /opt/cni/bin/cndp-e2e &> /dev/null
 	echo "Delete Network Attachment Definition"
-	kubectl delete network-attachment-definition cndp-e2e-test &> /dev/null
+	kubectl delete network-attachment-definition --ignore-not-found=true cndp-e2e-test &> /dev/null
 	echo "Delete Docker Image"
-	docker rmi cndp-e2e-test &> /dev/null
+	docker 2>/dev/null rmi cndp-e2e-test | true #remove docker image, ignore "does not exist error"
 	echo "Stop Device Plugin"
-	(( ${#pids[@]} )) && kill "${pids[@]}" #if we have a saved DP PID, kill it
+	if [ ${#pids[@]} -eq 0 ]; then
+		echo "No Device Plugin PID found"
+	else
+		echo "Found Device Plugin PID. Stopping..."
+		(( ${#pids[@]} )) && kill "${pids[@]}"
+	fi
 }
 
 build() {
@@ -56,7 +62,7 @@ run() {
 	echo "*****************************************************"
 	$run_dp & pids+=( "$!" ) #run the DP and save the PID
 	sleep 10
-	
+
 	echo
 	echo "*****************************************************"
 	echo "*          Run Pod: 1 container, 1 device           *"
@@ -74,9 +80,13 @@ run() {
 	kubectl exec -i cndp-e2e-test -- ip l
 	sleep 2
 	echo
+	echo "***** Env vars pod*****"
+	echo
+	kubectl exec -it cndp-e2e-test -- env
+	echo
 	echo "***** UDS Test *****"
 	echo
-	kubectl exec -i cndp-e2e-test --container cndp -- /cndp/uds-client-auto <<< echo "${devices[@]}"
+	kubectl exec -i cndp-e2e-test --container cndp -- /cndp/uds-client-auto 
 	echo "***** Delete Pod *****"
 	kubectl delete pod cndp-e2e-test &> /dev/null
 
@@ -99,12 +109,17 @@ run() {
 		kubectl exec -i cndp-e2e-test -- ip l
 		sleep 2
 		echo
+		echo "***** Env vars pod*****"
+	  echo
+	  kubectl exec -it cndp-e2e-test -- env
+	  echo
 		echo "***** UDS Test *****"
 		echo
-		kubectl exec -i cndp-e2e-test --container cndp -- /cndp/uds-client-auto <<< echo "${devices[@]}"
+		kubectl exec -i cndp-e2e-test --container cndp -- /cndp/uds-client-auto
+	  echo
 		echo "***** Delete Pod *****"
 		kubectl delete pod cndp-e2e-test &> /dev/null
-		
+
 		echo
 		echo "*****************************************************"
 		echo "*       Run Pod: 2 containers, 1 device each        *"
@@ -122,13 +137,22 @@ run() {
 		kubectl exec -i cndp-e2e-test -- ip l
 		sleep 2
 		echo
+	  echo "***** Env vars container 1 *****"
+	  echo
+	  kubectl exec -i cndp-e2e-test --container cndp -- env
+	  echo
+	  echo "***** Env vars container 2 *****"
+	  echo
+	  kubectl exec -i cndp-e2e-test --container cndp2 -- env
+	  echo
 		echo "***** UDS Test: Container 1 *****"
 		echo
-		kubectl exec -i cndp-e2e-test --container cndp -- /cndp/uds-client-auto <<< echo "${devices[@]}"
+		kubectl exec -i cndp-e2e-test --container cndp -- /cndp/uds-client-auto
 		echo
 		echo "***** UDS Test: Container 2 *****"
 		echo
-		kubectl exec -i cndp-e2e-test --container cndp2 -- /cndp/uds-client-auto <<< echo "${devices[@]}"
+		kubectl exec -i cndp-e2e-test --container cndp2 -- /cndp/uds-client-auto
+		echo
 		echo "***** Delete Pod *****"
 		kubectl delete pod cndp-e2e-test &> /dev/null
 
@@ -164,8 +188,6 @@ then
 		shift
 	done
 fi
-
-devices=( $(jq '.pools' config.json | jq '.[] | select(.name=="e2e")' | jq '.devices' | jq '.[]') )
 
 #remove logs from previous run
 rm /var/log/cndp-cni-e2e.log
