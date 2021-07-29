@@ -6,8 +6,8 @@ go fmt github.com/intel/cndp_device_plugin/...
 echo
 
 echo "***** Clang Format *****"
-echo "Runing C Formatter on the following files:"
-clang-format -i ./pkg/bpf/wrapper.c
+echo "Runing C Formatter"
+clang-format -i -style=file pkg/bpf/*.c pkg/bpf/*.h
 echo
 
 echo "***** Go Lint *****"
@@ -22,8 +22,8 @@ echo
 
 echo "***** Build *****"
 echo "Building Device Plugin"
-gcc ./pkg/bpf/wrapper.c -lbpf -c -o ./pkg/bpf/wrapper.o
-ar rs ./pkg/bpf/libwrapper.a ./pkg/bpf/wrapper.o  &> /dev/null
+gcc ./pkg/bpf/bpfWrapper.c -lbpf -c -o ./pkg/bpf/bpfWrapper.o
+ar rs ./pkg/bpf/libwrapper.a ./pkg/bpf/bpfWrapper.o  &> /dev/null
 go build -o ./bin/cndp-dp ./cmd/cndp-dp
 echo "Building CNI"
 go build -o ./bin/cndp ./cmd/cndp-cni

@@ -13,7 +13,7 @@
  limitations under the License.
 */
 
-package udshandler
+package uds
 
 import "time"
 
@@ -30,7 +30,6 @@ type FakeHandler interface {
 fakeHandler implements the Handler interface.
 */
 type fakeHandler struct {
-	FakeHandler
 	counter         int
 	fakeRequests    map[int]string
 	actualResponses map[int]string
@@ -55,7 +54,7 @@ func (f *fakeHandler) GetSocketPath() string {
 Init should initialises the Unix domain socket.
 In this fakeHandler it resets some counters and inits a map for recording calls to the Write() function.
 */
-func (f *fakeHandler) Init(protocol string, bufSize int, timeout time.Duration) (CancelFunc, error) {
+func (f *fakeHandler) Init(protocol string, msgbufSize int, ctlBufSize int, timeout time.Duration) (CancelFunc, error) {
 	f.actualResponses = make(map[int]string)
 	f.counter = 0
 	return func() {}, nil
@@ -73,9 +72,9 @@ func (f *fakeHandler) Listen() (CancelFunc, error) {
 Read should read the incoming message from the UDS.
 In this fakeHandler it will sequentially return a set of predetermined strings.
 */
-func (f *fakeHandler) Read() (string, error) {
+func (f *fakeHandler) Read() (string, int, error) {
 	request := f.fakeRequests[f.counter]
-	return request, nil
+	return request, 0, nil
 }
 
 /*

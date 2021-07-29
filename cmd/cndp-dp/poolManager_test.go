@@ -18,6 +18,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"github.com/intel/cndp_device_plugin/pkg/bpf"
 	"github.com/intel/cndp_device_plugin/pkg/cndp"
 	"github.com/stretchr/testify/assert"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
@@ -27,6 +28,7 @@ import (
 func TestAllocate(t *testing.T) {
 	pm := &PoolManager{}
 	pm.ServerFactory = cndp.NewFakeServerFactory()
+	pm.BpfHandler = bpf.NewFakeHandler()
 
 	containerAllocateResponse := &pluginapi.ContainerAllocateResponse{
 		Envs: map[string]string{},

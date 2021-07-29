@@ -13,7 +13,7 @@
  limitations under the License.
 */
 
-package udshandler
+package uds
 
 import (
 	"github.com/golang/glog"
@@ -31,10 +31,10 @@ The interface exists for testing purposes, allowing unit tests to run without ma
 on a real socket.
 */
 type Handler interface {
-	Init(protocol string, bufSize int, timeout time.Duration) (CancelFunc, error)
+	Init(protocol string, msgBufSize int, ctlBufSize int, timeout time.Duration) (CancelFunc, error)
 	Listen() (CancelFunc, error)
 	GetSocketPath() string
-	Read() (string, error)
+	Read() (string, int, error)
 	Write(response string, fd int) error
 }
 
@@ -42,13 +42,13 @@ type Handler interface {
 handler implements the Handler interface.
 */
 type handler struct {
-	Handler
-	socket   string
-	listener *net.UnixListener
-	conn     *net.UnixConn
-	bufSize  int
-	udsFD    int
-	timeout  time.Duration
+	socket     string
+	listener   *net.UnixListener
+	conn       *net.UnixConn
+	msgBufSize int
+	ctlBufSize int
+	udsFD      int
+	timeout    time.Duration
 }
 
 /*
@@ -80,8 +80,9 @@ Init initialises the Unix domain socket and creates a Unix listener
 A CancelFunc function is returned. This function should be deferred by the calling code
 to ensure proper socket cleanup.
 */
-func (h *handler) Init(protocol string, bufSize int, timeout time.Duration) (CancelFunc, error) {
-	h.bufSize = bufSize
+func (h *handler) Init(protocol string, msgBufSize int, ctlBufSize int, timeout time.Duration) (CancelFunc, error) {
+	h.msgBufSize = msgBufSize
+	h.ctlBufSize = ctlBufSize
 
 	if timeout > 0 { //TODO test and comment //TODO is this if needed? no?
 		h.timeout = timeout
@@ -146,28 +147,67 @@ func (h *handler) Listen() (CancelFunc, error) {
 
 /*
 Read will read the incoming message from the UDS
-Byte arrey is converted and returned as a string
+Message byte array is converted and returned as a string
+The control messages are also checked and returns the FD as an int, if present
 */
-func (h *handler) Read() (string, error) {
-	msgBuf := make([]byte, h.bufSize)
+func (h *handler) Read() (string, int, error) {
+	var request = ""
+	var fd int = 0
+	msgBuf := make([]byte, h.msgBufSize)
+	ctrlBuf := make([]byte, syscall.CmsgSpace(h.ctlBufSize))
 
 	// set connection timeout
 	if h.timeout > 0 {
 		err := h.conn.SetDeadline(time.Now().Add(h.timeout))
 		if err != nil {
 			glog.Error("Error setting connection timeout: ", err)
-			return "", err
+			return request, fd, err
 		}
 	}
 
 	// read request message
-	n, _, _, _, err := syscall.Recvmsg(h.udsFD, msgBuf, nil, 0)
+	n, _, _, _, err := syscall.Recvmsg(h.udsFD, msgBuf, ctrlBuf, 0)
 	if err != nil {
 		glog.Error("Recvmsg error: ", err)
-		return "", err
+		return request, fd, err
 	}
 
-	return string(msgBuf[0:n]), nil
+	request = string(msgBuf[0:n])
+	glog.Info("Request: " + request)
+
+	if ctrlBufHasValue(ctrlBuf) {
+		ctrlMsgs, err := syscall.ParseSocketControlMessage(ctrlBuf)
+		if err != nil {
+			glog.Error("Control messages parse error: ", err)
+			return request, fd, err
+		}
+
+		//TODO fmts should be a debug log
+		//TODO can new logging package handle %08b
+
+		//fmt.Println("ctrlMsgs:")
+		//fmt.Printf("%08b", ctrlMsgs)
+		//fmt.Println()
+
+		if len(ctrlMsgs) > 0 {
+			//Typically code would loop through ctrlMsgs and fds
+			//We're handling a single msg and single fd here, so it's msg[0] fds[0]
+			fds, _ := syscall.ParseUnixRights(&ctrlMsgs[0])
+			fd = fds[0]
+			glog.Info("Request contains file descriptor: " + strconv.Itoa(fd))
+
+			//TODO fmt prints should be a debug log
+			//TODO can new logging package handle %08b
+
+			//fmt.Println("FD:")
+			//fmt.Printf("%08b", fd)
+			//fmt.Println()
+		}
+	} else {
+		glog.Info("Request contains no file descriptor")
+	}
+
+	return request, fd, err
 }
 
 /*
@@ -210,4 +250,13 @@ func generateSocketPath(directory string) string {
 	}
 
 	return sockPath
+}
+
+func ctrlBufHasValue(s []byte) bool {
+	for _, v := range s {
+		if v != 0 {
+			return true
+		}
+	}
+	return false
 }
