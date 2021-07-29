@@ -42,7 +42,7 @@ test:
 lint:
   stage: qa
   script:
-    - /.${HOME}/go/bin/golint -set_exit_status ./...
+    - golint -set_exit_status ./...
 
 # Publish amd64 image
 publish-image-dev-amd64:
