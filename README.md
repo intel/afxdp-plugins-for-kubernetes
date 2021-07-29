@@ -21,6 +21,47 @@ By default the device plugin will search for `config.json` in the current direct
 ./bin/cndp-dp -config ./examples/sample-config/config.json
 ```
 
+
+# Logging Overview
+
+This logging framework consists of several customisable features. This is particularly helpful for debugging and helps support learning of code processes and its configurations. 
+
+
+
+Logging configurations for CNI and Device Plugin are devised in separate files:
+- **cndp-dp:**  DP Config                   `/examples/e2e-test/config.json`
+- **cndp-cni:** networkAttachmentDefinition `/examples/e2e-test/nad.yaml`
+
+## Logging Level
+
+Specifying a logging level enables filtering and differentiation of log events based on severity.
+```bash
+"logLevel": "debug",
+```
+
+
+As illustrated above, the default logging level has been set to ```debug```, this is the maximum level of verbosity. Increasing the logging level reduces filtering and severity of log entries, meaning more basic indications are captured in the log output.  
+
+•	```panic ```: The application has encountered a severe problem and will exit immediately.
+
+•	```error ```: A defect has occurred i.e., invalid input or inability to access a particular service. The application will eventually exit the code.
+
+•	```warning ```: A defect has occurred i.e., invalid input or inability to access a particular service. Application will continue irrespective of the unusual event.
+
+•	```info ```: Basic information, indication of major code paths.
+
+•	```debug ```: Additional information, indication of minor code branches.
+
+## Writing to a Log File
+There is also an option to log to a file on the file system. 
+The file will be created on the node executing the CNI or Device Plugin.
+
+```bash
+"logFile": "debug",
+````
+The log file path can be configured via the logFile field. The default log file path for both the CNI and Device Plugin are set to ```/var/log/```.
+
+
 ## CLOC
 Output from CLOC (count lines of code) - github.com/AlDanial/cloc 
 <!---clocstart--->
