@@ -1,52 +1,60 @@
+CLOC := $(shell command -v cloc 2> /dev/null)
+
 .PHONY: all
 
-all: start compilation build test end
-
 start:
-	echo "***** CNDP Makefile - running Makefile *****"
-
-compilation:
-	echo "***** Compiling CNDP binaries *****"
-	echo "***** Go Format *****"
-	gofmt -w -s .
-	echo "***** Go Lint *****"
-	#install golint if needed, suppress output to keep output clean
-	go get -u golang.org/x/lint/golint &> /dev/null
-	#where was golint installed?
-	golint=$(go list -f {{.Target}} golang.org/x/lint/golint)
-	#run golint
-	echo "The following files have linting issues:"
-	golint ./...
-	#need to add a watcher anytime a string changes 
+	@echo "********************************************"
+	@echo "*   CNDP Makefile - Running  Makefile      *"
+	@echo "********************************************"
 
 format:
-	echo "***** Format CNDP files *****"
-	echo "Runing C Formatter..."
-	clang-format -i ./pkg/bpf/wrapper.c
+	@echo "***   Go Format   ***"
+	@echo "Runing Go Format on the following files:"
+	go fmt github.com/intel/cndp_device_plugin/...
+	@echo
+
+	@echo "*** Clang Format  ***"
+	@echo "Runing Clang Format on the following C files:"	
+	clang-format -i -style=file pkg/bpf/*.c pkg/bpf/*.h
+	@echo
+
+lint:
+	@echo "***   Go Lint     ***"
+	go get -u golang.org/x/lint/golint &> /dev/null
+	golint=$(shell go list -f {{.Target}} golang.org/x/lint/golint)
+	golint ./...
+	@echo
 
 build:
-	echo "***** Build  CNDP files *****"
-	echo "Building Device Plugin"
-	gcc ./pkg/bpf/wrapper.c -lbpf -c -o ./pkg/bpf/wrapper.o
-	ar rs ./pkg/bpf/libwrapper.a ./pkg/bpf/wrapper.o  &> /dev/null
+	@echo "***   Build DP    ***"
+	gcc ./pkg/bpf/bpfWrapper.c -lbpf -c -o ./pkg/bpf/bpfWrapper.o
+	ar rs ./pkg/bpf/libwrapper.a ./pkg/bpf/bpfWrapper.o  &> /dev/null
 	go build -o ./bin/cndp-dp ./cmd/cndp-dp
-	echo "Building CNI"
+	@echo
+
+	@echo "***   Build CNI   ***"
 	go build -o ./bin/cndp ./cmd/cndp-cni
-	
+	@echo
+
 test: 
-	echo "***** Testing CNDP files *****"	
-	go test ./... -v *_test.go
-	go test github.com/intel/cndp_device_plugin/...
-run:
-	cd ./bin && ./cndp
-	cd ./bin && ./cndp-dp
+	@echo "***  Unit Tests   ***"
+	go test $(shell go list ./... | grep -v "/examples/e2e-test/" | grep -v "/pkg/resourcesapi")
+	@echo
+
+#installation:
+#       install to deploy once we have a damenset that can deploy DP and CNI
+
+cloc: 
+	./update-cloc.sh
+	@echo
 
 clean:
-	echo "***** cleaning CNDP files *****"
+	@echo "***    Cleanup    ***"
 	rm -f ./bin/cndp
 	rm -f ./bin/cndp-dp
-
+	@echo
 
 end:
-	echo "Build complete!"	
+	@echo "Build complete!"	
 
+all: start format lint build test cloc clean end
