@@ -31,7 +31,6 @@ type FakeHandler interface {
 fakeHandler implements the FakeHandler interface.
 */
 type fakeHandler struct {
-	FakeHandler
 	podName      string
 	namespace    string
 	resourceName string

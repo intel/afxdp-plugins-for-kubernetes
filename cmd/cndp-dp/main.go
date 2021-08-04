@@ -49,12 +49,12 @@ func main() {
 		logging.Errorf("Device plugin will exit")
 		os.Exit(1)
 	}
+
 	dp := devicePlugin{
 		pools: make(map[string]PoolManager),
 	}
 
 	for _, poolConfig := range cfg.Pools {
-
 		pm := PoolManager{
 			Name:          poolConfig.Name,
 			Devices:       make(map[string]*pluginapi.Device),

@@ -18,16 +18,12 @@ package cndp
 /*
 fakeServer is a fake implementation the Server interface.
 */
-type fakeServer struct {
-	Server
-}
+type fakeServer struct{}
 
 /*
 fakeServerFactory is a fake implementation the ServerFactory interface.
 */
-type fakeServerFactory struct {
-	ServerFactory
-}
+type fakeServerFactory struct{}
 
 /*
 NewFakeServerFactory returns a fake implementation of the ServerFactory interface.

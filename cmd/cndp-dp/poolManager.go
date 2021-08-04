@@ -41,6 +41,7 @@ type PoolManager struct {
 	DpAPIEndpoint string
 	DpAPIServer   *grpc.Server
 	ServerFactory cndp.ServerFactory
+	BpfHandler    bpf.Handler
 }
 
 /*
@@ -48,6 +49,8 @@ Init is called it initialise the PoolManager.
 */
 func (pm *PoolManager) Init(config *PoolConfig) error {
 	pm.ServerFactory = cndp.NewServerFactory()
+	pm.BpfHandler = bpf.NewHandler()
+
 	err := pm.registerWithKubelet()
 	if err != nil {
 		return err
@@ -137,9 +140,13 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 
 		//loop each device request per container
 		for _, dev := range crqt.DevicesIDs {
-			logging.Infof("Loading BPF program on device: " + dev)
-			fd := bpf.LoadBpfSendXskMap(dev) //TODO Load BPF should return an error
-			logging.Infof("BPF program loaded on: " + dev + " File descriptor: " + strconv.Itoa(fd))
+			logging.Infof("Loading BPF program on interface " + dev)
+			fd, err := pm.BpfHandler.LoadBpfSendXskMap(dev)
+			if err != nil {
+				logging.Errorf("Error loading BPF Program on interface "+dev+": %v", err)
+				return &response, err
+			}
+			logging.Infof("BPF program loaded on interface " + dev + ", file descriptor " + strconv.Itoa(fd))
 			cndpServer.AddDevice(dev, fd)
 		}
 		response.ContainerResponses = append(response.ContainerResponses, cresp)
