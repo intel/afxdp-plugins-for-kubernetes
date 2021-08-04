@@ -17,8 +17,8 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/intel/cndp_device_plugin/pkg/ethtool"
 	"github.com/intel/cndp_device_plugin/pkg/logging"
-	"github.com/safchain/ethtool"
 	"io/ioutil"
 	"net"
 	"strings"
@@ -120,6 +120,7 @@ func GetConfig(configFile string) (Config, error) {
 
 			logging.Infof("Pool " + pool.Name + " discovering devices")
 			devices, err := deviceDiscovery(driver)
+
 			if err != nil {
 				logging.Errorf("Error discovering devices: %v", err.Error())
 				return cfg, err
@@ -149,20 +150,13 @@ func deviceDiscovery(requiredDriver string) ([]string, error) {
 		return devices, err
 	}
 
-	ethtool, err := ethtool.NewEthtool()
-	if err != nil {
-		logging.Errorf("Error setting up Ethtool: %v", err)
-		return devices, err
-	}
-	defer ethtool.Close()
-
 	for _, intf := range interfaces {
 		if containsPrefix(excludedInfs, intf.Name) {
 			logging.Debugf("%s is an excluded device, skipping", intf.Name)
 			continue
 		}
 
-		deviceDriver, err := ethtool.DriverName(intf.Name)
+		deviceDriver, err := ethtool.GetDriverName(intf.Name)
 		if err != nil {
 			logging.Errorf("Error getting driver name: %v", err.Error())
 			return devices, err
