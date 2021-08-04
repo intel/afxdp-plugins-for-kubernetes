@@ -50,16 +50,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if cfg.LogLevel != "" {
-		logging.Infof("Setting log level to %s", cfg.LogLevel)
-		logging.SetLogLevel(cfg.LogLevel)
-	}
-
-	if cfg.LogFile != "" {
-		logging.Infof("Setting log file to %s", cfg.LogFile)
-		logging.SetLogFile(cfg.LogFile)
-	}
-
 	dp := devicePlugin{
 		pools: make(map[string]PoolManager),
 	}
