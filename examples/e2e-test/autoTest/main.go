@@ -13,7 +13,9 @@ import (
 const udsProtocol = "unixpacket"
 
 func main() {
-	devices := os.Args[1:]
+
+	//Get environment variable device values
+	var deviceEnvVar = os.Getenv("CNDP_DEVICES")
 
 	c, err := net.Dial(udsProtocol, "/tmp/cndp.sock")
 	if err != nil {
@@ -27,8 +29,9 @@ func main() {
 	makeRequest("/version", c)
 	time.Sleep(2 * time.Second)
 
+	devices := strings.Split(deviceEnvVar, " ")
+
 	for _, dev := range devices {
-		dev = strings.Replace(dev, "\"", "", -1)
 		devReq := "/xsk_map_fd, " + dev
 		makeRequestFD(devReq, c)
 		time.Sleep(2 * time.Second)
@@ -42,6 +45,7 @@ func main() {
 
 	makeRequest("/fin", c)
 	time.Sleep(2 * time.Second)
+
 }
 
 func makeRequest(request string, c net.Conn) {

@@ -30,19 +30,6 @@ func TestAllocate(t *testing.T) {
 	pm.ServerFactory = cndp.NewFakeServerFactory()
 	pm.BpfHandler = bpf.NewFakeHandler()
 
-	containerAllocateResponse := &pluginapi.ContainerAllocateResponse{
-		Envs: map[string]string{},
-		Mounts: []*pluginapi.Mount{
-			{
-				ContainerPath: "/tmp/cndp.sock",
-				HostPath:      "/tmp/fake-socket.sock",
-				ReadOnly:      false,
-			},
-		},
-		Devices:     []*pluginapi.DeviceSpec{},
-		Annotations: map[string]string{},
-	}
-
 	testCases := []struct {
 		name                  string
 		containerRequests     []*pluginapi.ContainerAllocateRequest
@@ -54,18 +41,42 @@ func TestAllocate(t *testing.T) {
 				{DevicesIDs: []string{"dev_1"}},
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
-				containerAllocateResponse,
+				{
+					Envs: map[string]string{"CNDP_DEVICES": "dev_1"},
+					Mounts: []*pluginapi.Mount{
+						{
+							ContainerPath: "/tmp/cndp.sock",
+							HostPath:      "/tmp/fake-socket.sock",
+							ReadOnly:      false,
+						},
+					},
+					Devices:     []*pluginapi.DeviceSpec{},
+					Annotations: map[string]string{},
+				},
 			},
 		},
+
 		{
 			name: "Single Container Multiple Devices",
 			containerRequests: []*pluginapi.ContainerAllocateRequest{
 				{DevicesIDs: []string{"dev_1", "dev_2", "dev_3"}},
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
-				containerAllocateResponse,
+				{
+					Envs: map[string]string{"CNDP_DEVICES": "dev_1 dev_2 dev_3"},
+					Mounts: []*pluginapi.Mount{
+						{
+							ContainerPath: "/tmp/cndp.sock",
+							HostPath:      "/tmp/fake-socket.sock",
+							ReadOnly:      false,
+						},
+					},
+					Devices:     []*pluginapi.DeviceSpec{},
+					Annotations: map[string]string{},
+				},
 			},
 		},
+
 		{
 			name: "Multiple Containers Single Device",
 			containerRequests: []*pluginapi.ContainerAllocateRequest{
@@ -73,10 +84,33 @@ func TestAllocate(t *testing.T) {
 				{DevicesIDs: []string{"dev_2"}},
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
-				containerAllocateResponse,
-				containerAllocateResponse,
+				{
+					Envs: map[string]string{"CNDP_DEVICES": "dev_1"},
+					Mounts: []*pluginapi.Mount{
+						{
+							ContainerPath: "/tmp/cndp.sock",
+							HostPath:      "/tmp/fake-socket.sock",
+							ReadOnly:      false,
+						},
+					},
+					Devices:     []*pluginapi.DeviceSpec{},
+					Annotations: map[string]string{},
+				},
+				{
+					Envs: map[string]string{"CNDP_DEVICES": "dev_2"},
+					Mounts: []*pluginapi.Mount{
+						{
+							ContainerPath: "/tmp/cndp.sock",
+							HostPath:      "/tmp/fake-socket.sock",
+							ReadOnly:      false,
+						},
+					},
+					Devices:     []*pluginapi.DeviceSpec{},
+					Annotations: map[string]string{},
+				},
 			},
 		},
+
 		{
 			name: "Multiple Containers Multiple Devices",
 			containerRequests: []*pluginapi.ContainerAllocateRequest{
@@ -84,17 +118,51 @@ func TestAllocate(t *testing.T) {
 				{DevicesIDs: []string{"dev_4", "dev_5", "dev_6"}},
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
-				containerAllocateResponse,
-				containerAllocateResponse,
+				{
+					Envs: map[string]string{"CNDP_DEVICES": "dev_1 dev_2 dev_3"},
+					Mounts: []*pluginapi.Mount{
+						{
+							ContainerPath: "/tmp/cndp.sock",
+							HostPath:      "/tmp/fake-socket.sock",
+							ReadOnly:      false,
+						},
+					},
+					Devices:     []*pluginapi.DeviceSpec{},
+					Annotations: map[string]string{},
+				},
+				{
+					Envs: map[string]string{"CNDP_DEVICES": "dev_4 dev_5 dev_6"},
+					Mounts: []*pluginapi.Mount{
+						{
+							ContainerPath: "/tmp/cndp.sock",
+							HostPath:      "/tmp/fake-socket.sock",
+							ReadOnly:      false,
+						},
+					},
+					Devices:     []*pluginapi.DeviceSpec{},
+					Annotations: map[string]string{},
+				},
 			},
 		},
+
 		{
 			name: "No Device",
 			containerRequests: []*pluginapi.ContainerAllocateRequest{
 				{DevicesIDs: []string{}},
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
-				containerAllocateResponse,
+				{
+					Envs: map[string]string{"CNDP_DEVICES": ""},
+					Mounts: []*pluginapi.Mount{
+						{
+							ContainerPath: "/tmp/cndp.sock",
+							HostPath:      "/tmp/fake-socket.sock",
+							ReadOnly:      false,
+						},
+					},
+					Devices:     []*pluginapi.DeviceSpec{},
+					Annotations: map[string]string{},
+				},
 			},
 		},
 		{
@@ -103,6 +171,7 @@ func TestAllocate(t *testing.T) {
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{},
 		},
 	}
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 
