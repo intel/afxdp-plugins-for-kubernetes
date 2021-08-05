@@ -12,7 +12,7 @@ cleanup() {
 	echo "*                     Cleanup                       *"
 	echo "*****************************************************"
 	echo "Delete Pod"
-	kubectl delete pod --ignore-not-found=true cndp-e2e-test --force &> /dev/null
+	kubectl delete pod --ignore-not-found=true cndp-e2e-test &> /dev/null
 	echo "Delete Sample Apps"
 	rm -f uds-client-auto &> /dev/null
 	rm -f uds-client-manual &> /dev/null
@@ -82,16 +82,16 @@ run() {
 	echo
 	echo "***** Env vars pod*****"
 	echo
-	kubectl exec -it cndp-e2e-test -- env
+	kubectl exec -i cndp-e2e-test -- env
 	echo
 	echo "***** UDS Test *****"
 	echo
 	kubectl exec -i cndp-e2e-test --container cndp -- /cndp/uds-client-auto 
 	echo "***** Delete Pod *****"
-	kubectl delete pod cndp-e2e-test --force &> /dev/null
+	kubectl delete pod cndp-e2e-test &> /dev/null
 
 	if [ "$full_run" = true ]; then
-
+		sleep 5
 		echo
 		echo "*****************************************************"
 		echo "*          Run Pod: 1 container, 2 device           *"
@@ -111,15 +111,16 @@ run() {
 		echo
 		echo "***** Env vars pod*****"
 		echo
-		kubectl exec -it cndp-e2e-test -- env
+		kubectl exec -i cndp-e2e-test -- env
 		echo
 		echo "***** UDS Test *****"
 		echo
-		kubectl exec -i cndp-e2e-test --container cndp -- /cndp/uds-client-auto
+		kubectl exec -i cndp-e2e-test -- /cndp/uds-client-auto
 		echo
 		echo "***** Delete Pod *****"
-		kubectl delete pod cndp-e2e-test --force &> /dev/null
+		kubectl delete pod cndp-e2e-test &> /dev/null
 
+		sleep 5
 		echo
 		echo "*****************************************************"
 		echo "*       Run Pod: 2 containers, 1 device each        *"
@@ -154,10 +155,9 @@ run() {
 		kubectl exec -i cndp-e2e-test --container cndp2 -- /cndp/uds-client-auto
 		echo
 		echo "***** Delete Pod *****"
-		kubectl delete pod cndp-e2e-test --force &> /dev/null
+		kubectl delete pod cndp-e2e-test &> /dev/null
 
 	fi
-
 }
 
 display_help() {
