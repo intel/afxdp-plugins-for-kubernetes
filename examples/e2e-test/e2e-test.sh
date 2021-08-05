@@ -189,10 +189,6 @@ then
 	done
 fi
 
-#remove logs from previous run
-rm /var/log/cndp-cni-e2e.log
-rm /var/log/cndp-dp-e2e.log
-
 cleanup
 build
 run

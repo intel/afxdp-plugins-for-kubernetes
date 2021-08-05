@@ -69,5 +69,7 @@ test:
   stage: e2e
   script:
     - ./build.sh
+    - rm -f /var/log/cndp-cni-e2e.log
+    - rm -f /var/log/cndp-dp-e2e.log
     - cd examples/e2e-test/
-    - ./e2e-test.sh
+    - ./e2e-test.sh --full
