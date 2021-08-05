@@ -1,7 +1,9 @@
 stages:
   - build
   - qa
+  - e2e
   - publish
+
 
 cache:
   key: ${CI_COMMIT_REF_SLUG}
@@ -62,3 +64,10 @@ publish-image-prod-amd64:
     - *push-docker-image
   only:
     - master
+
+test:
+  stage: e2e
+  script:
+    - ./build.sh
+    - cd examples/e2e-test/
+    - ./e2e-test.sh
