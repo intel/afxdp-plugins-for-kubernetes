@@ -12,7 +12,7 @@ cleanup() {
 	echo "*                     Cleanup                       *"
 	echo "*****************************************************"
 	echo "Delete Pod"
-	kubectl delete pod --ignore-not-found=true cndp-e2e-test &> /dev/null
+	kubectl delete pod --ignore-not-found=true cndp-e2e-test --force &> /dev/null
 	echo "Delete Sample Apps"
 	rm -f uds-client-auto &> /dev/null
 	rm -f uds-client-manual &> /dev/null
@@ -88,7 +88,7 @@ run() {
 	echo
 	kubectl exec -i cndp-e2e-test --container cndp -- /cndp/uds-client-auto 
 	echo "***** Delete Pod *****"
-	kubectl delete pod cndp-e2e-test &> /dev/null
+	kubectl delete pod cndp-e2e-test --force &> /dev/null
 
 	if [ "$full_run" = true ]; then
 
@@ -110,15 +110,15 @@ run() {
 		sleep 2
 		echo
 		echo "***** Env vars pod*****"
-	  echo
-	  kubectl exec -it cndp-e2e-test -- env
-	  echo
+		echo
+		kubectl exec -it cndp-e2e-test -- env
+		echo
 		echo "***** UDS Test *****"
 		echo
 		kubectl exec -i cndp-e2e-test --container cndp -- /cndp/uds-client-auto
-	  echo
+		echo
 		echo "***** Delete Pod *****"
-		kubectl delete pod cndp-e2e-test &> /dev/null
+		kubectl delete pod cndp-e2e-test --force &> /dev/null
 
 		echo
 		echo "*****************************************************"
@@ -137,14 +137,14 @@ run() {
 		kubectl exec -i cndp-e2e-test -- ip l
 		sleep 2
 		echo
-	  echo "***** Env vars container 1 *****"
-	  echo
-	  kubectl exec -i cndp-e2e-test --container cndp -- env
-	  echo
-	  echo "***** Env vars container 2 *****"
-	  echo
-	  kubectl exec -i cndp-e2e-test --container cndp2 -- env
-	  echo
+		echo "***** Env vars container 1 *****"
+		echo
+		kubectl exec -i cndp-e2e-test --container cndp -- env
+		echo
+		echo "***** Env vars container 2 *****"
+		echo
+		kubectl exec -i cndp-e2e-test --container cndp2 -- env
+		echo
 		echo "***** UDS Test: Container 1 *****"
 		echo
 		kubectl exec -i cndp-e2e-test --container cndp -- /cndp/uds-client-auto
@@ -154,7 +154,7 @@ run() {
 		kubectl exec -i cndp-e2e-test --container cndp2 -- /cndp/uds-client-auto
 		echo
 		echo "***** Delete Pod *****"
-		kubectl delete pod cndp-e2e-test &> /dev/null
+		kubectl delete pod cndp-e2e-test --force &> /dev/null
 
 	fi
 
