@@ -138,11 +138,22 @@ func (h *handler) Listen() (CancelFunc, error) {
 	socketFile, err := h.conn.File()
 	if err != nil {
 		glog.Error("Error getting socket file descriptor : ", err)
-		return func() { glog.Info("Closing connection"); h.conn.Close() }, err
+		return func() {
+			glog.Info("Closing connection")
+			h.conn.Close()
+			glog.Info("Closing socket file")
+			socketFile.Close()
+		}, err
 	}
 	h.udsFD = int(socketFile.Fd())
 
-	return func() { glog.Info("Closing connection"); h.conn.Close() }, nil
+	return func() {
+		glog.Info("Closing connection")
+		h.conn.Close()
+		glog.Info("Closing socket file")
+		socketFile.Close()
+	}, nil
+
 }
 
 /*
