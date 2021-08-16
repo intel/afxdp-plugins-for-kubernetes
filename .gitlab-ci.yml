@@ -47,29 +47,29 @@ lint:
     - golint -set_exit_status ./...
 
 # Publish amd64 image
-publish-image-dev-amd64:
-  extends: .publish-image
-  script:
-    - export DOCKER_FILE=${AMD64_DOCKER_FILE}
-    - export DOCKER_IMAGE=${AMD64_DEV_IMAGE}
-    - *push-docker-image
-  except:
-    - master
+#publish-image-dev-amd64:
+#  extends: .publish-image
+#  script:
+#    - export DOCKER_FILE=${AMD64_DOCKER_FILE}
+#    - export DOCKER_IMAGE=${AMD64_DEV_IMAGE}
+#    - *push-docker-image
+#  except:
+#    - master
 
-publish-image-prod-amd64:
-  extends: .publish-image
-  script:
-    - export DOCKER_FILE=${AMD64_DOCKER_FILE}
-    - export DOCKER_IMAGE=${AMD64_PROD_IMAGE}
-    - *push-docker-image
-  only:
-    - master
+#publish-image-prod-amd64:
+#  extends: .publish-image
+#  script:
+#    - export DOCKER_FILE=${AMD64_DOCKER_FILE}
+#    - export DOCKER_IMAGE=${AMD64_PROD_IMAGE}
+#    - *push-docker-image
+#  only:
+#    - master
 
-test:
-  stage: e2e
-  script:
-    - ./build.sh
-    - rm -f /var/log/cndp-cni-e2e.log
-    - rm -f /var/log/cndp-dp-e2e.log
-    - cd examples/e2e-test/
-    - ./e2e-test.sh --full
+#test:
+#  stage: e2e
+#  script:
+#    - ./build.sh
+#    - rm -f /var/log/cndp-cni-e2e.log
+#    - rm -f /var/log/cndp-dp-e2e.log
+#    - cd examples/e2e-test/
+#    - ./e2e-test.sh --full
