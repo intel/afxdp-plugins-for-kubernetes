@@ -12,7 +12,7 @@ cleanup() {
 	echo "*                     Cleanup                       *"
 	echo "*****************************************************"
 	echo "Delete Pod"
-	kubectl delete pod --ignore-not-found=true cndp-e2e-test &> /dev/null
+	kubectl delete pod --grace-period 0 --ignore-not-found=true cndp-e2e-test &> /dev/null
 	echo "Delete Sample Apps"
 	rm -f uds-client-auto &> /dev/null
 	rm -f uds-client-manual &> /dev/null
@@ -88,7 +88,7 @@ run() {
 	echo
 	kubectl exec -i cndp-e2e-test --container cndp -- /cndp/uds-client-auto 
 	echo "***** Delete Pod *****"
-	kubectl delete pod cndp-e2e-test &> /dev/null
+	kubectl delete pod --grace-period 0 --ignore-not-found=true cndp-e2e-test &> /dev/null
 
 	if [ "$full_run" = true ]; then
 		sleep 5
@@ -118,7 +118,7 @@ run() {
 		kubectl exec -i cndp-e2e-test -- /cndp/uds-client-auto
 		echo
 		echo "***** Delete Pod *****"
-		kubectl delete pod cndp-e2e-test &> /dev/null
+		kubectl delete pod --grace-period 0 --ignore-not-found=true cndp-e2e-test &> /dev/null
 
 		sleep 5
 		echo
@@ -155,7 +155,7 @@ run() {
 		kubectl exec -i cndp-e2e-test --container cndp2 -- /cndp/uds-client-auto
 		echo
 		echo "***** Delete Pod *****"
-		kubectl delete pod cndp-e2e-test &> /dev/null
+		kubectl delete pod --grace-period 0 --ignore-not-found=true cndp-e2e-test &> /dev/null
 
 	fi
 }
