@@ -249,6 +249,7 @@ func (s *server) write(response string) error {
 	if err := s.uds.Write(response, -1); err != nil {
 		return err
 	}
+	logging.Infof("Response: " + response)
 	return nil
 }
 
@@ -256,6 +257,7 @@ func (s *server) writeWithFD(response string, fd int) error {
 	if err := s.uds.Write(response, fd); err != nil {
 		return err
 	}
+	logging.Infof("Response: " + response)
 	return nil
 }
 
