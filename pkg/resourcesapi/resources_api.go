@@ -16,7 +16,7 @@
 package resourcesapi
 
 import (
-	"github.com/golang/glog"
+	"github.com/intel/cndp_device_plugin/pkg/logging"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	api "k8s.io/kubelet/pkg/apis/podresources/v1alpha1"
@@ -59,7 +59,7 @@ func (r *handler) GetPodResources() (map[string]api.PodResources, error) {
 
 	resp, err := getPodResources(podResSockPath)
 	if err != nil {
-		glog.Error("Error Getting pod resources: ", err)
+		logging.Errorf("Error Getting pod resources: %v", err)
 		return podResourceMap, err
 	}
 
@@ -74,27 +74,27 @@ func getPodResources(socket string) (*api.ListPodResourcesResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), podResTimeout)
 	defer cancel()
 
-	glog.Info("Opening Pod Resource API connection")
+	logging.Infof("Opening Pod Resource API connection")
 	conn, err := grpc.DialContext(ctx, socket, grpc.WithInsecure(), grpc.WithBlock(),
 		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
 			return net.DialTimeout("unix", addr, timeout)
 		}),
 	)
 	if err != nil {
-		glog.Error("Error connecting to Pod Resource API: ", err)
+		logging.Errorf("Error connecting to Pod Resource API: %v", err)
 		return nil, err
 	}
 	defer func() {
-		glog.Info("Closing Pod Resource API connection")
+		logging.Infof("Closing Pod Resource API connection")
 		conn.Close()
 	}()
 
-	glog.Info("Requesting pod resource list")
+	logging.Infof("Requesting pod resource list")
 	client := api.NewPodResourcesListerClient(conn)
 
 	resp, err := client.List(ctx, &api.ListPodResourcesRequest{})
 	if err != nil {
-		glog.Error("Error getting Pod Resource list: ", err)
+		logging.Errorf("Error getting Pod Resource list: %v", err)
 		return nil, err
 	}
 
