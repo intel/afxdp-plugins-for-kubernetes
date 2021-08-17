@@ -16,7 +16,7 @@
 package uds
 
 import (
-	"github.com/golang/glog"
+	"github.com/intel/cndp_device_plugin/pkg/logging"
 	"github.com/nu7hatch/gouuid"
 	"net"
 	"os"
@@ -91,27 +91,27 @@ func (h *handler) Init(protocol string, msgBufSize int, ctlBufSize int, timeout 
 	// resolve UDS address
 	addr, err := net.ResolveUnixAddr(protocol, h.socket)
 	if err != nil {
-		glog.Error("Error resolving Unix address "+h.socket+": ", err)
+		logging.Errorf("Error resolving Unix address %s: %v", h.socket, err)
 		return func() {}, err
 	}
 
 	// create UDS listener
 	h.listener, err = net.ListenUnix(protocol, addr)
 	if err != nil {
-		glog.Error("Error creating Unix listener for "+h.socket+": ", err)
-		return func() { glog.Info("Closing Unix listener"); h.listener.Close() }, err
+		logging.Errorf("Error creating Unix listener for %s: %v", h.socket, err)
+		return func() { logging.Infof("Closing Unix listener"); h.listener.Close() }, err
 	}
 
 	if h.timeout > 0 {
 		err = h.listener.SetDeadline(time.Now().Add(h.timeout))
 		if err != nil {
-			glog.Error("Error setting listener timeout: ", err)
-			return func() { glog.Info("Closing Unix listener"); h.listener.Close() }, err
+			logging.Errorf("Error setting listener timeout: %v", err)
+			return func() { logging.Infof("Closing Unix listener"); h.listener.Close() }, err
 		}
 	}
 
 	return func() {
-		glog.Info("Closing Unix listener")
+		logging.Infof("Closing Unix listener")
 		h.listener.Close()
 	}, nil
 
@@ -127,30 +127,30 @@ func (h *handler) Listen() (CancelFunc, error) {
 	h.conn, err = h.listener.AcceptUnix()
 	if err != nil {
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-			glog.Error("Listener timed out: ", err)
-			return func() { glog.Info("Closing connection"); h.conn.Close() }, err
+			logging.Errorf("Listener timed out: %v", err)
+			return func() { logging.Infof("Closing connection"); h.conn.Close() }, err
 		}
-		glog.Error("Listener Accept error: ", err)
-		return func() { glog.Info("Closing connection"); h.conn.Close() }, err
+		logging.Errorf("Listener Accept error: %v", err)
+		return func() { logging.Infof("Closing connection"); h.conn.Close() }, err
 	}
 
 	// get the UDS socket file descriptor, required for syscall.Recvmsg/Sendmsg
 	socketFile, err := h.conn.File()
 	if err != nil {
-		glog.Error("Error getting socket file descriptor : ", err)
+		logging.Errorf("Error getting socket file descriptor: %v", err)
 		return func() {
-			glog.Info("Closing connection")
+			logging.Infof("Closing connection")
 			h.conn.Close()
-			glog.Info("Closing socket file")
+			logging.Infof("Closing socket file")
 			socketFile.Close()
 		}, err
 	}
 	h.udsFD = int(socketFile.Fd())
 
 	return func() {
-		glog.Info("Closing connection")
+		logging.Infof("Closing connection")
 		h.conn.Close()
-		glog.Info("Closing socket file")
+		logging.Infof("Closing socket file")
 		socketFile.Close()
 	}, nil
 
@@ -171,7 +171,7 @@ func (h *handler) Read() (string, int, error) {
 	if h.timeout > 0 {
 		err := h.conn.SetDeadline(time.Now().Add(h.timeout))
 		if err != nil {
-			glog.Error("Error setting connection timeout: ", err)
+			logging.Errorf("Error setting connection timeout: %v", err)
 			return request, fd, err
 		}
 	}
@@ -179,17 +179,17 @@ func (h *handler) Read() (string, int, error) {
 	// read request message
 	n, _, _, _, err := syscall.Recvmsg(h.udsFD, msgBuf, ctrlBuf, 0)
 	if err != nil {
-		glog.Error("Recvmsg error: ", err)
+		logging.Errorf("Recvmsg error: %v", err)
 		return request, fd, err
 	}
 
 	request = string(msgBuf[0:n])
-	glog.Info("Request: " + request)
+	logging.Infof("Request: %s", request)
 
 	if ctrlBufHasValue(ctrlBuf) {
 		ctrlMsgs, err := syscall.ParseSocketControlMessage(ctrlBuf)
 		if err != nil {
-			glog.Error("Control messages parse error: ", err)
+			logging.Errorf("Control messages parse error: %v", err)
 			return request, fd, err
 		}
 
@@ -205,7 +205,7 @@ func (h *handler) Read() (string, int, error) {
 			//We're handling a single msg and single fd here, so it's msg[0] fds[0]
 			fds, _ := syscall.ParseUnixRights(&ctrlMsgs[0])
 			fd = fds[0]
-			glog.Info("Request contains file descriptor: " + strconv.Itoa(fd))
+			logging.Infof("Request contains file descriptor: %s", strconv.Itoa(fd))
 
 			//TODO fmt prints should be a debug log
 			//TODO can new logging package handle %08b
@@ -215,7 +215,7 @@ func (h *handler) Read() (string, int, error) {
 			//fmt.Println()
 		}
 	} else {
-		glog.Info("Request contains no file descriptor")
+		logging.Infof("Request contains no file descriptor")
 	}
 
 	return request, fd, err
@@ -228,16 +228,16 @@ If a file descriptor is included, Write will configure and include it
 func (h *handler) Write(response string, fd int) error {
 	// write response with or without file descriptor
 	if fd > 0 {
-		glog.Info("Response: " + response + ", FD: " + strconv.Itoa(fd))
+		logging.Infof("Response: %s, FD: %s", response, strconv.Itoa(fd))
 		rights := syscall.UnixRights(fd)
 		if err := syscall.Sendmsg(h.udsFD, []byte(response), rights, nil, 0); err != nil {
-			glog.Error("Sendmsg error: ", err)
+			logging.Errorf("Sendmsg error: %v", err)
 			return err
 		}
 	} else {
-		glog.Info("Response: " + response)
+		logging.Infof("Response: %s", response)
 		if err := syscall.Sendmsg(h.udsFD, []byte(response), nil, nil, 0); err != nil {
-			glog.Error("Sendmsg error: ", err)
+			logging.Errorf("Sendmsg error: %v", err)
 			return err
 		}
 	}
@@ -250,14 +250,14 @@ func generateSocketPath(directory string) string {
 	for {
 		sockName, err := uuid.NewV4()
 		if err != nil {
-			glog.Error(err)
+			logging.Errorf("%s", err)
 		}
 
 		sockPath = directory + sockName.String() + ".sock"
 		if _, err := os.Stat(sockPath); os.IsNotExist(err) {
 			break
 		}
-		glog.Info(sockPath + " already exists. Regenerating.")
+		logging.Infof("%s already exists. Regenerating.", sockPath)
 	}
 
 	return sockPath
