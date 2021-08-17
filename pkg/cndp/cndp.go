@@ -79,6 +79,7 @@ type ServerFactory interface {
 server implements the Server interface. It is the main type for this package.
 */
 type server struct {
+	podName    string
 	deviceType string
 	devices    map[string]int
 	uds        uds.Handler
@@ -106,6 +107,7 @@ It also returns the filepath of the UDS being served.
 */
 func (f *serverFactory) CreateServer(deviceType string) (Server, string) {
 	server := &server{
+		podName:    "unvalidated",
 		deviceType: deviceType,
 		devices:    make(map[string]int),
 		uds:        uds.NewHandler(usdSockDir),
@@ -137,7 +139,7 @@ It listens for and serves a single connection. Across this connection it validat
 and serves XSK file descriptors to the CNDP app within the pod.
 */
 func (s *server) start() {
-	logging.Infof("Initialising Unix domain socket: " + s.uds.GetSocketPath())
+	logging.Debugf("Initialising Unix domain socket: " + s.uds.GetSocketPath())
 
 	// init
 	closeListener, err := s.uds.Init(udsProtocol, udsMsgBufSize, udsCtlBufSize, udsIdleTimeout)
@@ -176,19 +178,21 @@ func (s *server) start() {
 		return
 	}
 
-	// first request should validate hostname
+	// first request should validate hostname/podname
 	connected := false
+	var podName string
 	if strings.Contains(request, requestConnect) {
 		words := strings.Split(request, ",")
 		if len(words) == 2 && words[0] == requestConnect {
-			hostname := strings.ReplaceAll(words[1], " ", "")
-			connected, err = s.validateHost(hostname)
+			podName = strings.ReplaceAll(words[1], " ", "")
+			connected, err = s.validatePod(podName)
 			if err != nil {
-				logging.Errorf("Error validating host "+hostname+": ", err)
+				logging.Errorf("Error validating pod "+podName+": ", err)
 				s.write(responseError)
 			}
 		}
 		if connected {
+			s.podName = podName
 			s.write(responseHostOk)
 		} else {
 			s.write(responseHostNak)
@@ -201,10 +205,10 @@ func (s *server) start() {
 		request, fd, err := s.read()
 		if err != nil {
 			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-				logging.Errorf("Connection timed out: %v", err)
+				logging.Errorf("Pod "+s.podName+" - Connection timed out: %v", err)
 				return
 			}
-			logging.Errorf("Connection read error: %v", err)
+			logging.Errorf("Pod "+s.podName+" - Connection read error: %v", err)
 			return
 		}
 
@@ -228,7 +232,7 @@ func (s *server) start() {
 		}
 
 		if err != nil {
-			logging.Errorf("Error handling request: %v", err)
+			logging.Errorf("Pod "+s.podName+" - Error handling request: %v", err)
 			return
 		}
 	}
@@ -237,27 +241,27 @@ func (s *server) start() {
 func (s *server) read() (string, int, error) {
 	request, fd, err := s.uds.Read()
 	if err != nil {
-		logging.Errorf("Read error: %v", err)
+		logging.Errorf("Pod "+s.podName+" - Read error: %v", err)
 		return "", 0, err
 	}
 
-	logging.Infof("Request: " + request)
+	logging.Infof("Pod " + s.podName + " - Request: " + request)
 	return request, fd, nil
 }
 
 func (s *server) write(response string) error {
+	logging.Infof("Pod " + s.podName + " - Response: " + response)
 	if err := s.uds.Write(response, -1); err != nil {
 		return err
 	}
-	logging.Infof("Response: " + response)
 	return nil
 }
 
 func (s *server) writeWithFD(response string, fd int) error {
+	logging.Infof("Pod " + s.podName + " - Response: " + response + ", FD: " + strconv.Itoa(fd))
 	if err := s.uds.Write(response, fd); err != nil {
 		return err
 	}
-	logging.Infof("Response: " + response)
 	return nil
 }
 
@@ -273,12 +277,12 @@ func (s *server) handleFdRequest(request string) error {
 	iface := strings.ReplaceAll(words[1], " ", "")
 
 	if fd, ok := s.devices[iface]; ok {
-		logging.Infof("Device " + iface + " recognised")
+		logging.Debugf("Pod " + s.podName + " - Device " + iface + " recognised")
 		if err := s.writeWithFD(responseFdAck, fd); err != nil {
 			return err
 		}
 	} else {
-		logging.Warningf("Device " + iface + " not recognised")
+		logging.Warningf("Pod " + s.podName + " - Device " + iface + " not recognised")
 		if err := s.write(responseFdNak); err != nil {
 			return err
 		}
@@ -288,7 +292,7 @@ func (s *server) handleFdRequest(request string) error {
 
 func (s *server) handleBusyPollRequest(request string, fd int) error {
 	if fd <= 0 {
-		logging.Errorf("Invalid file descriptor")
+		logging.Errorf("Pod " + s.podName + " - Invalid file descriptor")
 		if err := s.write(responseBusyPollNak); err != nil {
 			return err
 		}
@@ -307,21 +311,21 @@ func (s *server) handleBusyPollRequest(request string, fd int) error {
 
 	timeout, err := strconv.Atoi(timeoutString)
 	if err != nil {
-		logging.Errorf("Error converting busy timeout to int: %v", err)
+		logging.Errorf("Pod "+s.podName+" - Error converting busy timeout to int: %v", err)
 		return err
 	}
 
 	budget, err := strconv.Atoi(budgetString)
 	if err != nil {
-		logging.Errorf("Error converting busy budget to int: %v", err)
+		logging.Errorf("Pod "+s.podName+" - Error converting busy budget to int: %v", err)
 		return err
 	}
 
-	logging.Infof("Configuring busy poll, FD: " + strconv.Itoa(fd) + ", Timeout: " + timeoutString + ", Budget: " + budgetString)
+	logging.Infof("Pod " + s.podName + " - Configuring busy poll, FD: " + strconv.Itoa(fd) + ", Timeout: " + timeoutString + ", Budget: " + budgetString)
 
 	err = s.bpf.ConfigureBusyPoll(fd, timeout, budget)
 	if err != nil {
-		logging.Errorf("Error configuring busy poll: %v", err)
+		logging.Errorf("Pod "+s.podName+" - Error configuring busy poll: %v", err)
 		s.write(responseBusyPollNak)
 		return err
 	}
@@ -331,18 +335,18 @@ func (s *server) handleBusyPollRequest(request string, fd int) error {
 	return nil
 }
 
-func (s *server) validateHost(hostname string) (bool, error) {
-	logging.Infof("Validating pod hostname: " + hostname)
+func (s *server) validatePod(podName string) (bool, error) {
+	logging.Debugf("Pod " + podName + " - Validating pod hostname")
 	podResourceMap, _ := s.podRes.GetPodResources() //TODO error
 
-	if _, ok := podResourceMap[hostname]; ok {
-		logging.Infof("Pod " + hostname + " found on node")
+	if _, ok := podResourceMap[podName]; ok {
+		logging.Debugf("Pod " + podName + " - Found on node")
 	} else {
-		logging.Errorf(hostname + " not found on node")
+		logging.Warningf("Pod " + podName + " - Not found on node")
 		return false, nil
 	}
 
-	pod := podResourceMap[hostname]
+	pod := podResourceMap[podName]
 	valid := false
 
 	for _, container := range pod.GetContainers() {
@@ -366,12 +370,12 @@ func (s *server) validateHost(hostname string) (bool, error) {
 			}
 
 			if valid {
-				logging.Infof("Pod " + hostname + " is valid for this UDS connection")
+				logging.Infof("Pod " + podName + " - valid for this UDS connection")
 				return true, nil
 			}
 		}
 	}
 
-	logging.Infof("Pod " + hostname + " could not be validated for this UDS connection")
+	logging.Warningf("Pod " + podName + " could not be validated for this UDS connection")
 	return false, nil
 }

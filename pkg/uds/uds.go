@@ -99,19 +99,19 @@ func (h *handler) Init(protocol string, msgBufSize int, ctlBufSize int, timeout 
 	h.listener, err = net.ListenUnix(protocol, addr)
 	if err != nil {
 		logging.Errorf("Error creating Unix listener for %s: %v", h.socket, err)
-		return func() { logging.Infof("Closing Unix listener"); h.listener.Close() }, err
+		return func() { logging.Debugf("Closing Unix listener"); h.listener.Close() }, err
 	}
 
 	if h.timeout > 0 {
 		err = h.listener.SetDeadline(time.Now().Add(h.timeout))
 		if err != nil {
 			logging.Errorf("Error setting listener timeout: %v", err)
-			return func() { logging.Infof("Closing Unix listener"); h.listener.Close() }, err
+			return func() { logging.Debugf("Closing Unix listener"); h.listener.Close() }, err
 		}
 	}
 
 	return func() {
-		logging.Infof("Closing Unix listener")
+		logging.Debugf("Closing Unix listener")
 		h.listener.Close()
 	}, nil
 
@@ -128,10 +128,10 @@ func (h *handler) Listen() (CancelFunc, error) {
 	if err != nil {
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 			logging.Errorf("Listener timed out: %v", err)
-			return func() { logging.Infof("Closing connection"); h.conn.Close() }, err
+			return func() { logging.Debugf("Closing connection"); h.conn.Close() }, err
 		}
 		logging.Errorf("Listener Accept error: %v", err)
-		return func() { logging.Infof("Closing connection"); h.conn.Close() }, err
+		return func() { logging.Debugf("Closing connection"); h.conn.Close() }, err
 	}
 
 	// get the UDS socket file descriptor, required for syscall.Recvmsg/Sendmsg
@@ -139,18 +139,18 @@ func (h *handler) Listen() (CancelFunc, error) {
 	if err != nil {
 		logging.Errorf("Error getting socket file descriptor: %v", err)
 		return func() {
-			logging.Infof("Closing connection")
+			logging.Debugf("Closing connection")
 			h.conn.Close()
-			logging.Infof("Closing socket file")
+			logging.Debugf("Closing socket file")
 			socketFile.Close()
 		}, err
 	}
 	h.udsFD = int(socketFile.Fd())
 
 	return func() {
-		logging.Infof("Closing connection")
+		logging.Debugf("Closing connection")
 		h.conn.Close()
-		logging.Infof("Closing socket file")
+		logging.Debugf("Closing socket file")
 		socketFile.Close()
 	}, nil
 
@@ -184,7 +184,7 @@ func (h *handler) Read() (string, int, error) {
 	}
 
 	request = string(msgBuf[0:n])
-	logging.Infof("Request: %s", request)
+	logging.Debugf("Request: %s", request)
 
 	if ctrlBufHasValue(ctrlBuf) {
 		ctrlMsgs, err := syscall.ParseSocketControlMessage(ctrlBuf)
@@ -205,7 +205,7 @@ func (h *handler) Read() (string, int, error) {
 			//We're handling a single msg and single fd here, so it's msg[0] fds[0]
 			fds, _ := syscall.ParseUnixRights(&ctrlMsgs[0])
 			fd = fds[0]
-			logging.Infof("Request contains file descriptor: %s", strconv.Itoa(fd))
+			logging.Debugf("Request contains file descriptor: %s", strconv.Itoa(fd))
 
 			//TODO fmt prints should be a debug log
 			//TODO can new logging package handle %08b
@@ -215,7 +215,7 @@ func (h *handler) Read() (string, int, error) {
 			//fmt.Println()
 		}
 	} else {
-		logging.Infof("Request contains no file descriptor")
+		logging.Debugf("Request contains no file descriptor")
 	}
 
 	return request, fd, err
@@ -228,14 +228,14 @@ If a file descriptor is included, Write will configure and include it
 func (h *handler) Write(response string, fd int) error {
 	// write response with or without file descriptor
 	if fd > 0 {
-		logging.Infof("Response: %s, FD: %s", response, strconv.Itoa(fd))
+		logging.Debugf("Response: %s, FD: %s", response, strconv.Itoa(fd))
 		rights := syscall.UnixRights(fd)
 		if err := syscall.Sendmsg(h.udsFD, []byte(response), rights, nil, 0); err != nil {
 			logging.Errorf("Sendmsg error: %v", err)
 			return err
 		}
 	} else {
-		logging.Infof("Response: %s", response)
+		logging.Debugf("Response: %s", response)
 		if err := syscall.Sendmsg(h.udsFD, []byte(response), nil, nil, 0); err != nil {
 			logging.Errorf("Sendmsg error: %v", err)
 			return err
@@ -257,7 +257,7 @@ func generateSocketPath(directory string) string {
 		if _, err := os.Stat(sockPath); os.IsNotExist(err) {
 			break
 		}
-		logging.Infof("%s already exists. Regenerating.", sockPath)
+		logging.Debugf("%s already exists. Regenerating.", sockPath)
 	}
 
 	return sockPath
