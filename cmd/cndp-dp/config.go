@@ -17,10 +17,9 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/intel/cndp_device_plugin/pkg/ethtool"
 	"github.com/intel/cndp_device_plugin/pkg/logging"
+	"github.com/intel/cndp_device_plugin/pkg/networking"
 	"io/ioutil"
-	"net"
 	"strings"
 )
 
@@ -142,53 +141,54 @@ func GetConfig(configFile string) (Config, error) {
 }
 
 func deviceDiscovery(requiredDriver string) ([]string, error) {
-	var devices []string
+	var poolDevices []string
+	netHandler := networking.NewHandler()
 
-	interfaces, err := net.Interfaces()
+	hostDevices, err := netHandler.GetHostDevices()
 	if err != nil {
 		logging.Warningf("Error setting up Interfaces: %v", err)
-		return devices, err
+		return poolDevices, err
 	}
 
-	for _, intf := range interfaces {
-		if containsPrefix(excludedInfs, intf.Name) {
-			logging.Debugf("%s is an excluded device, skipping", intf.Name)
+	for _, hostDevice := range hostDevices {
+		if containsPrefix(excludedInfs, hostDevice.Name) {
+			logging.Debugf("%s is an excluded device, skipping", hostDevice.Name)
 			continue
 		}
 
-		deviceDriver, err := ethtool.GetDriverName(intf.Name)
+		deviceDriver, err := netHandler.GetDeviceDriver(hostDevice.Name)
 		if err != nil {
 			logging.Errorf("Error getting driver name: %v", err.Error())
-			return devices, err
+			return poolDevices, err
 		}
 
 		if deviceDriver == requiredDriver {
-			logging.Infof("Device %s is type %s", intf.Name, requiredDriver)
+			logging.Infof("Device %s is type %s", hostDevice.Name, requiredDriver)
 
-			if contains(assignedInfs, intf.Name) {
-				logging.Infof("Device %s is an already assigned to a pool, skipping", intf.Name)
+			if contains(assignedInfs, hostDevice.Name) {
+				logging.Infof("Device %s is an already assigned to a pool, skipping", hostDevice.Name)
 				continue
 			}
 
-			addrs, err := intf.Addrs()
+			addrs, err := hostDevice.Addrs()
 			if err != nil {
 				logging.Errorf("Error getting device IP: %v", err.Error())
-				return devices, err
+				return poolDevices, err
 			}
 
 			if len(addrs) > 0 {
-				logging.Infof("Device %s has an assigned IP address, skipping", intf.Name)
+				logging.Infof("Device %s has an assigned IP address, skipping", hostDevice.Name)
 				continue
 			}
 
-			devices = append(devices, intf.Name)
-			logging.Infof("Device %s appended to the device list", intf.Name)
+			poolDevices = append(poolDevices, hostDevice.Name)
+			logging.Infof("Device %s appended to the device list", hostDevice.Name)
 		} else {
-			logging.Debugf("%s has the wrong driver type: %s", intf.Name, deviceDriver)
+			logging.Debugf("%s has the wrong driver type: %s", hostDevice.Name, deviceDriver)
 		}
 
 	}
-	return devices, nil
+	return poolDevices, nil
 }
 
 func contains(array []string, str string) bool {
