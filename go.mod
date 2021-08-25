@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/containernetworking/cni v1.0.0
 	github.com/containernetworking/plugins v1.0.0
+	github.com/go-cmd/cmd v1.3.0
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
