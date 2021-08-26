@@ -2,7 +2,7 @@
 set -e
 
 pids=( )
-run_dp="./../../bin/cndp-dp"
+run_dp="./../bin/cndp-dp"
 full_run=false
 devices=()
 
@@ -15,7 +15,6 @@ cleanup() {
 	kubectl delete pod --grace-period 0 --ignore-not-found=true cndp-e2e-test &> /dev/null
 	echo "Delete Sample Apps"
 	rm -f uds-client-auto &> /dev/null
-	rm -f uds-client-manual &> /dev/null
 	echo "Delete CNI"
 	rm -f /opt/cni/bin/cndp-e2e &> /dev/null
 	echo "Delete Network Attachment Definition"
@@ -38,12 +37,11 @@ build() {
 	echo "*****************************************************"
 	echo
 	echo "***** CNI Install *****"
-	cp ../../bin/cndp /opt/cni/bin/cndp-e2e
+	cp ./../bin/cndp /opt/cni/bin/cndp-e2e
 	echo "***** Network Attachment Definition *****"
 	kubectl create -f ./nad.yaml
 	echo "***** Sample Apps *****"
 	go build -o uds-client-auto ./autoTest/main.go
-	go build -o uds-client-manual ./manualTest/main.go
 	echo "***** Docker Image *****"
 	docker build \
 		--build-arg http_proxy=${http_proxy} \
