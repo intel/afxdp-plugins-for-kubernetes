@@ -13,8 +13,6 @@ cleanup() {
 	echo "*****************************************************"
 	echo "Delete Pod"
 	kubectl delete pod --grace-period 0 --ignore-not-found=true cndp-e2e-test &> /dev/null
-	echo "Delete Sample Apps"
-	rm -f uds-client-auto &> /dev/null
 	echo "Delete CNI"
 	rm -f /opt/cni/bin/cndp-e2e &> /dev/null
 	echo "Delete Network Attachment Definition"
@@ -40,16 +38,14 @@ build() {
 	cp ./../bin/cndp /opt/cni/bin/cndp-e2e
 	echo "***** Network Attachment Definition *****"
 	kubectl create -f ./nad.yaml
-	echo "***** Sample Apps *****"
-	go build -o uds-client-auto ./autoTest/main.go
 	echo "***** Docker Image *****"
 	docker build \
 		--build-arg http_proxy=${http_proxy} \
-		--build-arg HTTP_PROXY=${HTTP_PROXY} \
-		--build-arg https_proxy=${https_proxy} \
-		--build-arg HTTPS_PROXY=${HTTPS_PROXY} \
+		--build-arg HTTP_PROXY=${http_proxy} \
+		--build-arg https_proxy=${http_proxy} \
+		--build-arg HTTPS_PROXY=${http_proxy} \
 		--build-arg no_proxy=${no_proxy} \
-		--build-arg NO_PROXY=${NO_PROXY} \
+		--build-arg NO_PROXY=${no_proxy} \
 		-t cndp-e2e-test -f Dockerfile .
 }
 
@@ -84,7 +80,7 @@ run() {
 	echo
 	echo "***** UDS Test *****"
 	echo
-	kubectl exec -i cndp-e2e-test --container cndp -- /cndp/uds-client-auto 
+	kubectl exec -i cndp-e2e-test --container cndp -- udsTest 
 	echo "***** Delete Pod *****"
 	kubectl delete pod --grace-period 0 --ignore-not-found=true cndp-e2e-test &> /dev/null
 
@@ -113,7 +109,7 @@ run() {
 		echo
 		echo "***** UDS Test *****"
 		echo
-		kubectl exec -i cndp-e2e-test -- /cndp/uds-client-auto
+		kubectl exec -i cndp-e2e-test -- udsTest
 		echo
 		echo "***** Delete Pod *****"
 		kubectl delete pod --grace-period 0 --ignore-not-found=true cndp-e2e-test &> /dev/null
@@ -146,11 +142,11 @@ run() {
 		echo
 		echo "***** UDS Test: Container 1 *****"
 		echo
-		kubectl exec -i cndp-e2e-test --container cndp -- /cndp/uds-client-auto
+		kubectl exec -i cndp-e2e-test --container cndp -- udsTest
 		echo
 		echo "***** UDS Test: Container 2 *****"
 		echo
-		kubectl exec -i cndp-e2e-test --container cndp2 -- /cndp/uds-client-auto
+		kubectl exec -i cndp-e2e-test --container cndp2 -- udsTest
 		echo
 		echo "***** Delete Pod *****"
 		kubectl delete pod --grace-period 0 --ignore-not-found=true cndp-e2e-test &> /dev/null
