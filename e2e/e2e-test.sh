@@ -78,7 +78,7 @@ run() {
 	kubectl exec -i cndp-e2e-test -- ip l
 	sleep 2
 	echo
-	echo "***** Env vars pod*****"
+	echo "***** Pod Env Vars *****"
 	echo
 	kubectl exec -i cndp-e2e-test -- env
 	echo
@@ -107,7 +107,7 @@ run() {
 		kubectl exec -i cndp-e2e-test -- ip l
 		sleep 2
 		echo
-		echo "***** Env vars pod*****"
+		echo "***** Pod Env Vars *****"
 		echo
 		kubectl exec -i cndp-e2e-test -- env
 		echo
