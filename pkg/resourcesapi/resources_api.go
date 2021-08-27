@@ -74,7 +74,7 @@ func getPodResources(socket string) (*api.ListPodResourcesResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), podResTimeout)
 	defer cancel()
 
-	logging.Infof("Opening Pod Resource API connection")
+	logging.Debugf("Opening Pod Resource API connection")
 	conn, err := grpc.DialContext(ctx, socket, grpc.WithInsecure(), grpc.WithBlock(),
 		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
 			return net.DialTimeout("unix", addr, timeout)
@@ -85,11 +85,11 @@ func getPodResources(socket string) (*api.ListPodResourcesResponse, error) {
 		return nil, err
 	}
 	defer func() {
-		logging.Infof("Closing Pod Resource API connection")
+		logging.Debugf("Closing Pod Resource API connection")
 		conn.Close()
 	}()
 
-	logging.Infof("Requesting pod resource list")
+	logging.Debugf("Requesting pod resource list")
 	client := api.NewPodResourcesListerClient(conn)
 
 	resp, err := client.List(ctx, &api.ListPodResourcesRequest{})
