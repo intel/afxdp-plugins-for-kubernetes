@@ -7,7 +7,7 @@ A proof of concept Kubernetes device plugin and CNI plugin to provide AF_XDP net
 ```bash
 git clone ssh://git@gitlab.devtools.intel.com:29418/OrchSW/CNO/containers_afxdp_network_device_plugin-.git
 cd containers_afxdp_network_device_plugin-/
-./build.sh
+make build
 ```
 Two binaries will be placed in ./bin directory:
 - **cndp-dp** is the device plugin
@@ -69,17 +69,17 @@ Output from CLOC (count lines of code) - github.com/AlDanial/cloc
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Go                              20            496            682           3991
+Go                              19            487            682           3955
 Markdown                         3            104              0            352
-Bourne Shell                     2             18              3            219
-YAML                             6             13             26            208
+YAML                             6             11             26            203
+Bourne Shell                     1             11              0            182
 C                                2             48             24            159
 make                             1             11              2             58
-JSON                             3              0              0             26
 C/C++ Header                     2             11             24             15
-Dockerfile                       1              0              0              3
+JSON                             1              0              0             10
+Dockerfile                       1              0              0              2
 -------------------------------------------------------------------------------
-SUM:                            40            701            761           5031
+SUM:                            36            683            758           4936
 -------------------------------------------------------------------------------
 
 ```

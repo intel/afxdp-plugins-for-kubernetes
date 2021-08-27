@@ -4,16 +4,11 @@ stages:
   - e2e
   - publish
 
-
 cache:
   key: ${CI_COMMIT_REF_SLUG}
   paths:
     - bin/cndp-dp
     - bin/cndp
-
-.build-c-wrappers: &build-c-wrappers
-  - gcc ./pkg/bpf/bpfWrapper.c -lbpf -c -o ./pkg/bpf/bpfWrapper.o
-  - ar rs ./pkg/bpf/libwrapper.a ./pkg/bpf/bpfWrapper.o
 
 .publish-image:
   stage: publish
@@ -31,20 +26,18 @@ cache:
 compile:
   stage: build
   script:
-    - *build-c-wrappers
-    - go build -o ./bin/cndp-dp ./cmd/cndp-dp
-    - go build -o ./bin/cndp ./cmd/cndp-cni
+    - make build
 
 test:
   stage: qa
   script:
-    - *build-c-wrappers
-    - go test github.com/intel/cndp_device_plugin/...
+    - make build
+    - make test
 
 lint:
   stage: qa
   script:
-    - golint -set_exit_status ./...
+    - make lint
 
 # Publish amd64 image
 #publish-image-dev-amd64:
@@ -68,7 +61,7 @@ lint:
 #test:
 #  stage: e2e
 #  script:
-#    - ./build.sh
+#    - make build
 #    - rm -f /var/log/cndp-cni-e2e.log
 #    - rm -f /var/log/cndp-dp-e2e.log
 #    - cd examples/e2e-test/
