@@ -18,9 +18,7 @@ format:
 lint:
 	@echo "******     Go Lint       ******"
 	@echo
-	go get -u golang.org/x/lint/golint &> /dev/null
-	golint=$(shell go list -f {{.Target}} golang.org/x/lint/golint)
-	golint ./...
+	golint -set_exit_status ./...
 	@echo
 	@echo
 
