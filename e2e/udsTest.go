@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/intel/cndp_device_plugin/pkg/logging"
 	"log"
 	"net"
 	"os"
@@ -18,10 +17,8 @@ func main() {
 	//Get environment variable device values
 	deviceEnvVar, exists := os.LookupEnv("CNDP_DEVICES")
 	if !exists {
-		logging.Errorf("CNDP_DEVICE environmental variable is unavailable")
 		os.Exit(1)
 	}
-	logging.Infof("variable is:%s", deviceEnvVar)
 
 	c, err := net.Dial(udsProtocol, "/tmp/cndp.sock")
 	if err != nil {
