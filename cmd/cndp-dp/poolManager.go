@@ -65,7 +65,7 @@ func (pm *PoolManager) Init(config *PoolConfig) error {
 	if err != nil {
 		return err
 	}
-	logging.Infof(devicePrefix+"/%s serving on %s", pm.Name, pm.DpAPISocket)
+	logging.Infof(devicePrefix+"/%s started serving", pm.Name)
 
 	for _, device := range config.Devices {
 		newdev := pluginapi.Device{ID: device, Health: pluginapi.Healthy}
@@ -197,14 +197,16 @@ func (pm *PoolManager) GetPreferredAllocation(context.Context, *pluginapi.Prefer
 }
 
 func (pm *PoolManager) registerWithKubelet() error {
-	conn, err := grpc.Dial(pluginapi.KubeletSocket, grpc.WithInsecure(),
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
-			return net.DialTimeout("unix", addr, timeout)
+	ctx := context.Background()
+	conn, err := grpc.DialContext(ctx, pluginapi.KubeletSocket, grpc.WithInsecure(),
+		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			return (&net.Dialer{}).DialContext(ctx, "unix", addr)
 		}))
-	defer conn.Close()
 	if err != nil {
-		return fmt.Errorf("Error registering with Kubelet: %v", err)
+		return fmt.Errorf("Error connecting to Kubelet: %v", err)
 	}
+	defer conn.Close()
+
 	client := pluginapi.NewRegistrationClient(conn)
 
 	reqt := &pluginapi.RegisterRequest{
@@ -236,17 +238,19 @@ func (pm *PoolManager) startGRPC() error {
 	pluginapi.RegisterDevicePluginServer(pm.DpAPIServer, pm)
 	go pm.DpAPIServer.Serve(sock)
 
-	conn, err := grpc.Dial(pm.DpAPISocket, grpc.WithInsecure(), grpc.WithBlock(),
-		grpc.WithTimeout(5*time.Second),
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
-			return net.DialTimeout("unix", addr, timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	conn, err := grpc.DialContext(ctx, pm.DpAPISocket, grpc.WithInsecure(), grpc.WithBlock(),
+		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			return (&net.Dialer{}).DialContext(ctx, "unix", addr)
 		}),
 	)
-	conn.Close()
-
 	if err != nil {
+		logging.Errorf("Unable to establish test connection with %s gRPC server: %v", pm.Name, err)
 		return err
 	}
+	conn.Close()
+	logging.Debugf(devicePrefix+"/%s started serving on %s", pm.Name, pm.DpAPISocket)
 
 	return nil
 }
