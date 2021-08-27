@@ -16,6 +16,7 @@
 #include "log.h"
 #include "_cgo_export.h"
 
+//256 is the maximum number of characters for vsnprintf
 #define LOG_SIZE 256
 
 void Log_Debug(char *fmt, ...) {
@@ -23,7 +24,7 @@ void Log_Debug(char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);
-	vsprintf(msg, fmt, args);
+	vsnprintf(msg, sizeof(msg), fmt, args);
 	va_end(args);
 
 	Debugf(msg);
@@ -34,7 +35,7 @@ void Log_Info(char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);
-	vsprintf(msg, fmt, args);
+	vsnprintf(msg, sizeof(msg), fmt, args);
 	va_end(args);
 
 	Infof(msg);
@@ -45,7 +46,7 @@ void Log_Warning(char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);
-	vsprintf(msg, fmt, args);
+	vsnprintf(msg, sizeof(msg), fmt, args);
 	va_end(args);
 
 	Warningf(msg);
@@ -56,7 +57,7 @@ void Log_Error(char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);
-	vsprintf(msg, fmt, args);
+	vsnprintf(msg, sizeof(msg), fmt, args);
 	va_end(args);
 
 	Errorf(msg);
@@ -67,7 +68,7 @@ void Log_Panic(char *fmt, ...) {
 	va_list args;
 
 	va_start(args, fmt);
-	vsprintf(msg, fmt, args);
+	vsnprintf(msg, sizeof(msg), fmt, args);
 	va_end(args);
 
 	Panicf(msg);
