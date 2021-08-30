@@ -1,4 +1,4 @@
-.PHONY: all
+.PHONY: all e2e
 
 all: format lint build test cloc end
 
@@ -37,10 +37,17 @@ build:
 	@echo
 	@echo
 
-test: 
+test:
 	@echo "******    Unit Tests     ******"
 	@echo
 	go test $(shell go list ./... | grep -v "/examples/e2e-test/" | grep -v "/pkg/resourcesapi")
+	@echo
+	@echo
+
+e2e: build
+	@echo "******    E2e Test     ******"
+	@echo
+	cd e2e && ./e2e-test.sh
 	@echo
 	@echo
 

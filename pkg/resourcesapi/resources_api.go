@@ -27,7 +27,7 @@ import (
 const (
 	podResSockDir  = "/var/lib/kubelet/pod-resources"
 	podResSockPath = podResSockDir + "/kubelet.sock"
-	podResTimeout  = 10 * time.Second
+	grpcTimeout  = 5*time.Second
 )
 
 /*
@@ -71,17 +71,18 @@ func (r *handler) GetPodResources() (map[string]api.PodResources, error) {
 }
 
 func getPodResources(socket string) (*api.ListPodResourcesResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), podResTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), grpcTimeout)
 	defer cancel()
 
 	logging.Debugf("Opening Pod Resource API connection")
 	conn, err := grpc.DialContext(ctx, socket, grpc.WithInsecure(), grpc.WithBlock(),
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
-			return net.DialTimeout("unix", addr, timeout)
+		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			return (&net.Dialer{}).DialContext(ctx, "unix", addr)
 		}),
 	)
 	if err != nil {
 		logging.Errorf("Error connecting to Pod Resource API: %v", err)
+		conn.Close()
 		return nil, err
 	}
 	defer func() {
