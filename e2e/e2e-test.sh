@@ -4,7 +4,6 @@ set -e
 pids=( )
 run_dp="./../bin/cndp-dp"
 full_run=false
-devices=()
 
 cleanup() {
 	echo
@@ -18,7 +17,7 @@ cleanup() {
 	echo "Delete Network Attachment Definition"
 	kubectl delete network-attachment-definition --ignore-not-found=true cndp-e2e-test &> /dev/null
 	echo "Delete Docker Image"
-	docker 2>/dev/null rmi cndp-e2e-test | true #remove docker image, ignore "does not exist error"
+	docker 2>/dev/null rmi cndp-e2e-test || true
 	echo "Stop Device Plugin"
 	if [ ${#pids[@]} -eq 0 ]; then
 		echo "No Device Plugin PID found"
@@ -39,14 +38,10 @@ build() {
 	echo "***** Network Attachment Definition *****"
 	kubectl create -f ./nad.yaml
 	echo "***** Docker Image *****"
-	docker build \
-		--build-arg http_proxy=${http_proxy} \
-		--build-arg HTTP_PROXY=${http_proxy} \
-		--build-arg https_proxy=${http_proxy} \
-		--build-arg HTTPS_PROXY=${http_proxy} \
-		--build-arg no_proxy=${no_proxy} \
-		--build-arg NO_PROXY=${no_proxy} \
-		-t cndp-e2e-test -f Dockerfile .
+	docker build -t cndp-e2e-test -f Dockerfile .
+
+
+
 }
 
 run() {

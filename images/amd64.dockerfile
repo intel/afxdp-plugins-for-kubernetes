@@ -9,7 +9,8 @@ ENV LIBBPF_DIR=/libbpf
 ENV LIBBPF_SRC_DIR=/libbpf/src
 ENV LIBBPF_GIT_REPO=https://github.com/libbpf/libbpf.git
 
-RUN apk -U add build-base libbsd-dev git elfutils-dev gcompat
+RUN apk --no-cache -U add build-base=0.5-r2 libbsd-dev=0.11.3-r0 \
+git=2.32.0-r0 elfutils-dev=0.182-r1 gcompat=1.0.0-r2
 
 # Clone, build, and install libbpf
 RUN git clone ${LIBBPF_GIT_REPO} ${LIBBPF_DIR} \
