@@ -361,6 +361,67 @@ func (s *server) validatePod(podName string) (bool, error) {
 	pod := podResourceMap[podName]
 	valid := false
 
+	/**********************************************************
+	BUG FIX - TODO investigate further. Better way to do this?
+	K8s v1.21.1 pod resources api found returning slightly
+	different format vs older v1.20.2
+
+	v1.20.2
+		Devices:[]*ContainerDevices{
+		&ContainerDevices{
+			ResourceName:cndp/e2e,
+			DeviceIds:[ens801f1 ens801f0]
+
+	v1.21.1
+	Devices:[]*ContainerDevices{
+		&ContainerDevices{
+			ResourceName:cndp/e2e,
+			DeviceIds:[ens785f1],},
+		&ContainerDevices{
+			ResourceName:cndp/e2e,
+			DeviceIds:[ens785f0],
+
+	Note that v1.20.2 returns the devices in a single array.
+	v1.21.1 devices are all separate, almost like each device
+	is its own type.
+
+	This is a problem when we compare the number of pod devices
+	vs number of known devices - returns pod not valid.
+
+	Solution below is to loop through all the containers and
+	associated devices first, building a list. This is the dev
+	list used in validation, rather than the raw res api data.
+	**********************************************************/
+	for _, container := range pod.GetContainers() {
+		var contDevs []string
+
+		for _, devType := range container.GetDevices() {
+			if devType.GetResourceName() == s.deviceType {
+				for _, device := range devType.GetDeviceIds() {
+					contDevs = append(contDevs, device)
+				}
+			}
+		}
+
+		if len(contDevs) == len(s.devices) {
+			// compare known devices (from Allocate) vs devices from resource api
+			for _, dev := range contDevs {
+				if _, exists := s.devices[dev]; exists {
+					valid = true // valid while devices match
+				} else {
+					valid = false
+					break // not valid if any device does not match
+				}
+			}
+		}
+
+		if valid {
+			logging.Infof("Pod " + podName + " is valid for this UDS connection")
+			return true, nil
+		}
+	}
+
+	/***************** BUG FIX END ****************************
 	for _, container := range pod.GetContainers() {
 		for _, device := range container.GetDevices() {
 
@@ -387,6 +448,7 @@ func (s *server) validatePod(podName string) (bool, error) {
 			}
 		}
 	}
+	********************************************************/
 
 	logging.Warningf("Pod " + podName + " could not be validated for this UDS connection")
 	return false, nil
