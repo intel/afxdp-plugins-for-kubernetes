@@ -31,7 +31,10 @@ import (
 	"time"
 )
 
-const envVarDevs = "CNDP_DEVICES"
+const (
+	envVarDevs = "CNDP_DEVICES"
+	grpcTimeout  = 5*time.Second
+)
 
 /*
 PoolManager represents an manages the pool of devices.
