@@ -56,8 +56,7 @@ func GetConfig(configFile string) (Config, error) {
 	if err != nil {
 		logging.Errorf("Error reading config file: %v", err)
 	} else {
-		err = json.Unmarshal(raw, &cfg)
-		if err != nil {
+		if err := json.Unmarshal(raw, &cfg); err != nil {
 			logging.Errorf("Error unmarshalling config data: %v", err)
 			return cfg, err
 		}
@@ -119,7 +118,6 @@ func GetConfig(configFile string) (Config, error) {
 
 			logging.Infof("Pool " + pool.Name + " discovering devices")
 			devices, err := deviceDiscovery(driver)
-
 			if err != nil {
 				logging.Errorf("Error discovering devices: %v", err.Error())
 				return cfg, err

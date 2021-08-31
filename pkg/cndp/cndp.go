@@ -187,20 +187,17 @@ func (s *server) start() {
 			connected, err = s.validatePod(podName)
 			if err != nil {
 				logging.Errorf("Error validating host %s: %v", podName, err)
-				err := s.write(responseError)
-				if err != nil {
+				if err := s.write(responseError); err != nil {
 					logging.Errorf("Connection write error: %v", err)
 				}
 			}
 		}
 		if connected {
-			err := s.write(responseHostOk)
-			if err != nil {
+			if err := s.write(responseHostOk); err != nil {
 				logging.Errorf("Connection write error: %v", err)
 			}
 		} else {
-			err := s.write(responseHostNak)
-			if err != nil {
+			if err := s.write(responseHostNak); err != nil {
 				logging.Errorf("Connection write error: %v", err)
 			}
 		}
@@ -330,17 +327,14 @@ func (s *server) handleBusyPollRequest(request string, fd int) error {
 
 	logging.Infof("Pod " + s.podName + " - Configuring busy poll, FD: " + strconv.Itoa(fd) + ", Timeout: " + timeoutString + ", Budget: " + budgetString)
 
-	err = s.bpf.ConfigureBusyPoll(fd, timeout, budget)
-	if err != nil {
+	if err := s.bpf.ConfigureBusyPoll(fd, timeout, budget); err != nil {
 		logging.Errorf("Error configuring busy poll: %v", err)
-		err := s.write(responseBusyPollNak)
-		if err != nil {
+		if err := s.write(responseBusyPollNak); err != nil {
 			logging.Errorf("Connection write error: %v", err)
 		}
 		return err
 	}
-	err = s.write(responseBusyPollAck)
-	if err != nil {
+	if err := s.write(responseBusyPollAck); err != nil {
 		logging.Errorf("Connection write error: %v", err)
 	}
 

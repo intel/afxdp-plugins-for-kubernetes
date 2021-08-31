@@ -58,14 +58,12 @@ func (pm *PoolManager) Init(config *PoolConfig) error {
 	pm.ServerFactory = cndp.NewServerFactory()
 	pm.BpfHandler = bpf.NewHandler()
 
-	err := pm.registerWithKubelet()
-	if err != nil {
+	if err := pm.registerWithKubelet(); err != nil {
 		return err
 	}
 	logging.Infof(devicePrefix+"/%s registered with Kubelet", pm.Name)
 
-	err = pm.startGRPC()
-	if err != nil {
+	if err := pm.startGRPC(); err != nil {
 		return err
 	}
 	logging.Infof(devicePrefix+"/%s started serving", pm.Name)
@@ -87,8 +85,7 @@ Terminate is called it terminate the PoolManager.
 */
 func (pm *PoolManager) Terminate() error {
 	pm.stopGRPC()
-	err := pm.cleanup()
-	if err != nil {
+	if err := pm.cleanup(); err != nil {
 		logging.Infof("Cleanup error: %v", err)
 	}
 	logging.Infof(devicePrefix + "/" + pm.Name + " terminated")
@@ -228,8 +225,7 @@ func (pm *PoolManager) registerWithKubelet() error {
 }
 
 func (pm *PoolManager) startGRPC() error {
-	err := pm.cleanup()
-	if err != nil {
+	if err := pm.cleanup(); err != nil {
 		return err
 	}
 
@@ -241,8 +237,7 @@ func (pm *PoolManager) startGRPC() error {
 	pm.DpAPIServer = grpc.NewServer([]grpc.ServerOption{}...)
 	pluginapi.RegisterDevicePluginServer(pm.DpAPIServer, pm)
 	go func() {
-		err := pm.DpAPIServer.Serve(sock)
-		if err != nil {
+		if err := pm.DpAPIServer.Serve(sock); err != nil {
 			logging.Errorf("API Server socket error: %v", err)
 		}
 	}()

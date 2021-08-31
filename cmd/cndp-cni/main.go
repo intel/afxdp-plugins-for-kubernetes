@@ -72,10 +72,10 @@ func loadConf(bytes []byte) (*netConfig, error) {
 
 func cmdAdd(args *skel.CmdArgs) error {
 	cfg, err := loadConf(args.StdinData)
-	logging.Debugf("cmdAdd(): loaded config: %v", cfg)
 	if err != nil {
 		return err
 	}
+	logging.Debugf("cmdAdd(): loaded config: %v", cfg)
 
 	logging.Infof("cmdAdd(): getting container network namespace")
 	containerNs, err := ns.GetNS(args.Netns)
@@ -197,8 +197,7 @@ func cmdDel(args *skel.CmdArgs) error {
 	}
 
 	logging.Infof("cmdDel(): removing BPF program from device")
-	err = bpfHanfler.Cleanbpf(cfg.Device)
-	if err != nil {
+	if err := bpfHanfler.Cleanbpf(cfg.Device); err != nil {
 		err = fmt.Errorf("cmdDel(): error removing BPF program from device: %v", err)
 		logging.Errorf(err.Error())
 
@@ -241,7 +240,6 @@ func configureIPAM(args *skel.CmdArgs, cfg *netConfig, device netlink.Link, netn
 			if err != nil {
 				logging.Errorf("error while executing IPAM addition: %v", err)
 			}
-
 		}
 	}()
 
