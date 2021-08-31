@@ -63,8 +63,7 @@ func main() {
 			UpdateSignal:  make(chan bool),
 		}
 
-		err = pm.Init(poolConfig)
-		if err != nil {
+		if err := pm.Init(poolConfig); err != nil {
 			logging.Warningf("Error initializing pool: %v", pm.Name)
 			logging.Errorf("%v", err)
 		}
@@ -78,8 +77,7 @@ func main() {
 	logging.Infof("Received signal \"%v\"", s)
 	for _, pm := range dp.pools {
 		logging.Infof("Terminating %v", pm.Name)
-		err := pm.Terminate()
-		if err != nil {
+		if err := pm.Terminate(); err != nil {
 			logging.Errorf("Termination error: %v", err)
 		}
 	}

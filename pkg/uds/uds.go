@@ -103,8 +103,7 @@ func (h *handler) Init(protocol string, msgBufSize int, ctlBufSize int, timeout 
 	}
 
 	if h.timeout > 0 {
-		err = h.listener.SetDeadline(time.Now().Add(h.timeout))
-		if err != nil {
+		if err := h.listener.SetDeadline(time.Now().Add(h.timeout)); err != nil {
 			logging.Errorf("Error setting listener timeout: %v", err)
 			return func() { logging.Debugf("Closing Unix listener"); h.listener.Close() }, err
 		}
@@ -169,8 +168,7 @@ func (h *handler) Read() (string, int, error) {
 
 	// set connection timeout
 	if h.timeout > 0 {
-		err := h.conn.SetDeadline(time.Now().Add(h.timeout))
-		if err != nil {
+		if err := h.conn.SetDeadline(time.Now().Add(h.timeout)); err != nil {
 			logging.Errorf("Error setting connection timeout: %v", err)
 			return request, fd, err
 		}
