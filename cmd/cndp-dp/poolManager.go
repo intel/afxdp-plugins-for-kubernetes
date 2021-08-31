@@ -87,7 +87,10 @@ Terminate is called it terminate the PoolManager.
 */
 func (pm *PoolManager) Terminate() error {
 	pm.stopGRPC()
-	pm.cleanup()
+	err := pm.cleanup()
+	if err != nil {
+		logging.Infof("Cleanup error: %v", err)
+	}
 	logging.Infof(devicePrefix + "/" + pm.Name + " terminated")
 
 	return nil
@@ -104,19 +107,17 @@ func (pm *PoolManager) ListAndWatch(empty *pluginapi.Empty,
 	logging.Infof(devicePrefix+"/%s ListAndWatch started", pm.Name)
 
 	for {
-		select {
-		case <-pm.UpdateSignal:
-			resp := new(pluginapi.ListAndWatchResponse)
-			logging.Infof(devicePrefix+"/%s device list:", pm.Name)
+		<-pm.UpdateSignal
+		resp := new(pluginapi.ListAndWatchResponse)
+		logging.Infof(devicePrefix+"/%s device list:", pm.Name)
 
-			for _, dev := range pm.Devices {
-				logging.Infof("\t" + dev.ID + ", " + dev.Health)
-				resp.Devices = append(resp.Devices, dev)
-			}
+		for _, dev := range pm.Devices {
+			logging.Infof("\t" + dev.ID + ", " + dev.Health)
+			resp.Devices = append(resp.Devices, dev)
+		}
 
-			if err := stream.Send(resp); err != nil {
-				logging.Errorf("Failed to send stream to kubelet: %v", err)
-			}
+		if err := stream.Send(resp); err != nil {
+			logging.Errorf("Failed to send stream to kubelet: %v", err)
 		}
 	}
 }
@@ -239,8 +240,12 @@ func (pm *PoolManager) startGRPC() error {
 
 	pm.DpAPIServer = grpc.NewServer([]grpc.ServerOption{}...)
 	pluginapi.RegisterDevicePluginServer(pm.DpAPIServer, pm)
-	go pm.DpAPIServer.Serve(sock)
-
+	go func() {
+		err := pm.DpAPIServer.Serve(sock)
+		if err != nil {
+			logging.Errorf("API Server socket error: %v", err)
+		}
+	}()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	conn, err := grpc.DialContext(ctx, pm.DpAPISocket, grpc.WithInsecure(), grpc.WithBlock(),

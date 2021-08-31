@@ -186,7 +186,7 @@ func TestAllocate(t *testing.T) {
 			response, err := pm.Allocate(context.Background(), allocateRequest)
 
 			if err != nil {
-				//TODO
+				assert.FailNow(t, "Unexpected error during Allocate %v", err)
 			}
 
 			//TODO error
