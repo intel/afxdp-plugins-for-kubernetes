@@ -45,9 +45,8 @@ const (
 	requestFin     = "/fin"
 	responseFinAck = "/fin_ack"
 
-	responseBadRequest     = "/nak"
-	responseNotImplemented = "/nak"
-	responseError          = "/error"
+	responseBadRequest = "/nak"
+	responseError      = "/error"
 
 	udsProtocol    = "unixpacket" // "unix"=SOCK_STREAM, "unixdomain"=SOCK_DGRAM, "unixpacket"=SOCK_SEQPACKET
 	udsMsgBufSize  = 64
@@ -187,15 +186,23 @@ func (s *server) start() {
 			podName = strings.ReplaceAll(words[1], " ", "")
 			connected, err = s.validatePod(podName)
 			if err != nil {
-				logging.Errorf("Error validating pod "+podName+": ", err)
-				s.write(responseError)
+				logging.Errorf("Error validating host %s: %v", podName, err)
+				err := s.write(responseError)
+				if err != nil {
+					logging.Errorf("Connection write error: %v", err)
+				}
 			}
 		}
 		if connected {
-			s.podName = podName
-			s.write(responseHostOk)
+			err := s.write(responseHostOk)
+			if err != nil {
+				logging.Errorf("Connection write error: %v", err)
+			}
 		} else {
-			s.write(responseHostNak)
+			err := s.write(responseHostNak)
+			if err != nil {
+				logging.Errorf("Connection write error: %v", err)
+			}
 		}
 	}
 
@@ -325,12 +332,17 @@ func (s *server) handleBusyPollRequest(request string, fd int) error {
 
 	err = s.bpf.ConfigureBusyPoll(fd, timeout, budget)
 	if err != nil {
-		logging.Errorf("Pod "+s.podName+" - Error configuring busy poll: %v", err)
-		s.write(responseBusyPollNak)
+		logging.Errorf("Error configuring busy poll: %v", err)
+		err := s.write(responseBusyPollNak)
+		if err != nil {
+			logging.Errorf("Connection write error: %v", err)
+		}
 		return err
 	}
-
-	s.write(responseBusyPollAck)
+	err = s.write(responseBusyPollAck)
+	if err != nil {
+		logging.Errorf("Connection write error: %v", err)
+	}
 
 	return nil
 }

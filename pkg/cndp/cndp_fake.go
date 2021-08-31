@@ -46,7 +46,6 @@ Start is the public facing method for starting a Server.
 In this fakeServer it does nothing.
 */
 func (s *fakeServer) Start() {
-	return
 }
 
 /*
@@ -54,5 +53,4 @@ AddDevice appends a netdev and its associated XSK file descriptor to the Servers
 In this fakeServer it does nothing.
 */
 func (s *fakeServer) AddDevice(dev string, fd int) {
-	return
 }

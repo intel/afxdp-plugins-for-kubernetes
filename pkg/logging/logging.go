@@ -117,9 +117,8 @@ func Warningf(format string, a ...interface{}) {
 }
 
 // Errorf prints logging if logging level >= error
-func Errorf(format string, a ...interface{}) error {
+func Errorf(format string, a ...interface{}) {
 	Printf(ErrorLevel, format, a...)
-	return fmt.Errorf(format, a...)
 }
 
 // Panicf prints logging plus stack trace. This should be used only for unrecoverble error

@@ -74,14 +74,13 @@ func main() {
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-
-	select {
-	case s := <-sigs:
-		logging.Infof("Received signal \"%v\"", s)
-		for _, pm := range dp.pools {
-			logging.Infof("Terminating %v", pm.Name)
-			pm.Terminate()
+	s := <-sigs
+	logging.Infof("Received signal \"%v\"", s)
+	for _, pm := range dp.pools {
+		logging.Infof("Terminating %v", pm.Name)
+		err := pm.Terminate()
+		if err != nil {
+			logging.Errorf("Termination error: %v", err)
 		}
-		return
 	}
 }

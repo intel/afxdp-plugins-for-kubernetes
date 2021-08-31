@@ -325,7 +325,10 @@ func TestLogFunctions(t *testing.T) {
 			os.Stderr = origStdErr
 			stdW.Close()
 			var buf bytes.Buffer
-			io.Copy(&buf, stdR)
+			_, err = io.Copy(&buf, stdR)
+			if err != nil {
+			    assert.FailNow(t, "Unexpected IO Copy error %v", err)
+			}
 
 			if tc.expResultStdE != "" {
 				assert.Regexp(t, tc.expResultStdE, buf.String(), "Unexpected stderr log")
@@ -335,7 +338,10 @@ func TestLogFunctions(t *testing.T) {
 
 			if tc.expResultFile != "" {
 				logW.Close()
-				io.Copy(&buf, logR)
+				_, err = io.Copy(&buf, logR)
+				if err != nil {
+				    assert.FailNow(t, "Unexpected IO Copy error %v", err)
+				}
 				assert.Regexp(t, tc.expResultFile, buf.String(), "Unexpected file log")
 			}
 		})
@@ -515,7 +521,10 @@ func TestSetLogFile(t *testing.T) {
 			os.Stderr = origStdErr
 			stdW.Close()
 			var buf bytes.Buffer
-			io.Copy(&buf, stdR)
+			_, err = io.Copy(&buf, stdR)
+			if err != nil {
+			    assert.FailNow(t, "Unexpected IO Copy error %v", err)
+			}
 
 			if tc.expError == "" {
 				assert.Empty(t, buf.String(), "Unexpected error")
