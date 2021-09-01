@@ -20,13 +20,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	hostname, exists := os.LookupEnv("HOSTNAME")
+	if !exists {
+		os.Exit(1)
+	}
+
 	c, err := net.Dial(udsProtocol, "/tmp/cndp.sock")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer c.Close()
 
-	makeRequest("/connect, cndp-e2e-test", c)
+	makeRequest("/connect, " + hostname, c)
 	time.Sleep(2 * time.Second)
 
 	makeRequest("/version", c)
