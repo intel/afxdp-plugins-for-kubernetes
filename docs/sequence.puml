@@ -1,0 +1,159 @@
+@startuml
+
+skinparam sequenceGroupBorderThickness 1
+
+actor "User"
+participant "Linux"
+participant "Kubelet"
+box "Device Plugin"
+	participant "Device Plugin"
+	participant "UDS server"
+end box
+participant "CNI"
+participant "Pod/CNDP App"
+
+== Initialization ==
+autonumber
+
+"User" -> "Kubelet": network attachment definition (CNI config)
+"User" -> "Device Plugin": deploy
+activate "Device Plugin"
+
+"Device Plugin" -> "Device Plugin": config.json
+"Device Plugin" -> "Linux": net.Interfaces()
+activate "Device Plugin" #DarkRed
+note right #DarkRed: <color #White>discover resources</color>
+
+"Linux" --> "Device Plugin": interface list
+
+"Device Plugin" -> "Linux": ethtool.DriverName()
+activate "Device Plugin" #FireBrick
+note right #FireBrick: <color #White>loop interfaces, build device list</color>
+"Linux" --> "Device Plugin": driver
+deactivate "Device Plugin"
+
+"Device Plugin" [hidden]-> "Device Plugin"
+
+
+deactivate "Device Plugin"
+
+"Device Plugin" -> "Device Plugin": start GRPC
+"Device Plugin" -> "Kubelet": GRPC: register
+"Device Plugin" -> "Kubelet": GRPC: device list
+
+deactivate "Device Plugin"
+
+== Pod Creation ==
+autonumber
+
+"User" -> "Kubelet": create pod
+"Kubelet" -> "Device Plugin": GRPC: Allocate(ifname)
+activate "Device Plugin"
+
+"Device Plugin" -> "Linux": net.if_nametoindex(ifname)
+"Linux" --> "Device Plugin": if_index
+"Device Plugin" -> "Linux": bpf.xsk_setup_xdp_prog(if_index)
+"Linux" --> "Device Plugin": XSK file descriptor
+
+"Device Plugin" -> "Device Plugin": create UDS
+"Device Plugin" -> "UDS server" ** : create & start UDS server
+"Device Plugin" -> "UDS server" : ifname, XSK FD, UDS filepath
+hnote over "UDS server"
+	  listen for
+	  connection
+endhnote
+"Device Plugin" --> "Kubelet": GRPC: AllocateResponse(UDS mount path, pod env vars)
+
+deactivate "Device Plugin"
+
+autonumber stop
+"Kubelet" -[#deepSkyBlue]>> "Pod/CNDP App" : <color:deepSkyBlue>Kubelet starts creating the pod around now
+autonumber resume
+
+"Kubelet" -> "CNI" : cmdAdd(ifname, namespace, config)
+activate "CNI"
+"CNI" -> "CNI" : cni.IPAM
+"CNI" -> "Linux" : ethtool.filters(ifname)
+"CNI" -> "Pod/CNDP App" : place interface in pod netns
+"CNI" -> "Kubelet" : return 0
+deactivate "CNI"
+
+autonumber stop
+
+== Pod Running ==
+
+"Kubelet" -> "Pod/CNDP App" : start pod
+"Pod/CNDP App" -> "Pod/CNDP App" : application start
+activate "Pod/CNDP App"
+
+"Pod/CNDP App" -> "UDS server": /connect,hostname
+note right
+	CNDP application starts
+	UDS handshake begins
+end note
+activate "UDS server"
+"UDS server" -> "Kubelet": podresources.ListPodResourcesRequest()
+"Kubelet" --> "UDS server": podresources.ListPodResourcesResponse()
+"UDS server" -> "UDS server": validate hostname against ifname
+"UDS server" --> "Pod/CNDP App": /host_ok
+deactivate "UDS server"
+hnote over "UDS server"
+	listen for
+	request
+end note
+
+"Pod/CNDP App" -> "UDS server": /xsk_map_fd,ifname
+activate "UDS server"
+"UDS server" -> "UDS server": FD for ifname
+"UDS server" --> "Pod/CNDP App": /fd_ack,FD
+deactivate "UDS server"
+
+hnote over "UDS server"
+	listen for
+	request
+endhnote
+
+"Pod/CNDP App" -> "UDS server": /config_busy_poll,FD
+activate "UDS server"
+"UDS server" -> "Linux" : bpf.setsockopt(FD, BUSY_POLL)
+"Linux" --> "UDS server" : return 0
+"UDS server" --> "Pod/CNDP App": /config_busy_poll_ack
+deactivate "UDS server"
+
+hnote over "UDS server"
+	listen for
+	request
+endhnote
+
+"Pod/CNDP App" -> "UDS server": /fin
+activate "UDS server"
+"UDS server" --> "Pod/CNDP App": /fin_ack
+"Pod/CNDP App" [hidden]-> "Pod/CNDP App"
+note left: UDS handshake ends
+deactivate "UDS server"
+
+destroy "UDS server"
+
+== Pod Deletion ==
+autonumber
+
+"User" -> "Kubelet": delete pod
+"Kubelet" -> "Pod/CNDP App" : stop pod
+deactivate "Pod/CNDP App"
+"Kubelet" -> "CNI" : cmdDel(ifname, config)
+activate "CNI"
+"CNI" -> "Pod/CNDP App" : interface from pod to host netns
+"Pod/CNDP App" --> "CNI" : interface
+"CNI" -> "CNI" : clear IPAM
+"CNI" -> "Linux": net.if_nametoindex(ifname)
+"Linux" --> "CNI": if_index
+"CNI" -> "Linux": bpf.set_link_xdp_fd(if_index, -1)
+"Linux" --> "CNI": return 0
+"CNI" --> "Kubelet": return 0
+deactivate "CNI"
+
+"Kubelet" -> "Pod/CNDP App" : delete pod
+deactivate "Pod/CNDP App"
+
+
+@enduml
