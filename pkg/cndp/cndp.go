@@ -193,6 +193,7 @@ func (s *server) start() {
 			}
 		}
 		if connected {
+			s.podName = podName
 			if err := s.write(responseHostOk); err != nil {
 				logging.Errorf("Connection write error: %v", err)
 			}
