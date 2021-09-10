@@ -64,7 +64,7 @@ spec:
               memory: "200Mi"
           volumeMounts:
             - name: unixsock
-              mountPath: /tmp
+              mountPath: /tmp/cndp/
             - name: devicesock
               mountPath: /var/lib/kubelet/device-plugins/
             - name: resources
@@ -76,7 +76,7 @@ spec:
       volumes:
         - name: unixsock
           hostPath:
-            path: /tmp
+            path: /tmp/cndp/
         - name: devicesock
           hostPath:
             path: /var/lib/kubelet/device-plugins/

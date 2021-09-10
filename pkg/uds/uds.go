@@ -16,6 +16,7 @@
 package uds
 
 import (
+	"fmt"
 	"github.com/intel/cndp_device_plugin/pkg/logging"
 	"github.com/nu7hatch/gouuid"
 	"net"
@@ -23,6 +24,10 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+)
+
+const (
+	fileMode = os.FileMode(0600) // drw-------
 )
 
 /*
@@ -54,12 +59,17 @@ type handler struct {
 /*
 NewHandler returns an implementation of the Handler interface.
 */
-func NewHandler(directory string) Handler {
-	socket := generateSocketPath(directory)
+func NewHandler(directory string) (Handler, error) {
+	socket, err := generateSocketPath(directory)
+	if err != nil {
+		logging.Errorf("Error generating socket file path: %v", err)
+		return &handler{}, err
+	}
+
 	handler := &handler{
 		socket: socket,
 	}
-	return handler
+	return handler, nil
 }
 
 /*
@@ -254,8 +264,35 @@ func (h *handler) Write(response string, fd int) error {
 	return nil
 }
 
-func generateSocketPath(directory string) string {
+func generateSocketPath(directory string) (string, error) {
 	var sockPath string
+
+	//create directory if not exists, with correct file permissions
+	if err := os.MkdirAll(directory, fileMode); err != nil {
+		logging.Errorf("Error creating socket file directory %s: %v", directory, err)
+		return sockPath, err
+	}
+
+	//get directory info
+	fileInfo, err := os.Stat(directory)
+	if err != nil {
+		logging.Errorf("Error getting directory info %s: %v", directory, err)
+		return sockPath, err
+	}
+
+	//verify it is a directory, incase of pre existing file
+	if fileInfo.IsDir() != true {
+		err = fmt.Errorf("%s is not a directory", directory)
+		logging.Errorf(err.Error())
+		return sockPath, err
+	}
+
+	//verify the permissions are correct, incase of pre existing dir
+	if fileInfo.Mode().Perm() != fileMode {
+		err = fmt.Errorf("Incorrect permissions on directory %s", directory)
+		logging.Errorf(err.Error())
+		return sockPath, err
+	}
 
 	for {
 		sockName, err := uuid.NewV4()
@@ -270,7 +307,7 @@ func generateSocketPath(directory string) string {
 		logging.Debugf("%s already exists. Regenerating.", sockPath)
 	}
 
-	return sockPath
+	return sockPath, nil
 }
 
 func ctrlBufHasValue(s []byte) bool {
