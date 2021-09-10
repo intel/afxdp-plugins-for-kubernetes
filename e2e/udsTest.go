@@ -31,7 +31,7 @@ func main() {
 	}
 	defer c.Close()
 
-	makeRequest("/connect, " + hostname, c)
+	makeRequest("/connect, "+hostname, c)
 	time.Sleep(2 * time.Second)
 
 	makeRequest("/version", c)
