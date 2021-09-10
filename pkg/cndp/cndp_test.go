@@ -385,6 +385,42 @@ func TestStart(t *testing.T) {
 			},
 		},
 		{
+			//Put a null byte before an otherwise good connect request
+			testName:          "Null byte before good connect request (1)",
+			fakePodName:       "podA",
+			fakePodNamespace:  "default",
+			fakeResourceName:  "cndp/testing",
+			cndpServerDevType: "cndp/testing",
+			fakePodDevices:    []string{"devA", "devB"},
+			cndpServerDevices: []string{"devA", "devB"},
+			fakeRequests: map[int]string{
+				0: `\0` + requestConnect + ", podA",
+				1: requestFin,
+			},
+			expectedResponse: map[int]string{
+				0: responseHostNak,
+				1: "should not get " + responseFinAck + " as should not have connected",
+			},
+		},
+		{
+			//Put a null byte an otherwise good connect request
+			testName:          "Null byte before good connect request (2)",
+			fakePodName:       "podA",
+			fakePodNamespace:  "default",
+			fakeResourceName:  "cndp/testing",
+			cndpServerDevType: "cndp/testing",
+			fakePodDevices:    []string{"devA", "devB"},
+			cndpServerDevices: []string{"devA", "devB"},
+			fakeRequests: map[int]string{
+				0: "\\0" + requestConnect + ", podA",
+				1: requestFin,
+			},
+			expectedResponse: map[int]string{
+				0: responseHostNak,
+				1: "should not get " + responseFinAck + " as should not have connected",
+			},
+		},
+		{
 			//Put garbage before an otherwise good connect request
 			testName:          "Garbage before good connect request (1)",
 			fakePodName:       "podA",
@@ -475,6 +511,42 @@ func TestStart(t *testing.T) {
 			},
 		},
 		{
+			//Put a null byte after an otherwise good connect request
+			testName:          "Null byte after good connect request (1)",
+			fakePodName:       "podA",
+			fakePodNamespace:  "default",
+			fakeResourceName:  "cndp/testing",
+			cndpServerDevType: "cndp/testing",
+			fakePodDevices:    []string{"devA", "devB"},
+			cndpServerDevices: []string{"devA", "devB"},
+			fakeRequests: map[int]string{
+				0: requestConnect + ", podA" + `\0`,
+				1: requestFin,
+			},
+			expectedResponse: map[int]string{
+				0: responseHostNak,
+				1: "should not get " + responseFinAck + " as should not have connected",
+			},
+		},
+		{
+			//Put a null byte after an otherwise good connect request
+			testName:          "Null byte after good connect request (2)",
+			fakePodName:       "podA",
+			fakePodNamespace:  "default",
+			fakeResourceName:  "cndp/testing",
+			cndpServerDevType: "cndp/testing",
+			fakePodDevices:    []string{"devA", "devB"},
+			cndpServerDevices: []string{"devA", "devB"},
+			fakeRequests: map[int]string{
+				0: requestConnect + ", podA" + "\\0",
+				1: requestFin,
+			},
+			expectedResponse: map[int]string{
+				0: responseHostNak,
+				1: "should not get " + responseFinAck + " as should not have connected",
+			},
+		},
+		{
 			//Put garbage after an otherwise good connect request
 			testName:          "Garbage after good connect request (1)",
 			fakePodName:       "podA",
@@ -557,6 +629,78 @@ func TestStart(t *testing.T) {
 			cndpServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA,",
+				1: requestFin,
+			},
+			expectedResponse: map[int]string{
+				0: responseHostNak,
+				1: "should not get " + responseFinAck + " as should not have connected",
+			},
+		},
+		{
+			//Put null byte within otherwise good connect request
+			testName:          "Null byte within good connect request (1)",
+			fakePodName:       "podA",
+			fakePodNamespace:  "default",
+			fakeResourceName:  "cndp/testing",
+			cndpServerDevType: "cndp/testing",
+			fakePodDevices:    []string{"devA", "devB"},
+			cndpServerDevices: []string{"devA", "devB"},
+			fakeRequests: map[int]string{
+				0: requestConnect + `\0` + ", podA",
+				1: requestFin,
+			},
+			expectedResponse: map[int]string{
+				0: responseHostNak,
+				1: "should not get " + responseFinAck + " as should not have connected",
+			},
+		},
+		{
+			//Put null byte within otherwise good connect request
+			testName:          "Null byte within good connect request (2)",
+			fakePodName:       "podA",
+			fakePodNamespace:  "default",
+			fakeResourceName:  "cndp/testing",
+			cndpServerDevType: "cndp/testing",
+			fakePodDevices:    []string{"devA", "devB"},
+			cndpServerDevices: []string{"devA", "devB"},
+			fakeRequests: map[int]string{
+				0: requestConnect + "\\0" + ", podA",
+				1: requestFin,
+			},
+			expectedResponse: map[int]string{
+				0: responseHostNak,
+				1: "should not get " + responseFinAck + " as should not have connected",
+			},
+		},
+		{
+			//Null byte before connect
+			testName:          "Send a null byte (1)",
+			fakePodName:       "podA",
+			fakePodNamespace:  "default",
+			fakeResourceName:  "cndp/testing",
+			cndpServerDevType: "cndp/testing",
+			fakePodDevices:    []string{"devA", "devB"},
+			cndpServerDevices: []string{"devA", "devB"},
+			fakeRequests: map[int]string{
+				0: `\0`,
+				1: requestFin,
+			},
+			expectedResponse: map[int]string{
+				0: responseHostNak,
+				1: "should not get " + responseFinAck + " as should not have connected",
+			},
+		},
+		{
+			//Null byte before connect
+			testName:          "Send a null byte (2)",
+			fakePodName:       "podA",
+			fakePodNamespace:  "default",
+			fakeResourceName:  "cndp/testing",
+			cndpServerDevType: "cndp/testing",
+			fakePodDevices:    []string{"devA", "devB"},
+			cndpServerDevices: []string{"devA", "devB"},
+			fakeRequests: map[int]string{
+				0: "\\0",
 				1: requestFin,
 			},
 			expectedResponse: map[int]string{
@@ -1075,6 +1219,46 @@ func TestStart(t *testing.T) {
 			},
 		},
 		{
+			//Put null byte before an otherwise good FD request
+			testName:          "Null byte before good FD request (1)",
+			fakePodName:       "podA",
+			fakePodNamespace:  "default",
+			fakeResourceName:  "cndp/testing",
+			cndpServerDevType: "cndp/testing",
+			fakePodDevices:    []string{"devA", "devB"},
+			cndpServerDevices: []string{"devA", "devB"},
+			fakeRequests: map[int]string{
+				0: requestConnect + ", podA",
+				1: `\0` + requestFd + ", devA",
+				2: requestFin,
+			},
+			expectedResponse: map[int]string{
+				0: responseHostOk,
+				1: responseBadRequest,
+				2: responseFinAck,
+			},
+		},
+		{
+			//Put null byte before an otherwise good FD request
+			testName:          "Null byte before good FD request (2)",
+			fakePodName:       "podA",
+			fakePodNamespace:  "default",
+			fakeResourceName:  "cndp/testing",
+			cndpServerDevType: "cndp/testing",
+			fakePodDevices:    []string{"devA", "devB"},
+			cndpServerDevices: []string{"devA", "devB"},
+			fakeRequests: map[int]string{
+				0: requestConnect + ", podA",
+				1: "\\0" + requestFd + ", devA",
+				2: requestFin,
+			},
+			expectedResponse: map[int]string{
+				0: responseHostOk,
+				1: responseBadRequest,
+				2: responseFinAck,
+			},
+		},
+		{
 			//Put garbage before an otherwise good FD request
 			testName:          "Garbage before good FD request (1)",
 			fakePodName:       "podA",
@@ -1171,6 +1355,46 @@ func TestStart(t *testing.T) {
 			expectedResponse: map[int]string{
 				0: responseHostOk,
 				1: responseBadRequest,
+				2: responseFinAck,
+			},
+		},
+		{
+			//Put null byte after an otherwise good FD request
+			testName:          "Null byte after good FD request (1)",
+			fakePodName:       "podA",
+			fakePodNamespace:  "default",
+			fakeResourceName:  "cndp/testing",
+			cndpServerDevType: "cndp/testing",
+			fakePodDevices:    []string{"devA", "devB"},
+			cndpServerDevices: []string{"devA", "devB"},
+			fakeRequests: map[int]string{
+				0: requestConnect + ", podA",
+				1: requestFd + "," + `\0`,
+				2: requestFin,
+			},
+			expectedResponse: map[int]string{
+				0: responseHostOk,
+				1: responseFdNak,
+				2: responseFinAck,
+			},
+		},
+		{
+			//Put null byte after an otherwise good FD request
+			testName:          "Null byte after good FD request (2)",
+			fakePodName:       "podA",
+			fakePodNamespace:  "default",
+			fakeResourceName:  "cndp/testing",
+			cndpServerDevType: "cndp/testing",
+			fakePodDevices:    []string{"devA", "devB"},
+			cndpServerDevices: []string{"devA", "devB"},
+			fakeRequests: map[int]string{
+				0: requestConnect + ", podA",
+				1: requestFd + "," + "\\0",
+				2: requestFin,
+			},
+			expectedResponse: map[int]string{
+				0: responseHostOk,
+				1: responseFdNak,
 				2: responseFinAck,
 			},
 		},
@@ -1277,6 +1501,46 @@ func TestStart(t *testing.T) {
 		/***************************************************
 		Negative Tests - validate, but send garbage requests
 		***************************************************/
+		{
+			//Validate but then send null byte
+			testName:          "Validate and send null byte (1)",
+			fakePodName:       "podA",
+			fakePodNamespace:  "default",
+			fakeResourceName:  "cndp/testing",
+			cndpServerDevType: "cndp/testing",
+			fakePodDevices:    []string{"devA", "devB"},
+			cndpServerDevices: []string{"devA", "devB"},
+			fakeRequests: map[int]string{
+				0: requestConnect + ", podA",
+				1: `\0`,
+				2: requestFin,
+			},
+			expectedResponse: map[int]string{
+				0: responseHostOk,
+				1: responseBadRequest,
+				2: responseFinAck,
+			},
+		},
+		{
+			//Validate but then send null byte
+			testName:          "Validate and send null byte (2)",
+			fakePodName:       "podA",
+			fakePodNamespace:  "default",
+			fakeResourceName:  "cndp/testing",
+			cndpServerDevType: "cndp/testing",
+			fakePodDevices:    []string{"devA", "devB"},
+			cndpServerDevices: []string{"devA", "devB"},
+			fakeRequests: map[int]string{
+				0: requestConnect + ", podA",
+				1: "\\0",
+				2: requestFin,
+			},
+			expectedResponse: map[int]string{
+				0: responseHostOk,
+				1: responseBadRequest,
+				2: responseFinAck,
+			},
+		},
 		{
 			//Validate but then send garbage request
 			testName:          "Validate and send no request (1)",
