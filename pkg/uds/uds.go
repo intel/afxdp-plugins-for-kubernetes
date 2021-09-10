@@ -99,19 +99,31 @@ func (h *handler) Init(protocol string, msgBufSize int, ctlBufSize int, timeout 
 	h.listener, err = net.ListenUnix(protocol, addr)
 	if err != nil {
 		logging.Errorf("Error creating Unix listener for %s: %v", h.socket, err)
-		return func() { logging.Debugf("Closing Unix listener"); h.listener.Close() }, err
+		return func() {
+			logging.Debugf("Closing Unix listener")
+			h.listener.Close()
+			logging.Debugf("Removing socket file")
+			os.Remove(h.socket)
+		}, err
 	}
 
 	if h.timeout > 0 {
 		if err := h.listener.SetDeadline(time.Now().Add(h.timeout)); err != nil {
 			logging.Errorf("Error setting listener timeout: %v", err)
-			return func() { logging.Debugf("Closing Unix listener"); h.listener.Close() }, err
+			return func() {
+				logging.Debugf("Closing Unix listener")
+				h.listener.Close()
+				logging.Debugf("Removing socket file")
+				os.Remove(h.socket)
+			}, err
 		}
 	}
 
 	return func() {
 		logging.Debugf("Closing Unix listener")
 		h.listener.Close()
+		logging.Debugf("Removing socket file")
+		os.Remove(h.socket)
 	}, nil
 
 }
