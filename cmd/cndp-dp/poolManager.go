@@ -32,8 +32,8 @@ import (
 )
 
 const (
-	envVarDevs = "CNDP_DEVICES"
-	grpcTimeout  = 5*time.Second
+	envVarDevs  = "CNDP_DEVICES"
+	grpcTimeout = 5 * time.Second
 )
 
 /*

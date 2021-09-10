@@ -27,7 +27,7 @@ import (
 const (
 	podResSockDir  = "/var/lib/kubelet/pod-resources"
 	podResSockPath = podResSockDir + "/kubelet.sock"
-	grpcTimeout  = 5*time.Second
+	grpcTimeout    = 5 * time.Second
 )
 
 /*

@@ -16,7 +16,7 @@
 #include "log.h"
 #include "_cgo_export.h"
 
-//256 is the maximum number of characters for vsnprintf
+// 256 is the maximum number of characters for vsnprintf
 #define LOG_SIZE 256
 
 void Log_Debug(char *fmt, ...) {
