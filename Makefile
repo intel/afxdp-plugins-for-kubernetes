@@ -5,12 +5,12 @@ all: build test lint
 format:
 	@echo "******     Go Format     ******"
 	@echo
-	go fmt github.com/intel/cndp_device_plugin/...
+	-go fmt github.com/intel/cndp_device_plugin/...
 	@echo
 	@echo
 	@echo "******   Clang Format    ******"
 	@echo
-	clang-format -i -style=file pkg/bpf/*.c pkg/bpf/*.h
+	-clang-format -i -style=file pkg/bpf/*.c pkg/bpf/*.h
 	@echo
 	@echo
 
