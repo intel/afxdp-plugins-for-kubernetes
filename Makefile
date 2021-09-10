@@ -35,7 +35,7 @@ image: build
 	@echo
 	@echo
 
-deploy: image
+deploy: image undeploy
 	@echo "****** Deploy Daemonset  ******"
 	@echo
 	kubectl create -f ./deployments/daemonset.yml
