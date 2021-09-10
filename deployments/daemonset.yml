@@ -49,7 +49,12 @@ spec:
           image: cndp-device-plugin:latest
           imagePullPolicy: IfNotPresent
           securityContext:
-            privileged: true
+            capabilities:
+              drop:
+                - all
+              add:
+                - CAP_SYS_ADMIN
+                - CAP_NET_ADMIN
           resources:
             requests:
               cpu: "250m"

@@ -2,6 +2,29 @@
 
 A proof of concept Kubernetes device plugin and CNI plugin to provide AF_XDP networking to Kubernetes pods using Intel's Cloud Native Data Plane framework.
 
+## Prerequisites
+
+- Docker installed and running.
+	- All recent versions should work. Tested on `20.10.5`, `20.10.7`.
+	- **Note:** You may need to disable memlock on Docker.
+		Add the following section to `/etc/docker/daemon.json`:
+		```
+		"default-ulimits": {
+		"memlock": {
+			"Name": "memlock",
+			"Hard": -1,
+			"Soft": -1
+			}
+		}
+		```
+		Restart the Docker service: `systemctl restart docker.service`
+- Kubernetes installed an running.
+ 	- All recent versions should work. Tested on `1.20.2`, `1.21.1`.
+- A CNI network to serve as the [default network](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md#key-concepts) to the Kubernetes pods.
+	- Any CNI should work. Tested with [Flannel](https://github.com/flannel-io/flannel).
+- [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), to enable attaching multiple network interfaces to pods.
+	- [Multus quickstart guide.](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md)
+
 ## Clone and Build
 
 ```bash
@@ -15,7 +38,7 @@ Common dependencies and packages that are requried:
  - Clang Format - C Formatter (apt instal clang-format)
  - CLOC - cloc counts blank lines, comment lines, and physical lines of source code in many programming languages. (sudo apt-get install -y cloc)
 
-  ```
+```
 Two binaries will be placed in ./bin directory:
 - **cndp-dp** is the device plugin
 - **cndp** is the CNI plugin. This needs to be placed in `/opt/cni/bin/`
