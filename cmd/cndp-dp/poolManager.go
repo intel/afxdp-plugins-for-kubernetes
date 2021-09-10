@@ -130,7 +130,12 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 	response := pluginapi.AllocateResponse{}
 
 	logging.Infof("New allocate request. Creating new UDS server.")
-	cndpServer, udsPath := pm.ServerFactory.CreateServer(devicePrefix + "/" + pm.Name)
+	cndpServer, udsPath, err := pm.ServerFactory.CreateServer(devicePrefix + "/" + pm.Name)
+	if err != nil {
+		logging.Errorf("Error Creating new UDS server: %v", err)
+		return &response, err
+	}
+
 	logging.Infof("UDS socket path: %s", udsPath)
 
 	//loop each container

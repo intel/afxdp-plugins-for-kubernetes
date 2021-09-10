@@ -51,7 +51,7 @@ const (
 	udsProtocol    = "unixpacket" // "unix"=SOCK_STREAM, "unixdomain"=SOCK_DGRAM, "unixpacket"=SOCK_SEQPACKET
 	udsMsgBufSize  = 64
 	udsCtlBufSize  = 4
-	usdSockDir     = "/tmp/"
+	usdSockDir     = "/tmp/cndp_dp/" // if changing, remember to update daemonset to mount parent dir
 	udsIdleTimeout = 0 * time.Second //TODO make configurable
 )
 
@@ -71,7 +71,7 @@ container is created the factory will create a Server to serve the associated Un
 domain socket.
 */
 type ServerFactory interface {
-	CreateServer(deviceType string) (Server, string)
+	CreateServer(deviceType string) (Server, string, error)
 }
 
 /*
@@ -104,17 +104,23 @@ func NewServerFactory() ServerFactory {
 CreateServer creates, initialises, and returns an implementation of the Server interface.
 It also returns the filepath of the UDS being served.
 */
-func (f *serverFactory) CreateServer(deviceType string) (Server, string) {
+func (f *serverFactory) CreateServer(deviceType string) (Server, string, error) {
+	udsHandler, err := uds.NewHandler(usdSockDir)
+	if err != nil {
+		logging.Errorf("Error Creating new UDS server: %v", err)
+		return &server{}, "", err
+	}
+
 	server := &server{
 		podName:    "unvalidated",
 		deviceType: deviceType,
 		devices:    make(map[string]int),
-		uds:        uds.NewHandler(usdSockDir),
+		uds:        udsHandler,
 		bpf:        bpf.NewHandler(),
 		podRes:     resourcesapi.NewHandler(),
 	}
 
-	return server, server.uds.GetSocketPath()
+	return server, server.uds.GetSocketPath(), nil
 }
 
 /*

@@ -37,8 +37,8 @@ CreateServer creates, initialises, and returns an implementation of the Server i
 In this fakeServerFactory it returnss an empty fakeServer implementation and a hardcoded
 fake UDS filepath.
 */
-func (f *fakeServerFactory) CreateServer(deviceType string) (Server, string) {
-	return &fakeServer{}, "/tmp/fake-socket.sock"
+func (f *fakeServerFactory) CreateServer(deviceType string) (Server, string, error) {
+	return &fakeServer{}, "/tmp/fake-socket.sock", nil
 }
 
 /*

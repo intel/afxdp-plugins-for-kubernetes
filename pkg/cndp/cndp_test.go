@@ -37,8 +37,8 @@ func TestCreateNewServer(t *testing.T) {
 			expectedServer: &server{
 				deviceType: "cndp/device",
 				devices:    make(map[string]int),
-				uds:        uds.NewHandler("/tmp/fake-socket.sock"),
-				podRes:     resourcesapi.NewHandler(),
+				uds:        uds.NewFakeHandler(),
+				podRes:     resourcesapi.NewFakeHandler(),
 			},
 		},
 	}
