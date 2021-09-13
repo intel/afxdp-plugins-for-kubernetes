@@ -398,9 +398,8 @@ func (s *server) validatePod(podName string) (bool, error) {
 
 		for _, devType := range container.GetDevices() {
 			if devType.GetResourceName() == s.deviceType {
-				for _, device := range devType.GetDeviceIds() {
-					contDevs = append(contDevs, device)
-				}
+					contDevs = append(contDevs, devType.GetDeviceIds()...)
+
 			}
 		}
 
