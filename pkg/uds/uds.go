@@ -281,7 +281,7 @@ func generateSocketPath(directory string) (string, error) {
 	}
 
 	//verify it is a directory, incase of pre existing file
-	if fileInfo.IsDir() != true {
+	if !fileInfo.IsDir() {
 		err = fmt.Errorf("%s is not a directory", directory)
 		logging.Errorf(err.Error())
 		return sockPath, err

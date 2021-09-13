@@ -1,6 +1,6 @@
 .PHONY: all e2e
 
-all: build test lint
+all: build test static
 
 format:
 	@echo "******     Go Format     ******"
@@ -14,11 +14,17 @@ format:
 	@echo
 	@echo
 
-build: format
-	@echo "******     Build DP      ******"
+buildc:
+	@echo "******     Build BPF     ******"
 	@echo
 	gcc ./pkg/bpf/bpfWrapper.c -lbpf -c -o ./pkg/bpf/bpfWrapper.o
 	ar rs ./pkg/bpf/libwrapper.a ./pkg/bpf/bpfWrapper.o  &> /dev/null
+	@echo
+	@echo
+
+build: format buildc
+	@echo "******     Build DP      ******"
+	@echo
 	go build -o ./bin/cndp-dp ./cmd/cndp-dp
 	@echo
 	@echo
@@ -35,17 +41,17 @@ image: build
 	@echo
 	@echo
 
-deploy: image undeploy
-	@echo "****** Deploy Daemonset  ******"
-	@echo
-	kubectl create -f ./deployments/daemonset.yml
-	@echo
-	@echo
-
 undeploy:
 	@echo "******  Stop Daemonset   ******"
 	@echo
 	kubectl delete -f ./deployments/daemonset.yml --ignore-not-found=true
+	@echo
+	@echo
+
+deploy: image undeploy
+	@echo "****** Deploy Daemonset  ******"
+	@echo
+	kubectl create -f ./deployments/daemonset.yml
 	@echo
 	@echo
 
@@ -63,12 +69,31 @@ e2e: build
 	@echo
 	@echo
 
-lint:
-	@echo "******     Go Lint       ******"
+static:
+	@echo "******      Go Lint      ******"
 	@echo
 	golint -set_exit_status ./...
 	@echo
 	@echo
+	@echo "******   GolangCI-Lint   ******"
+	@echo
+	golangci-lint run
+	@echo
+	@echo
+	@echo "******      Go Vet       ******"
+	@echo
+	for pkg in $$(go list github.com/intel/cndp_device_plugin/...); do echo $$pkg && go vet $$pkg; done
+	@echo
+	@echo
+	@echo "******     Hadolint      ******"
+	@echo
+	for file in $$(find . -type f -iname "*dockerfile*"); do echo $$file && docker run --rm -i hadolint/hadolint < $$file; done
+	@echo
+	@echo
+	@echo "******    Shellcheck     ******"
+	@echo
+	for file in $$(find . -iname "*.sh"); do echo $$file && shellcheck $$file; done
+	
 
 cloc: format
 	@echo "******    Update CLOC    ******"
@@ -83,5 +108,7 @@ clean:
 	@echo
 	rm -f ./bin/cndp
 	rm -f ./bin/cndp-dp
+	rm -f ./pkg/bpf/bpfWrapper.o
+	rm -f ./pkg/bpf/libwrapper.a
 	@echo
 	@echo
