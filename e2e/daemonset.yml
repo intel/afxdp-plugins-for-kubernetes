@@ -26,7 +26,7 @@ metadata:
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: kube-cndp-device-plugin-amd64
+  name: kube-cndp-device-plugin-e2e
   namespace: kube-system
   labels:
     tier: node

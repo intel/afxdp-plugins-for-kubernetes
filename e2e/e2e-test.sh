@@ -4,6 +4,7 @@ set -e
 pids=( )
 run_dp="./../bin/cndp-dp"
 full_run=false
+daemonset=false
 
 cleanup() {
 	echo
@@ -18,13 +19,15 @@ cleanup() {
 	kubectl delete network-attachment-definition --ignore-not-found=true cndp-e2e-test &> /dev/null
 	echo "Delete Docker Image"
 	docker 2>/dev/null rmi cndp-e2e-test || true
-	echo "Stop Device Plugin"
+	echo "Stop Device Plugin on host (if running)"
 	if [ ${#pids[@]} -eq 0 ]; then
-		echo "No Device Plugin PID found"
+		echo "No Device Plugin PID found on host"
 	else
 		echo "Found Device Plugin PID. Stopping..."
 		(( ${#pids[@]} )) && kill "${pids[@]}"
 	fi
+	echo "Stop Daemonset Device Plugin (if running)"
+	kubectl delete --ignore-not-found=true -f ./daemonset.yml
 }
 
 build() {
@@ -39,9 +42,6 @@ build() {
 	kubectl create -f ./nad.yaml
 	echo "***** Docker Image *****"
 	docker build -t cndp-e2e-test -f Dockerfile .
-
-
-
 }
 
 run() {
@@ -49,7 +49,18 @@ run() {
 	echo "*****************************************************"
 	echo "*              Run Device Plugin                    *"
 	echo "*****************************************************"
-	$run_dp & pids+=( "$!" ) #run the DP and save the PID
+	if [ "$daemonset" = true ]; then
+		echo "***** Deploying Device Plugin as daemonset *****"
+		echo
+		echo "Note that device plugin logs will not be printed to screen on a daemonset run"
+		echo "Logs can be viewed separately in /var/log/cndp/cndp-dp-e2e.log"
+		echo
+		kubectl create -f ./daemonset.yml
+	else
+		echo "***** Starting Device Plugin as host binary *****"
+		echo
+		$run_dp & pids+=( "$!" ) #run the DP and save the PID
+	fi
 	sleep 10
 
 	echo
@@ -154,6 +165,7 @@ display_help() {
 	echo
 	echo "  -h, --help          Print Help (this message) and exit"
 	echo "  -f, --full          Multiple runs with multiple containers and multiple devices"
+	echo "  -d, --daemonset     Deploy the device plugin in a daemonset"
 	echo
 	exit 0
 }
@@ -167,6 +179,9 @@ then
 			;;
 			-f|--full)
 				full_run=true
+			;;
+			-d|--daemonset)
+				daemonset=true
 			;;
 			-?*)
 				echo "Unknown argument $1"
