@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	fileMode = os.FileMode(0600) // drw-------
+	fileMode = os.FileMode(0700) // drwx------
 )
 
 /*
@@ -265,36 +265,42 @@ func (h *handler) Write(response string, fd int) error {
 }
 
 func generateSocketPath(directory string) (string, error) {
-	var sockPath string
-
 	//create directory if not exists, with correct file permissions
 	if err := os.MkdirAll(directory, fileMode); err != nil {
 		logging.Errorf("Error creating socket file directory %s: %v", directory, err)
-		return sockPath, err
+		return "", err
 	}
 
 	//get directory info
 	fileInfo, err := os.Stat(directory)
 	if err != nil {
 		logging.Errorf("Error getting directory info %s: %v", directory, err)
-		return sockPath, err
+		return "", err
 	}
 
-	//verify it is a directory, incase of pre existing file
+	//verify it is a directory, in case of pre existing file
 	if !fileInfo.IsDir() {
 		err = fmt.Errorf("%s is not a directory", directory)
 		logging.Errorf(err.Error())
-		return sockPath, err
+		return "", err
 	}
 
-	//verify the permissions are correct, incase of pre existing dir
+	//verify the permissions are correct, in case of pre existing dir
 	if fileInfo.Mode().Perm() != fileMode {
 		err = fmt.Errorf("Incorrect permissions on directory %s", directory)
 		logging.Errorf(err.Error())
-		return sockPath, err
+		return "", err
 	}
 
+	var sockPath string
+	var count int = 0
 	for {
+		if count >= 5 {
+			err = fmt.Errorf("Error generating a unique UDS filepath")
+			logging.Errorf(err.Error())
+			return "", err
+		}
+
 		sockName, err := uuid.NewV4()
 		if err != nil {
 			logging.Errorf("%s", err)
@@ -304,7 +310,9 @@ func generateSocketPath(directory string) (string, error) {
 		if _, err := os.Stat(sockPath); os.IsNotExist(err) {
 			break
 		}
+
 		logging.Debugf("%s already exists. Regenerating.", sockPath)
+		count++
 	}
 
 	return sockPath, nil
