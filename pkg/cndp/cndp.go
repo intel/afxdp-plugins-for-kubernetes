@@ -51,7 +51,7 @@ const (
 	udsProtocol    = "unixpacket" // "unix"=SOCK_STREAM, "unixdomain"=SOCK_DGRAM, "unixpacket"=SOCK_SEQPACKET
 	udsMsgBufSize  = 64
 	udsCtlBufSize  = 4
-	usdSockDir     = "/tmp/cndp_dp/" // if changing, remember to update daemonset to mount parent dir
+	usdSockDir     = "/tmp/cndp_dp/" // if changing, remember to update daemonset to mount this dir
 	udsIdleTimeout = 0 * time.Second //TODO make configurable
 )
 
@@ -105,7 +105,8 @@ CreateServer creates, initialises, and returns an implementation of the Server i
 It also returns the filepath of the UDS being served.
 */
 func (f *serverFactory) CreateServer(deviceType string) (Server, string, error) {
-	udsHandler, err := uds.NewHandler(usdSockDir)
+	subDir := strings.ReplaceAll(deviceType, "/", "_")
+	udsHandler, err := uds.NewHandler(usdSockDir + subDir + "/")
 	if err != nil {
 		logging.Errorf("Error Creating new UDS server: %v", err)
 		return &server{}, "", err
