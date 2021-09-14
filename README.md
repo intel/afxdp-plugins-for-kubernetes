@@ -35,6 +35,12 @@ The following prerequisites are required to build and deploy the plugins:
 - **BPF Library**
 	- To load and unload the XDP program onto the network device.
 	- TODO - link to install steps
+- **GCC Compiler**
+	- To compile the C code used to call on the BPF Library.
+	- Install on Ubuntu `apt install build-essential`
+- **Binutils**
+	- Used in archiving of C code object file.
+	- Install on Ubuntu `apt install binutils`
 
 ### Development
 The following static analysis, linting and formatting tools are not required for building and deploying, but are built into some of the Make targets and enforced by CI. It is recommended to have these installed on your development system.
@@ -137,17 +143,17 @@ Output from CLOC (count lines of code) - github.com/AlDanial/cloc
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Go                              19            513            748           4319
-Markdown                         2             57              0            227
-YAML                             6             11             25            213
-Bourne Shell                     1             14              0            170
+Go                              19            515            748           4324
+YAML                             7             12             17            322
+Markdown                         2             59              0            269
+Bourne Shell                     1             11              0            188
 C                                2             48             25            159
-make                             1             12              2             62
+make                             1             13              0            101
 C/C++ Header                     2             11             24             15
 JSON                             1              0              0             10
 Dockerfile                       1              2              0              7
 -------------------------------------------------------------------------------
-SUM:                            35            668            824           5182
+SUM:                            36            671            814           5395
 -------------------------------------------------------------------------------
 
 ```
