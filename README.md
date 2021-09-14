@@ -1,10 +1,12 @@
-# CNDP Device Plugin
+# CNDP Kubernetes Plugins
 
 A proof of concept Kubernetes device plugin and CNI plugin to provide AF_XDP networking to Kubernetes pods using Intel's Cloud Native Data Plane framework.
 
 ## Prerequisites
+### Required
+The following prerequisites are required to build and deploy the plugins:
 
-- Docker installed and running.
+- **Docker**
 	- All recent versions should work. Tested on `20.10.5`, `20.10.7`.
 	- **Note:** You may need to disable memlock on Docker.
 		Add the following section to `/etc/docker/daemon.json`:
@@ -18,30 +20,66 @@ A proof of concept Kubernetes device plugin and CNI plugin to provide AF_XDP net
 		}
 		```
 		Restart the Docker service: `systemctl restart docker.service`
-- Kubernetes installed an running.
+- **Kubernetes**
  	- All recent versions should work. Tested on `1.20.2`, `1.21.1`.
-- A CNI network to serve as the [default network](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md#key-concepts) to the Kubernetes pods.
+- **A CNI network**
+	- To serve as the [default network](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md#key-concepts) to the Kubernetes pods.
 	- Any CNI should work. Tested with [Flannel](https://github.com/flannel-io/flannel).
-- [Multus CNI](https://github.com/k8snetworkplumbingwg/multus-cni), to enable attaching multiple network interfaces to pods.
+- **Multus CNI**
+	- To enable attaching multiple network interfaces to pods.
 	- [Multus quickstart guide.](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md)
+- **GoLang**
+	- To build the plugin binaries.
+	- All recent versions should work. Tested on `1.13.8`, TODO - more versions
+	- [Download and install](https://golang.org/doc/install).
+- **BPF Library**
+	- To load and unload the XDP program onto the network device.
+	- TODO - link to install steps
 
-## Clone and Build
+### Development
+The following static analysis, linting and formatting tools are not required for building and deploying, but are built into some of the Make targets and enforced by CI. It is recommended to have these installed on your development system.
 
-```bash
-git clone ssh://git@gitlab.devtools.intel.com:29418/OrchSW/CNO/containers_afxdp_network_device_plugin-.git
-cd containers_afxdp_network_device_plugin-/
-make build
+- **[GoFmt](https://pkg.go.dev/cmd/gofmt)**
+	- Applies standard formatting to Go code.
+	- Supplied with GoLang.
+- **[Go Vet](https://pkg.go.dev/cmd/vet)**
+	- Examines Go source code and reports suspicious constructs.
+	- Supplied with GoLang.
+- **[Go Lint](https://github.com/golang/lint)**
+	- A linter for Go source code.
+	- Install: `go get -u golang.org/x/lint/golint`
+	- *Note: Deprecated, but still useful in day to day development as a quick check*
+- **[GolangCI-Lint](https://golangci-lint.run/)**
+	- A Go linters aggregator.
+	- Install: `curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.42.1`
+- **[Hadolint](https://github.com/hadolint/hadolint)**
+	- A Dockerfile linter that helps build best practice into Docker images.
+	- Runs in Docker container.
+- **[Shellcheck](https://github.com/koalaman/shellcheck)**
+	- A static analysis tool for shell scripts.
+	- Install on Ubuntu: `apt install shellcheck`
+- **[Clang Format](https://clang.llvm.org/docs/ClangFormat.html)**
+	- Applies standard formatting to C code.
+	- Install on Ubuntu: `apt install clang-format`
+- **[CLOC](https://github.com/AlDanial/cloc)**
+	- Count Lines Of Code, counts lines of code in many programming languages.
+	- Install on Ubuntu `apt install cloc`
 
-Common dependencies and packages that are requried:
+## Build and Deploy
 
- - Go ($ wget -c https://dl.google.com/go/go1.17.linux-amd64.tar.gz -O - | sudo tar -xz -C /usr/local)
- - Clang Format - C Formatter (apt instal clang-format)
- - CLOC - cloc counts blank lines, comment lines, and physical lines of source code in many programming languages. (sudo apt-get install -y cloc)
+ - Clone this repo and `cd` into it.
+ - Run `make deploy`
 
-```
-Two binaries will be placed in ./bin directory:
-- **cndp-dp** is the device plugin
-- **cndp** is the CNI plugin. This needs to be placed in `/opt/cni/bin/`
+This following steps happen **automatically**:
+
+ 1. `make build` is executed, resulting in CNI and Device Plugin
+    binaries in `./bin`.
+2. `make image` is executed, resulting in the creation of a new Docker image that includes the Device Plugin binary.
+	- ***Note:** if testing on a multi-node cluster. In the current absence of a Docker registry, this image will need to be manually copied to all nodes (or rebuilt on all nodes using: `make image`).*
+3. The damenonset running the Device Plugin image will then be deployed on all nodes in the cluster.
+
+**Note:** The daemonset deploys the Device Plugin but does not yet deploy the CNI plugin.
+`./bin/cndp` should be copied to `/opt/cni/bin/` on all nodes. 
 
 ## Device Plugin Config
 The device plugin currently reads a list of devices from a config file, rather than actual device discovery. A sample config file can be found in `examples/sample-config/`
