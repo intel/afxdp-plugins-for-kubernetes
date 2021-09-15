@@ -2,3 +2,4 @@ bin
 *.o
 *.a
 .idea
+e2e/udsTest

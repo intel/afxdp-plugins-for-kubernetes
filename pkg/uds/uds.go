@@ -16,18 +16,12 @@
 package uds
 
 import (
-	"fmt"
 	"github.com/intel/cndp_device_plugin/pkg/logging"
-	"github.com/nu7hatch/gouuid"
 	"net"
 	"os"
 	"strconv"
 	"syscall"
 	"time"
-)
-
-const (
-	fileMode = os.FileMode(0700) // drwx------
 )
 
 /*
@@ -36,9 +30,9 @@ The interface exists for testing purposes, allowing unit tests to run without ma
 on a real socket.
 */
 type Handler interface {
-	Init(protocol string, msgBufSize int, ctlBufSize int, timeout time.Duration) (CancelFunc, error)
-	Listen() (CancelFunc, error)
-	GetSocketPath() string
+	Init(socketPath string, protocol string, msgBufSize int, ctlBufSize int, timeout time.Duration) error
+	Listen() (CleanupFunc, error)
+	Dial() (CleanupFunc, error)
 	Read() (string, int, error)
 	Write(response string, fd int) error
 }
@@ -47,140 +41,123 @@ type Handler interface {
 handler implements the Handler interface.
 */
 type handler struct {
-	socket     string
+	socketPath string
+	socketFile *os.File
+	addr       *net.UnixAddr
 	listener   *net.UnixListener
 	conn       *net.UnixConn
 	msgBufSize int
 	ctlBufSize int
 	udsFD      int
 	timeout    time.Duration
+	protocol   string
 }
 
 /*
 NewHandler returns an implementation of the Handler interface.
 */
-func NewHandler(directory string) (Handler, error) {
-	socket, err := generateSocketPath(directory)
-	if err != nil {
-		logging.Errorf("Error generating socket file path: %v", err)
-		return &handler{}, err
-	}
-
-	handler := &handler{
-		socket: socket,
-	}
-	return handler, nil
+func NewHandler() Handler {
+	return &handler{}
 }
 
 /*
-GetSocketPath returns the socket path that this Handler is serving
+CleanupFunc defines a function that we return from the other functions.
+This function is responsible for proper cleanup of the socket files.
 */
-func (h *handler) GetSocketPath() string {
-	return h.socket
-}
+type CleanupFunc func()
 
 /*
-CancelFunc defines a function that we return from the Init function.
-This function is responsible for proper cleanup of the socket file.
-*/
-type CancelFunc func()
-
-/*
-Init initialises the Unix domain socket and creates a Unix listener
-A CancelFunc function is returned. This function should be deferred by the calling code
+Init initialises the UDS Handler.
+A CleanupFunc function is returned. This function should be deferred by the calling code
 to ensure proper socket cleanup.
 */
-func (h *handler) Init(protocol string, msgBufSize int, ctlBufSize int, timeout time.Duration) (CancelFunc, error) {
+func (h *handler) Init(socketPath string, protocol string, msgBufSize int, ctlBufSize int, timeout time.Duration) error {
+	var err error
+
+	h.socketPath = socketPath
+	h.protocol = protocol
 	h.msgBufSize = msgBufSize
 	h.ctlBufSize = ctlBufSize
-
-	if timeout > 0 { //TODO test and comment //TODO is this if needed? no?
-		h.timeout = timeout
-	}
+	h.timeout = timeout
 
 	// resolve UDS address
-	addr, err := net.ResolveUnixAddr(protocol, h.socket)
+	h.addr, err = net.ResolveUnixAddr(h.protocol, h.socketPath)
 	if err != nil {
-		logging.Errorf("Error resolving Unix address %s: %v", h.socket, err)
-		return func() {}, err
+		logging.Errorf("Error resolving Unix address %s: %v", h.socketPath, err)
+		return err
 	}
 
+	return nil
+}
+
+/*
+Listen listens for and accepts new connections.
+A CleanupFunc function is returned. This function should be deferred by the calling code
+to ensure proper socket cleanup.
+*/
+func (h *handler) Listen() (CleanupFunc, error) {
+	var err error
+
 	// create UDS listener
-	h.listener, err = net.ListenUnix(protocol, addr)
+	h.listener, err = net.ListenUnix(h.protocol, h.addr)
 	if err != nil {
-		logging.Errorf("Error creating Unix listener for %s: %v", h.socket, err)
-		return func() {
-			logging.Debugf("Closing Unix listener")
-			h.listener.Close()
-			logging.Debugf("Removing socket file")
-			os.Remove(h.socket)
-		}, err
+		logging.Errorf("Error creating Unix listener for %s: %v", h.socketPath, err)
+		return func() { h.cleanup() }, err
 	}
 
 	if h.timeout > 0 {
 		if err := h.listener.SetDeadline(time.Now().Add(h.timeout)); err != nil {
 			logging.Errorf("Error setting listener timeout: %v", err)
-			return func() {
-				logging.Debugf("Closing Unix listener")
-				h.listener.Close()
-				logging.Debugf("Removing socket file")
-				os.Remove(h.socket)
-			}, err
+			return func() { h.cleanup() }, err
 		}
 	}
 
-	return func() {
-		logging.Debugf("Closing Unix listener")
-		h.listener.Close()
-		logging.Debugf("Removing socket file")
-		os.Remove(h.socket)
-	}, nil
-
-}
-
-/*
-Listen listens for and accepts new connections
-A CancelFunc function is returned. This function should be deferred by the calling code
-to ensure proper socket cleanup.
-*/
-func (h *handler) Listen() (CancelFunc, error) {
-	var err error
 	h.conn, err = h.listener.AcceptUnix()
 	if err != nil {
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 			logging.Errorf("Listener timed out: %v", err)
-			return func() { logging.Debugf("Closing connection"); h.conn.Close() }, err
+			return func() { h.cleanup() }, err
 		}
 		logging.Errorf("Listener Accept error: %v", err)
-		return func() { logging.Debugf("Closing connection"); h.conn.Close() }, err
+		return func() { h.cleanup() }, err
 	}
 
-	// get the UDS socket file descriptor, required for syscall.Recvmsg/Sendmsg
-	socketFile, err := h.conn.File()
+	if err := h.setUdsFD(); err != nil {
+		logging.Errorf("Error setting UDS file descriptor: %v", err)
+		return func() { h.cleanup() }, err
+	}
+
+	return func() { h.cleanup() }, nil
+}
+
+/*
+Dial creates a new connection
+A CleanupFunc function is returned. This function should be deferred by the calling code
+to ensure proper socket cleanup.
+*/
+func (h *handler) Dial() (CleanupFunc, error) {
+	var err error
+
+	// create UDS dialer
+	h.conn, err = net.DialUnix(h.protocol, nil, h.addr)
 	if err != nil {
-		logging.Errorf("Error getting socket file descriptor: %v", err)
-		return func() {
-			logging.Debugf("Closing connection")
-			h.conn.Close()
-			logging.Debugf("Closing socket file")
-			socketFile.Close()
-		}, err
+		logging.Errorf("Error dialling Unix connection on %s: %v", h.socketPath, err)
+		return func() { h.cleanup() }, err
 	}
-	h.udsFD = int(socketFile.Fd())
 
-	return func() {
-		logging.Debugf("Closing connection")
-		h.conn.Close()
-		logging.Debugf("Closing socket file")
-		socketFile.Close()
-	}, nil
+	if err := h.setUdsFD(); err != nil {
+		logging.Errorf("Error setting UDS file descriptor: %v", err)
+		return func() { h.cleanup() }, err
+	}
+
+	return func() { h.cleanup() }, nil
 
 }
 
 /*
-Read will read the incoming message from the UDS
-Message byte array is converted and returned as a string
-The control messages are also checked and returns the FD as an int, if present
+Read will read the incoming message from the UDS.
+Message byte array is converted and returned as a string.
+The control messages are also checked and returns the FD as an int, if present.
 */
 func (h *handler) Read() (string, int, error) {
 	var request = ""
@@ -213,26 +190,12 @@ func (h *handler) Read() (string, int, error) {
 			return request, fd, err
 		}
 
-		//TODO fmts should be a debug log
-		//TODO can new logging package handle %08b
-
-		//fmt.Println("ctrlMsgs:")
-		//fmt.Printf("%08b", ctrlMsgs)
-		//fmt.Println()
-
 		if len(ctrlMsgs) > 0 {
 			//Typically code would loop through ctrlMsgs and fds
 			//We're handling a single msg and single fd here, so it's msg[0] fds[0]
 			fds, _ := syscall.ParseUnixRights(&ctrlMsgs[0])
 			fd = fds[0]
 			logging.Debugf("Request contains file descriptor: %s", strconv.Itoa(fd))
-
-			//TODO fmt prints should be a debug log
-			//TODO can new logging package handle %08b
-
-			//fmt.Println("FD:")
-			//fmt.Printf("%08b", fd)
-			//fmt.Println()
 		}
 	} else {
 		logging.Debugf("Request contains no file descriptor")
@@ -264,58 +227,27 @@ func (h *handler) Write(response string, fd int) error {
 	return nil
 }
 
-func generateSocketPath(directory string) (string, error) {
-	//create directory if not exists, with correct file permissions
-	if err := os.MkdirAll(directory, fileMode); err != nil {
-		logging.Errorf("Error creating socket file directory %s: %v", directory, err)
-		return "", err
-	}
+func (h *handler) cleanup() {
+	logging.Debugf("Closing Unix listener")
+	h.listener.Close()
+	logging.Debugf("Closing connection")
+	h.conn.Close()
+	logging.Debugf("Closing socket file")
+	h.socketFile.Close()
+	logging.Debugf("Removing socket file")
+	os.Remove(h.socketPath)
+}
 
-	//get directory info
-	fileInfo, err := os.Stat(directory)
+func (h *handler) setUdsFD() error {
+	var err error
+
+	h.socketFile, err = h.conn.File()
 	if err != nil {
-		logging.Errorf("Error getting directory info %s: %v", directory, err)
-		return "", err
+		logging.Errorf("Error getting socket file descriptor: %v", err)
+		return err
 	}
-
-	//verify it is a directory, in case of pre existing file
-	if !fileInfo.IsDir() {
-		err = fmt.Errorf("%s is not a directory", directory)
-		logging.Errorf(err.Error())
-		return "", err
-	}
-
-	//verify the permissions are correct, in case of pre existing dir
-	if fileInfo.Mode().Perm() != fileMode {
-		err = fmt.Errorf("Incorrect permissions on directory %s", directory)
-		logging.Errorf(err.Error())
-		return "", err
-	}
-
-	var sockPath string
-	var count int = 0
-	for {
-		if count >= 5 {
-			err = fmt.Errorf("Error generating a unique UDS filepath")
-			logging.Errorf(err.Error())
-			return "", err
-		}
-
-		sockName, err := uuid.NewV4()
-		if err != nil {
-			logging.Errorf("%s", err)
-		}
-
-		sockPath = directory + sockName.String() + ".sock"
-		if _, err := os.Stat(sockPath); os.IsNotExist(err) {
-			break
-		}
-
-		logging.Debugf("%s already exists. Regenerating.", sockPath)
-		count++
-	}
-
-	return sockPath, nil
+	h.udsFD = int(h.socketFile.Fd())
+	return nil
 }
 
 func ctrlBufHasValue(s []byte) bool {

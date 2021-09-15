@@ -1,141 +1,99 @@
 package main
 
 import (
-	"log"
-	"net"
+	"github.com/intel/cndp_device_plugin/pkg/uds"
 	"os"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 )
 
-const udsProtocol = "unixpacket"
+const (
+	udsProtocol    = "unixpacket"
+	udsPath        = "/tmp/cndp.sock"
+	udsMsgBufSize  = 64
+	udsCtlBufSize  = 4
+	udsIdleTimeout = 0 * time.Second
+	requestDelay   = 100 * time.Millisecond // not required but keeps things in nice order when DP and this test app are both printing to screen
+)
+
+var udsHandler uds.Handler
 
 func main() {
-
 	//Get environment variable device values
-	deviceEnvVar, exists := os.LookupEnv("CNDP_DEVICES")
+	devicesVar, exists := os.LookupEnv("CNDP_DEVICES")
 	if !exists {
+		println("Test App Error: Devices env var does not exist")
 		os.Exit(1)
 	}
+	devices := strings.Split(devicesVar, " ")
 
 	hostname, exists := os.LookupEnv("HOSTNAME")
 	if !exists {
+		println("Test App Error: Hostname env var does not exist")
 		os.Exit(1)
 	}
 
-	c, err := net.Dial(udsProtocol, "/tmp/cndp.sock")
-	if err != nil {
-		log.Fatal(err)
+	udsHandler = uds.NewHandler()
+
+	// init
+	if err := udsHandler.Init(udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, udsIdleTimeout); err != nil {
+		println("Test App Error: Error Initialising UDS server: ", err)
+		os.Exit(1)
 	}
-	defer c.Close()
 
-	makeRequest("/connect, "+hostname, c)
-	time.Sleep(2 * time.Second)
+	cleanup, err := udsHandler.Dial()
+	if err != nil {
+		println("Test App Error: UDS Dial error:: ", err)
+		cleanup()
+		os.Exit(1)
+	}
+	defer cleanup()
 
-	makeRequest("/version", c)
-	time.Sleep(2 * time.Second)
+	// connect and verify pod hostname
+	makeRequest("/connect, " + hostname)
+	time.Sleep(requestDelay)
 
-	devices := strings.Split(deviceEnvVar, " ")
+	// request version
+	makeRequest("/version")
+	time.Sleep(requestDelay)
 
+	// request XSK map FD for all devices
 	for _, dev := range devices {
-		devReq := "/xsk_map_fd, " + dev
-		makeRequestFD(devReq, c)
-		time.Sleep(2 * time.Second)
+		request := "/xsk_map_fd, " + dev
+		makeRequest(request)
+		time.Sleep(requestDelay)
 	}
 
-	makeRequestFD("/xsk_map_fd, bad-device", c)
-	time.Sleep(2 * time.Second)
+	// request an unknown device
+	makeRequest("/xsk_map_fd, bad-device")
+	time.Sleep(requestDelay)
 
-	makeRequest("/bad-request", c)
-	time.Sleep(2 * time.Second)
+	// send a bad request
+	makeRequest("/bad-request")
+	time.Sleep(requestDelay)
 
-	makeRequest("/fin", c)
-	time.Sleep(2 * time.Second)
-
+	// finish
+	makeRequest("/fin")
+	time.Sleep(requestDelay)
 }
 
-func makeRequest(request string, c net.Conn) {
-
-	buf := make([]byte, 1024)
-
-	_, err := c.Write([]byte(request))
-	if err != nil {
-		println("Write error: ", err)
-	}
-
-	n, err := c.Read(buf[:])
-	if err != nil {
-		println("Read error: ", err)
-	}
-
+func makeRequest(request string) {
 	println()
-	println("Request: " + request)
-	println("Response:", string(buf[0:n]))
-	println()
-}
+	println("Test App - Request: " + request)
 
-func makeRequestFD(request string, c net.Conn) {
-
-	_, err := c.Write([]byte(request))
-	if err != nil {
-		println("Write error: ", err)
+	if err := udsHandler.Write(request, -1); err != nil {
+		println("Test App - Write error: ", err)
 	}
 
-	conn := c.(*net.UnixConn)
-
-	fd, response, err := getFD(conn)
+	response, fd, err := udsHandler.Read()
 	if err != nil {
-		log.Fatal(err)
+		println("Test App - Read error: ", err)
 	}
 
-	println()
-	println("Request: " + request)
-	println("Response:", response)
+	println("Test App - Response: " + response)
 	if fd > 0 {
-		println("File Descriptor:", strconv.Itoa(fd))
-	} else {
-		println("File Descriptor: NA")
+		println("Test App - File Descriptor:", strconv.Itoa(fd))
 	}
 	println()
-}
-
-func getFD(conn *net.UnixConn) (int, string, error) {
-
-	// get the underlying socket
-	socketFile, err := conn.File()
-	if err != nil {
-		println("Socket error: ", err)
-		return 0, "", err
-	}
-	defer socketFile.Close()
-	socketFD := int(socketFile.Fd())
-
-	// recvmsg
-	rights := make([]byte, syscall.CmsgSpace(4))
-	msgBuf := make([]byte, 128)
-
-	n, _, _, _, err := syscall.Recvmsg(socketFD, msgBuf, rights, 0)
-	if err != nil {
-		println("Recvmsg error: ", err)
-		return 0, "", err
-	}
-
-	msg := string(msgBuf[0:n])
-
-	if msg == "/fd_ack" {
-		// parse control msgs
-		var msgs []syscall.SocketControlMessage
-		msgs, err = syscall.ParseSocketControlMessage(rights)
-		//should be looping through msgs and FDs
-		//but I know it's a single FD, so it's msg[0] fds[0]
-		fds, _ := syscall.ParseUnixRights(&msgs[0])
-		fd := fds[0]
-		return fd, msg, err
-	} else if msg == "/fd_nak" {
-		return -1, msg, err
-	}
-
-	return -1, "unexpected reply", err
 }

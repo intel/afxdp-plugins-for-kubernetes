@@ -16,11 +16,14 @@
 package cndp
 
 import (
+	"fmt"
 	"github.com/intel/cndp_device_plugin/pkg/bpf"
 	"github.com/intel/cndp_device_plugin/pkg/logging"
 	"github.com/intel/cndp_device_plugin/pkg/resourcesapi"
 	"github.com/intel/cndp_device_plugin/pkg/uds"
+	"github.com/nu7hatch/gouuid"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -48,11 +51,12 @@ const (
 	responseBadRequest = "/nak"
 	responseError      = "/error"
 
-	udsProtocol    = "unixpacket" // "unix"=SOCK_STREAM, "unixdomain"=SOCK_DGRAM, "unixpacket"=SOCK_SEQPACKET
 	udsMsgBufSize  = 64
 	udsCtlBufSize  = 4
-	usdSockDir     = "/tmp/cndp_dp/" // if changing, remember to update daemonset to mount this dir
-	udsIdleTimeout = 0 * time.Second //TODO make configurable
+	udsProtocol    = "unixpacket"      // "unix"=SOCK_STREAM, "unixdomain"=SOCK_DGRAM, "unixpacket"=SOCK_SEQPACKET
+	usdSockDir     = "/tmp/cndp_dp/"   // if changing, remember to update daemonset to mount this dir
+	udsDirFileMode = os.FileMode(0700) // drwx------
+	udsIdleTimeout = 0 * time.Second   // TODO make configurable
 )
 
 /*
@@ -81,6 +85,7 @@ type server struct {
 	podName    string
 	deviceType string
 	devices    map[string]int
+	udsPath    string
 	uds        uds.Handler
 	bpf        bpf.Handler
 	podRes     resourcesapi.Handler
@@ -106,9 +111,9 @@ It also returns the filepath of the UDS being served.
 */
 func (f *serverFactory) CreateServer(deviceType string) (Server, string, error) {
 	subDir := strings.ReplaceAll(deviceType, "/", "_")
-	udsHandler, err := uds.NewHandler(usdSockDir + subDir + "/")
+	udsPath, err := generateSocketPath(usdSockDir + subDir + "/")
 	if err != nil {
-		logging.Errorf("Error Creating new UDS server: %v", err)
+		logging.Errorf("Error generating socket file path: %v", err)
 		return &server{}, "", err
 	}
 
@@ -116,12 +121,13 @@ func (f *serverFactory) CreateServer(deviceType string) (Server, string, error) 
 		podName:    "unvalidated",
 		deviceType: deviceType,
 		devices:    make(map[string]int),
-		uds:        udsHandler,
+		udsPath:    udsPath,
+		uds:        uds.NewHandler(),
 		bpf:        bpf.NewHandler(),
 		podRes:     resourcesapi.NewHandler(),
 	}
 
-	return server, server.uds.GetSocketPath(), nil
+	return server, udsPath, nil
 }
 
 /*
@@ -145,31 +151,28 @@ It listens for and serves a single connection. Across this connection it validat
 and serves XSK file descriptors to the CNDP app within the pod.
 */
 func (s *server) start() {
-	logging.Debugf("Initialising Unix domain socket: " + s.uds.GetSocketPath())
+	logging.Debugf("Initialising Unix domain socket: " + s.udsPath)
 
 	// init
-	closeListener, err := s.uds.Init(udsProtocol, udsMsgBufSize, udsCtlBufSize, udsIdleTimeout)
-	if err != nil {
+	if err := s.uds.Init(s.udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, udsIdleTimeout); err != nil {
 		logging.Errorf("Error Initialising UDS: %v", err)
-		closeListener()
 		return
 	}
-	defer closeListener()
 
 	logging.Infof("Unix domain socket initialised. Listening for new connection.")
 
-	closeConnection, err := s.uds.Listen()
+	cleanup, err := s.uds.Listen()
 	if err != nil {
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 			logging.Errorf("Listener timed out: %v", err)
-			closeConnection()
+			cleanup()
 			return
 		}
 		logging.Errorf("Listener Accept error: %v", err)
-		closeConnection()
+		cleanup()
 		return
 	}
-	defer closeConnection()
+	defer cleanup()
 
 	logging.Infof("New connection accepted. Waiting for requests.")
 
@@ -453,4 +456,58 @@ func (s *server) validatePod(podName string) (bool, error) {
 
 	logging.Warningf("Pod " + podName + " could not be validated for this UDS connection")
 	return false, nil
+}
+
+func generateSocketPath(directory string) (string, error) {
+	//create directory if not exists, with correct file permissions
+	if err := os.MkdirAll(directory, udsDirFileMode); err != nil {
+		logging.Errorf("Error creating socket file directory %s: %v", directory, err)
+		return "", err
+	}
+
+	//get directory info
+	fileInfo, err := os.Stat(directory)
+	if err != nil {
+		logging.Errorf("Error getting directory info %s: %v", directory, err)
+		return "", err
+	}
+
+	//verify it is a directory, in case of pre existing file
+	if !fileInfo.IsDir() {
+		err = fmt.Errorf("%s is not a directory", directory)
+		logging.Errorf(err.Error())
+		return "", err
+	}
+
+	//verify the permissions are correct, in case of pre existing dir
+	if fileInfo.Mode().Perm() != udsDirFileMode {
+		err = fmt.Errorf("Incorrect permissions on directory %s", directory)
+		logging.Errorf(err.Error())
+		return "", err
+	}
+
+	var sockPath string
+	var count int = 0
+	for {
+		if count >= 5 {
+			err = fmt.Errorf("Error generating a unique UDS filepath")
+			logging.Errorf(err.Error())
+			return "", err
+		}
+
+		sockName, err := uuid.NewV4()
+		if err != nil {
+			logging.Errorf("%s", err)
+		}
+
+		sockPath = directory + sockName.String() + ".sock"
+		if _, err := os.Stat(sockPath); os.IsNotExist(err) {
+			break
+		}
+
+		logging.Debugf("%s already exists. Regenerating.", sockPath)
+		count++
+	}
+
+	return sockPath, nil
 }

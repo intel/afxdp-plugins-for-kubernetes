@@ -43,28 +43,27 @@ func NewFakeHandler() FakeHandler {
 }
 
 /*
-GetSocketPath returns the socket path that this Handler is serving.
-In this fakeHandler it returns a fake hardcoded path.
-*/
-func (f *fakeHandler) GetSocketPath() string {
-	return "/tmp/fake-socket.sock"
-}
-
-/*
 Init should initialises the Unix domain socket.
 In this fakeHandler it resets some counters and inits a map for recording calls to the Write() function.
 */
-func (f *fakeHandler) Init(protocol string, msgbufSize int, ctlBufSize int, timeout time.Duration) (CancelFunc, error) {
+func (f *fakeHandler) Init(socketPath string, protocol string, msgbufSize int, ctlBufSize int, timeout time.Duration) error {
 	f.actualResponses = make(map[int]string)
 	f.counter = 0
-	return func() {}, nil
+	return nil
 }
 
 /*
 Listen listens for and accepts new connections.
 In this fakeHandler it does nothing.
 */
-func (f *fakeHandler) Listen() (CancelFunc, error) {
+func (f *fakeHandler) Listen() (CleanupFunc, error) {
+	return func() {}, nil
+}
+
+/*
+Dial is TODO
+*/
+func (f *fakeHandler) Dial() (CleanupFunc, error) {
 	return func() {}, nil
 }
 
