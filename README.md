@@ -27,20 +27,21 @@ The following prerequisites are required to build and deploy the plugins:
 	- Any CNI should work. Tested with [Flannel](https://github.com/flannel-io/flannel).
 - **Multus CNI**
 	- To enable attaching multiple network interfaces to pods.
-	- [Multus quickstart guide.](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md)
+	- [Multus quickstart guide](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md).
 - **GoLang**
 	- To build the plugin binaries.
-	- All recent versions should work. Tested on `1.13.8`, TODO - more versions
+	- All recent versions should work. Tested on `1.13.8`, `1.15.15` and `1.17.1`.
 	- [Download and install](https://golang.org/doc/install).
-- **BPF Library**
+- **Libbpf**
 	- To load and unload the XDP program onto the network device.
-	- TODO - link to install steps
+	- Install on Ubuntu 20.10+: `apt install libbpf-dev`
+	- Older versions: [Install from source](https://github.com/libbpf/libbpf#build).
 - **GCC Compiler**
 	- To compile the C code used to call on the BPF Library.
-	- Install on Ubuntu `apt install build-essential`
+	- Install on Ubuntu: `apt install build-essential`
 - **Binutils**
 	- Used in archiving of C code object file.
-	- Install on Ubuntu `apt install binutils`
+	- Install on Ubuntu: `apt install binutils`
 
 ### Development
 The following static analysis, linting and formatting tools are not required for building and deploying, but are built into some of the Make targets and enforced by CI. It is recommended to have these installed on your development system.
@@ -69,69 +70,95 @@ The following static analysis, linting and formatting tools are not required for
 	- Install on Ubuntu: `apt install clang-format`
 - **[CLOC](https://github.com/AlDanial/cloc)**
 	- Count Lines Of Code, counts lines of code in many programming languages.
-	- Install on Ubuntu `apt install cloc`
+	- Install on Ubuntu: `apt install cloc`
 
 ## Build and Deploy
 
  - Clone this repo and `cd` into it.
- - Run `make deploy`
+ - Optional: Update configuration. See [Device Plugin Config](#device-plugin-config).
+ - Run `make deploy`.
 
-These following steps happen **automatically**:
+The following steps happen **automatically**:
 
 1. `make build` is executed, resulting in CNI and Device Plugin binaries in `./bin`.
 2. `make image` is executed, resulting in the creation of a new Docker image that includes the CNI and Device Plugin binaries.
 	- ***Note:** if testing on a multi-node cluster. The current absence of a Docker registry means this image will need to be manually copied to all nodes (or rebuilt on all nodes using: `make image`).*
 3. The damenonset will run on all nodes, installing the CNI and starting the Device Plugin running on each node.
 
+The CNI and Device Plugin are now deployed.
+
+#### Running Pods
+
+- Create a network attachment definition file. This is the config for the CNI plugin.
+	- An example file can be found under [examples/network-attachment-definition.yaml](./examples/network-attachment-definition.yaml)
+	- Change the config if necessary. See comments in the example file.
+	- `kubectl create -f network-attachment-definition.yaml`
+- Create a pod spec:
+	- An example pod spec can be found under [examples/pod-spec.yaml](./examples/pod-spec.yaml)
+	- Configure the pod spec to use a suitable Docker image and to reference the network attachment definition as well as the resource type from the Device Plugin. See comments in the example file.
+	- `kubectl create -f pod-spec.yaml`
+
 
 ## Device Plugin Config
-The device plugin currently reads a list of devices from a config file, rather than actual device discovery. A sample config file can be found in `examples/sample-config/`
-For actual testing with the CNI, the config file should be updated to include only the names of real netdevs that exist on the node.
-By default the device plugin will search for `config.json` in the current directory. An alternative path can be provided using the `-config` flag, e.g.
-```bash
-./bin/cndp-dp -config ./examples/sample-config/config.json
+Under normal circumstances the device plugin config is set as part of a config map at the top of the [daemonset.yml](./deployments/daemonset.yml) file.
+
+The device plugin binary can also be run manually on the host for development and testing purposes. In these scenarios the device plugin will search for a `config.json` file in its current directory, or the device plugin can be pointed to a config file using the `-config` flag followed by a filepath. 
+
+### Default Behaviour
+If no config is given, the default behaviour of the device plugin is to discover AF_XDP capable devices on the node and create device pools based on driver type.
+For example, a host with a single 4-port X710 NIC will result in 4 devices being added to the `cndp/i40e` pool.
+
+### Driver Pools
+It is possible to have multiple driver types in a single device pool. The example below will result in a pool named `cndp/intel` that contains all the x710 and all E810 devices on the node.
+
+```
+{
+    "pools" : [
+        {
+            "name" : "intel",
+            "drivers" : ["i40e", "E810"]
+        }
+    ]
+}
 ```
 
+### Device Pools
+It is possible to assign individual devices to a pool. The example below will generate a pool named `cndp/test` with the two listed devices.
+This is not scalable over many nodes and is intended only for development and testing purposes.
 
-# Logging Overview
-
-This logging framework consists of several customisable features. This is particularly helpful for debugging and helps support learning of code processes and its configurations. 
-
-
-
-Logging configurations for CNI and Device Plugin are devised in separate files:
-- **cndp-dp:**  DP Config                   `/examples/e2e-test/config.json`
-- **cndp-cni:** networkAttachmentDefinition `/examples/e2e-test/nad.yaml`
-
-## Logging Level
-
-Specifying a logging level enables filtering and differentiation of log events based on severity.
-```bash
-"logLevel": "debug",
+```
+{
+    "pools" : [
+        {
+            "name" : "test",
+            "devices" : ["ens801f0", "ens801f1"],
+        }
+    ]
+}
 ```
 
+### Logging
+A log file and log level can be configured for the device plugin. As above, these are set in the config map at the top of the [daemonset.yml](./deployments/daemonset.yml) file. Or, as above, a `config.json` file.
+- The log file is set using `logFile`. This file should be placed under `/var/log/cndp/`. 
+- The log level is set using `logLevel`. Available options are:
+	- `error` - Only logs errors.
+	- `warning` - Logs errors and warnings.
+	- `info` - Logs errors, warnings and basic info about the operation of the device plugin.
+	- `debug` - Logs all of the above along with additional in-depth info about the operation of the device plugin.
+- Example config including log settings:
 
-As illustrated above, the default logging level has been set to ```debug```, this is the maximum level of verbosity. Increasing the logging level reduces filtering and severity of log entries, meaning more basic indications are captured in the log output.  
-
-•	```panic ```: The application has encountered a severe problem and will exit immediately.
-
-•	```error ```: A defect has occurred i.e., invalid input or inability to access a particular service. The application will eventually exit the code.
-
-•	```warning ```: A defect has occurred i.e., invalid input or inability to access a particular service. Application will continue irrespective of the unusual event.
-
-•	```info ```: Basic information, indication of major code paths.
-
-•	```debug ```: Additional information, indication of minor code branches.
-
-## Writing to a Log File
-There is also an option to log to a file on the file system. 
-The file will be created on the node executing the CNI or Device Plugin.
-
-```bash
-"logFile": "debug",
-````
-The log file path can be configured via the logFile field. The default log file path for both the CNI and Device Plugin are set to ```/var/log/```.
-
+```
+{
+    "logLevel": "debug",
+    "logFile": "/var/log/cndp/cndp-dp.log",
+    "pools" : [
+        {
+            "name" : "i40e",
+            "drivers" : ["i40e"]
+        }
+    ]
+}
+```
 
 ## CLOC
 Output from CLOC (count lines of code) - github.com/AlDanial/cloc 
@@ -140,17 +167,17 @@ Output from CLOC (count lines of code) - github.com/AlDanial/cloc
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Go                              19            472            779           4290
-YAML                             7             12             17            332
-Markdown                         2             59              0            266
+Go                              19            464            729           4294
+YAML                             9             12             17            373
+Markdown                         2             52              0            300
 Bourne Shell                     2             13              0            201
-C                                2             32             29            141
+C                                2             31             29            141
 make                             1             13              0            101
 C/C++ Header                     2             10             28             28
 JSON                             1              0              0             10
 Dockerfile                       1              0              0              3
 -------------------------------------------------------------------------------
-SUM:                            37            611            853           5372
+SUM:                            39            595            803           5451
 -------------------------------------------------------------------------------
 
 ```
