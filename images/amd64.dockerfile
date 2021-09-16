@@ -23,13 +23,14 @@ RUN git clone ${LIBBPF_GIT_REPO} ${LIBBPF_DIR} \
       && rm -rf ${LIBBPF_DIR} \
       && apk del git
 
-# Copy AFX Device Plugin binaries
+# Copy Plugin binaries and scripts
 COPY ./bin/cndp /cndp/cndp
 COPY ./bin/cndp-dp /cndp/cndp-dp
+COPY ./images/entrypoint.sh /cndp/entrypoint.sh
 
 ENV LD_CONFIG_DIR=
 ENV LIBBPF_DIR=
 ENV LIBBPF_SRC_DIR=
 ENV LIBBPF_GIT_REPO=
 
-ENTRYPOINT ["./cndp/cndp-dp", "-config", "/cndp/config/config.json"]
+ENTRYPOINT ["/cndp/entrypoint.sh"]
