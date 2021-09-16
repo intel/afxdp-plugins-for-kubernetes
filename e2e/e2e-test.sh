@@ -13,6 +13,8 @@ cleanup() {
 	echo "*****************************************************"
 	echo "Delete Pod"
 	kubectl delete pod --grace-period 0 --ignore-not-found=true cndp-e2e-test &> /dev/null
+	echo "Delete Test App"
+	rm -f ./udsTest &> /dev/null
 	echo "Delete CNI"
 	rm -f /opt/cni/bin/cndp-e2e &> /dev/null
 	echo "Delete Network Attachment Definition"
@@ -40,6 +42,8 @@ build() {
 	cp ./../bin/cndp /opt/cni/bin/cndp-e2e
 	echo "***** Network Attachment Definition *****"
 	kubectl create -f ./nad.yaml
+	echo "***** Test App *****"
+	go build -tags netgo -o udsTest ./udsTest.go
 	echo "***** Docker Image *****"
 	docker build -t cndp-e2e-test -f Dockerfile .
 }

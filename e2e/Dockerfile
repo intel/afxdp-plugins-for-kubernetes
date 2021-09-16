@@ -1,9 +1,3 @@
-FROM golang:alpine as builder
-COPY ./udsTest.go /cndp/udsTest.go
-
-WORKDIR /cndp
-RUN go build -o udsTest ./udsTest.go
-
 FROM alpine:3.14
-COPY --from=builder /cndp/udsTest /bin/udsTest
 RUN apk --no-cache add -U iproute2=5.12.0-r0
+COPY ./udsTest /bin/udsTest
