@@ -1,4 +1,4 @@
-# CNDP Kubernetes Plugins
+# AF_XDP Kubernetes Plugins
 
 A proof of concept Kubernetes device plugin and CNI plugin to provide AF_XDP networking to Kubernetes pods using Intel's Cloud Native Data Plane framework.
 
@@ -76,16 +76,13 @@ The following static analysis, linting and formatting tools are not required for
  - Clone this repo and `cd` into it.
  - Run `make deploy`
 
-This following steps happen **automatically**:
+These following steps happen **automatically**:
 
- 1. `make build` is executed, resulting in CNI and Device Plugin
-    binaries in `./bin`.
-2. `make image` is executed, resulting in the creation of a new Docker image that includes the Device Plugin binary.
-	- ***Note:** if testing on a multi-node cluster. In the current absence of a Docker registry, this image will need to be manually copied to all nodes (or rebuilt on all nodes using: `make image`).*
-3. The damenonset running the Device Plugin image will then be deployed on all nodes in the cluster.
+1. `make build` is executed, resulting in CNI and Device Plugin binaries in `./bin`.
+2. `make image` is executed, resulting in the creation of a new Docker image that includes the CNI and Device Plugin binaries.
+	- ***Note:** if testing on a multi-node cluster. The current absence of a Docker registry means this image will need to be manually copied to all nodes (or rebuilt on all nodes using: `make image`).*
+3. The damenonset will run on all nodes, installing the CNI and starting the Device Plugin running on each node.
 
-**Note:** The daemonset deploys the Device Plugin but does not yet deploy the CNI plugin.
-`./bin/cndp` should be copied to `/opt/cni/bin/` on all nodes. 
 
 ## Device Plugin Config
 The device plugin currently reads a list of devices from a config file, rather than actual device discovery. A sample config file can be found in `examples/sample-config/`

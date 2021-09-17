@@ -79,6 +79,8 @@ spec:
               mountPath: /cndp/config
             - name: log
               mountPath: /var/log/cndp/
+            - name: cnibin
+              mountPath: /opt/cni/bin/
       volumes:
         - name: unixsock
           hostPath:
@@ -98,3 +100,6 @@ spec:
         - name: log
           hostPath:
             path: /var/log/cndp/
+        - name: cnibin
+          hostPath:
+            path: /opt/cni/bin/
