@@ -14,62 +14,34 @@
  */
 
 #include "log.h"
+
 #include "_cgo_export.h"
 
 // 256 is the maximum number of characters for vsnprintf
 #define LOG_SIZE 256
 
-void Log_Debug(char *fmt, ...) {
+void log_fn(log_level_t level, char *fmt, ...) {
 	char msg[LOG_SIZE];
 	va_list args;
-
 	va_start(args, fmt);
 	vsnprintf(msg, sizeof(msg), fmt, args);
 	va_end(args);
 
-	Debugf(msg);
-}
-
-void Log_Info(char *fmt, ...) {
-	char msg[LOG_SIZE];
-	va_list args;
-
-	va_start(args, fmt);
-	vsnprintf(msg, sizeof(msg), fmt, args);
-	va_end(args);
-
-	Infof(msg);
-}
-
-void Log_Warning(char *fmt, ...) {
-	char msg[LOG_SIZE];
-	va_list args;
-
-	va_start(args, fmt);
-	vsnprintf(msg, sizeof(msg), fmt, args);
-	va_end(args);
-
-	Warningf(msg);
-}
-
-void Log_Error(char *fmt, ...) {
-	char msg[LOG_SIZE];
-	va_list args;
-
-	va_start(args, fmt);
-	vsnprintf(msg, sizeof(msg), fmt, args);
-	va_end(args);
-
-	Errorf(msg);
-}
-
-void Log_Panic(char *fmt, ...) {
-	char msg[LOG_SIZE];
-	va_list args;
-
-	va_start(args, fmt);
-	vsnprintf(msg, sizeof(msg), fmt, args);
-	va_end(args);
-
-	Panicf(msg);
+	switch (level) {
+	case LOG_LEVEL_ERR:
+		Errorf(msg);
+		break;
+	case LOG_LEVEL_INFO:
+		Infof(msg);
+		break;
+	case LOG_LEVEL_DEBUG:
+		Debugf(msg);
+		break;
+	case LOG_LEVEL_PANIC:
+		Panicf(msg);
+		break;
+	case LOG_LEVEL_WARNING:
+		Warningf(msg);
+		break;
+	}
 }
