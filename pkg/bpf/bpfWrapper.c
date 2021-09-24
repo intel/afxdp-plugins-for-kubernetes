@@ -27,33 +27,32 @@ int Load_bpf_send_xsk_map(char *ifname) {
 	int fd = -1;
 	int if_index, ret;
 
-	Log_Info("Load_bpf_send_xsk_map(): disovering if_index for interface %s", ifname);
+	Log_Info("%s: disovering if_index for interface %s", __FUNCTION__, ifname);
 
 	if_index = if_nametoindex(ifname);
 	if (!if_index) {
-		Log_Error("Load_bpf_send_xsk_map(): if_index not valid: %s", ifname);
+		Log_Error("%s: if_index not valid: %s", __FUNCTION__, ifname);
 		return -1;
 	} else {
-		Log_Info("Load_bpf_send_xsk_map(): if_index for interface %s is %d", ifname,
-			 if_index);
+		Log_Info("%s: if_index for interface %s is %d", __FUNCTION__, ifname, if_index);
 	}
 
-	Log_Info("Load_bpf_send_xsk_map(): starting setup of xdp program on "
+	Log_Info("%s: starting setup of xdp program on "
 		 "interface %s (%d)",
-		 ifname, if_index);
+		 __FUNCTION__, ifname, if_index);
 
 	ret = xsk_setup_xdp_prog(if_index, &fd);
 	if (ret) {
-		Log_Error("Load_bpf_send_xsk_map(): setup of xdp program failed, "
+		Log_Error("%s: setup of xdp program failed, "
 			  "returned: %d",
-			  ret);
+			  __FUNCTION__, ret);
 		return -1;
 	}
 
 	if (fd > 0) {
-		Log_Info("Load_bpf_send_xsk_map(): loaded xdp program on interface %s "
+		Log_Info("%s: loaded xdp program on interface %s "
 			 "(%d), file descriptor %d",
-			 ifname, if_index, fd);
+			 __FUNCTION__, ifname, if_index, fd);
 		return fd;
 	}
 
@@ -64,67 +63,66 @@ int Configure_busy_poll(int fd, int busy_timeout, int busy_budget) {
 	int sock_opt = 1;
 	int ret;
 
-	Log_Info("Configure_busy_poll(): setting SO_PREFER_BUSY_POLL on file descriptor %d", fd);
+	Log_Info("%s: setting SO_PREFER_BUSY_POLL on file descriptor %d", __FUNCTION__, fd);
 
 	ret = setsockopt(fd, SOL_SOCKET, SO_PREFER_BUSY_POLL, (void *)&sock_opt, sizeof(sock_opt));
 	if (ret < 0) {
-		Log_Error("Configure_busy_poll(): failed to set SO_PREFER_BUSY_POLL on file "
+		Log_Error("%s: failed to set SO_PREFER_BUSY_POLL on file "
 			  "descriptor %d, returned: %d",
-			  fd, ret);
+			  __FUNCTION__, fd, ret);
 		return 1;
 	}
 
-	Log_Info("Configure_busy_poll(): setting SO_BUSY_POLL to %d on file descriptor %d",
-		 busy_timeout, fd);
+	Log_Info("%s: setting SO_BUSY_POLL to %d on file descriptor %d", __FUNCTION__, busy_timeout,
+		 fd);
 
 	sock_opt = busy_timeout;
 	ret = setsockopt(fd, SOL_SOCKET, SO_BUSY_POLL, (void *)&sock_opt, sizeof(sock_opt));
 	if (ret < 0) {
-		Log_Error("Configure_busy_poll(): failed to set SO_BUSY_POLL on file descriptor "
+		Log_Error("%s: failed to set SO_BUSY_POLL on file descriptor "
 			  "%d, returned: %d",
-			  fd, ret);
+			  __FUNCTION__, fd, ret);
 		goto err_timeout;
 	}
 
-	Log_Info("Configure_busy_poll(): setting SO_BUSY_POLL_BUDGET to %d on file descriptor %d",
+	Log_Info("%s: setting SO_BUSY_POLL_BUDGET to %d on file descriptor %d", __FUNCTION__,
 		 busy_budget, fd);
 
 	sock_opt = busy_budget;
 	ret = setsockopt(fd, SOL_SOCKET, SO_BUSY_POLL_BUDGET, (void *)&sock_opt, sizeof(sock_opt));
 	if (ret < 0) {
-		Log_Error("Configure_busy_poll(): failed to set SO_BUSY_POLL_BUDGET on file "
+		Log_Error("%s: failed to set SO_BUSY_POLL_BUDGET on file "
 			  "descriptor %d, returned: %d",
-			  fd, ret);
+			  __FUNCTION__, fd, ret);
 	} else {
-		Log_Info("Configure_busy_poll(): busy polling budget on file descriptor %d set to "
+		Log_Info("%s: busy polling budget on file descriptor %d set to "
 			 "%d",
-			 fd, busy_budget);
+			 __FUNCTION__, fd, busy_budget);
 		return 0;
 	}
 
-	Log_Warning("Configure_busy_poll(): setsockopt failure, attempting to restore xsk to "
-		    "default state");
+	Log_Warning("%s: setsockopt failure, attempting to restore xsk to default state",
+		    __FUNCTION__);
 
-	Log_Warning("Configure_busy_poll(): unsetting SO_BUSY_POLL on file descriptor %d", fd);
+	Log_Warning("%s: unsetting SO_BUSY_POLL on file descriptor %d", __FUNCTION__, fd);
 
 	sock_opt = 0;
 	ret = setsockopt(fd, SOL_SOCKET, SO_BUSY_POLL, (void *)&sock_opt, sizeof(sock_opt));
 	if (ret < 0) {
-		Log_Error("Configure_busy_poll(): failed to unset SO_BUSY_POLL on file descriptor "
+		Log_Error("%s: failed to unset SO_BUSY_POLL on file descriptor "
 			  "%d, returned: %d",
-			  fd, ret);
+			  __FUNCTION__, fd, ret);
 		return 1;
 	}
 
 err_timeout:
-	Log_Warning("Configure_busy_poll(): unsetting SO_PREFER_BUSY_POLL on file descriptor %d",
-		    fd);
+	Log_Warning("%s: unsetting SO_PREFER_BUSY_POLL on file descriptor %d", __FUNCTION__, fd);
 	sock_opt = 0;
 	ret = setsockopt(fd, SOL_SOCKET, SO_PREFER_BUSY_POLL, (void *)&sock_opt, sizeof(sock_opt));
 	if (ret < 0) {
-		Log_Error("Configure_busy_poll(): failed to unset SO_PREFER_BUSY_POLL on file "
+		Log_Error("%s: failed to unset SO_PREFER_BUSY_POLL on file "
 			  "descriptor %d, returned: %d",
-			  fd, ret);
+			  __FUNCTION__, fd, ret);
 		return 1;
 	}
 }
@@ -133,25 +131,25 @@ int Clean_bpf(char *ifname) {
 	int if_index, ret;
 	int fd = -1;
 
-	Log_Info("Clean_bpf(): disovering if_index for interface %s", ifname);
+	Log_Info("%s: disovering if_index for interface %s", __FUNCTION__, ifname);
 
 	if_index = if_nametoindex(ifname);
 	if (!if_index) {
-		Log_Error("Clean_bpf(): if_index not valid: %s", ifname);
+		Log_Error("%s: if_index not valid: %s", __FUNCTION__, ifname);
 		return 1;
 	} else {
-		Log_Info("Clean_bpf(): if_index for interface %s is %d", ifname, if_index);
+		Log_Info("%s: if_index for interface %s is %d", __FUNCTION__, ifname, if_index);
 	}
 
-	Log_Info("Clean_bpf(): starting removal of xdp program on interface %s (%d)", ifname,
+	Log_Info("%s: starting removal of xdp program on interface %s (%d)", __FUNCTION__, ifname,
 		 if_index);
 
 	ret = bpf_set_link_xdp_fd(if_index, fd, XDP_FLAGS_UPDATE_IF_NOEXIST);
 	if (ret) {
-		Log_Error("Clean_bpf(): Removal of xdp program failed, returned: ", ret);
+		Log_Error("%s: Removal of xdp program failed, returned: ", __FUNCTION__, ret);
 		return 1;
 	}
 
-	Log_Info("Clean_bpf(): removed xdp program from interface %s (%d)", ifname, if_index);
+	Log_Info("%s: removed xdp program from interface %s (%d)", __FUNCTION__, ifname, if_index);
 	return 0;
 }
