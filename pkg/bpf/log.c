@@ -14,7 +14,6 @@
  */
 
 #include "log.h"
-
 #include "_cgo_export.h"
 
 // 256 is the maximum number of characters for vsnprintf
