@@ -208,7 +208,7 @@ func (pm *PoolManager) registerWithKubelet() error {
 			return (&net.Dialer{}).DialContext(ctx, "unix", addr)
 		}))
 	if err != nil {
-		return fmt.Errorf("Error connecting to Kubelet: %v", err)
+		return fmt.Errorf("Error connecting to Kubelet: %w", err)
 	}
 	defer conn.Close()
 
@@ -222,7 +222,7 @@ func (pm *PoolManager) registerWithKubelet() error {
 
 	_, err = client.Register(context.Background(), reqt)
 	if err != nil {
-		return fmt.Errorf("Error registering with Kubelet: %v", err)
+		return fmt.Errorf("Error registering with Kubelet: %w", err)
 	}
 
 	return nil
