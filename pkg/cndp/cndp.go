@@ -17,16 +17,17 @@ package cndp
 
 import (
 	"fmt"
-	"github.com/intel/cndp_device_plugin/pkg/bpf"
-	"github.com/intel/cndp_device_plugin/pkg/logging"
-	"github.com/intel/cndp_device_plugin/pkg/resourcesapi"
-	"github.com/intel/cndp_device_plugin/pkg/uds"
-	"github.com/nu7hatch/gouuid"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/intel/cndp_device_plugin/pkg/bpf"
+	"github.com/intel/cndp_device_plugin/pkg/logging"
+	"github.com/intel/cndp_device_plugin/pkg/resourcesapi"
+	"github.com/intel/cndp_device_plugin/pkg/uds"
+	"github.com/nu7hatch/gouuid"
 )
 
 const (
@@ -366,37 +367,6 @@ func (s *server) validatePod(podName string) (bool, error) {
 	pod := podResourceMap[podName]
 	valid := false
 
-	/**********************************************************
-	BUG FIX - TODO investigate further. Better way to do this?
-	K8s v1.21.1 pod resources api found returning slightly
-	different format vs older v1.20.2
-
-	v1.20.2
-		Devices:[]*ContainerDevices{
-		&ContainerDevices{
-			ResourceName:cndp/e2e,
-			DeviceIds:[ens801f1 ens801f0]
-
-	v1.21.1
-	Devices:[]*ContainerDevices{
-		&ContainerDevices{
-			ResourceName:cndp/e2e,
-			DeviceIds:[ens785f1],},
-		&ContainerDevices{
-			ResourceName:cndp/e2e,
-			DeviceIds:[ens785f0],
-
-	Note that v1.20.2 returns the devices in a single array.
-	v1.21.1 devices are all separate, almost like each device
-	is its own type.
-
-	This is a problem when we compare the number of pod devices
-	vs number of known devices - returns pod not valid.
-
-	Solution below is to loop through all the containers and
-	associated devices first, building a list. This is the dev
-	list used in validation, rather than the raw res api data.
-	**********************************************************/
 	for _, container := range pod.GetContainers() {
 		var contDevs []string
 
@@ -424,35 +394,6 @@ func (s *server) validatePod(podName string) (bool, error) {
 			return true, nil
 		}
 	}
-
-	/***************** BUG FIX END ****************************
-	for _, container := range pod.GetContainers() {
-		for _, device := range container.GetDevices() {
-
-			if device.GetResourceName() != s.deviceType ||
-				len(device.GetDeviceIds()) != len(s.devices) {
-				// not the resource we're interested in
-				// or this container has a different number of the resource
-				continue
-			}
-
-			// compare known devices (from Allocate) vs devices from resource api
-			for _, dev := range device.GetDeviceIds() {
-				if _, exists := s.devices[dev]; exists {
-					valid = true // valid while devices match
-				} else {
-					valid = false
-					break // not valid if any device does not match
-				}
-			}
-
-			if valid {
-				logging.Infof("Pod " + podName + " - valid for this UDS connection")
-				return true, nil
-			}
-		}
-	}
-	********************************************************/
 
 	logging.Warningf("Pod " + podName + " could not be validated for this UDS connection")
 	return false, nil
