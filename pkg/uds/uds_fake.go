@@ -61,7 +61,8 @@ func (f *fakeHandler) Listen() (CleanupFunc, error) {
 }
 
 /*
-Dial is TODO
+Dial creates a new connection.
+In this fakeHandler it does nothing.
 */
 func (f *fakeHandler) Dial() (CleanupFunc, error) {
 	return func() {}, nil

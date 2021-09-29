@@ -17,17 +17,16 @@ package cndp
 
 import (
 	"fmt"
-	"net"
-	"os"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/intel/cndp_device_plugin/pkg/bpf"
 	"github.com/intel/cndp_device_plugin/pkg/logging"
 	"github.com/intel/cndp_device_plugin/pkg/resourcesapi"
 	"github.com/intel/cndp_device_plugin/pkg/uds"
 	"github.com/nu7hatch/gouuid"
+	"net"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 const (
@@ -355,7 +354,12 @@ func (s *server) handleBusyPollRequest(request string, fd int) error {
 
 func (s *server) validatePod(podName string) (bool, error) {
 	logging.Debugf("Pod " + podName + " - Validating pod hostname")
-	podResourceMap, _ := s.podRes.GetPodResources() //TODO error
+
+	podResourceMap, err := s.podRes.GetPodResources()
+	if err != nil {
+		logging.Errorf("Error getting pod resources: %v", err)
+		return false, err
+	}
 
 	if _, ok := podResourceMap[podName]; ok {
 		logging.Debugf("Pod " + podName + " - Found on node")
