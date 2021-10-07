@@ -16,7 +16,7 @@
 package resourcesapi
 
 import (
-	api "k8s.io/kubelet/pkg/apis/podresources/v1alpha1"
+	api "k8s.io/kubelet/pkg/apis/podresources/v1"
 )
 
 /*
