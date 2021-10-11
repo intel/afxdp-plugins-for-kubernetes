@@ -17,11 +17,11 @@ package cndp
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/intel/cndp_device_plugin/pkg/bpf"
 	"github.com/intel/cndp_device_plugin/pkg/logging"
 	"github.com/intel/cndp_device_plugin/pkg/resourcesapi"
 	"github.com/intel/cndp_device_plugin/pkg/uds"
-	"github.com/nu7hatch/gouuid"
 	"net"
 	"os"
 	"strconv"
@@ -440,9 +440,9 @@ func generateSocketPath(directory string) (string, error) {
 			return "", err
 		}
 
-		sockName, err := uuid.NewV4()
+		sockName, err := uuid.NewRandom()
 		if err != nil {
-			logging.Errorf("%s", err)
+			logging.Errorf("Error generating random UDS filename: %v", err)
 		}
 
 		sockPath = directory + sockName.String() + ".sock"
