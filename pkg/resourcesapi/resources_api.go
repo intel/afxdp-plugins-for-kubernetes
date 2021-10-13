@@ -19,7 +19,7 @@ import (
 	"github.com/intel/cndp_device_plugin/pkg/logging"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	api "k8s.io/kubelet/pkg/apis/podresources/v1alpha1"
+	api "k8s.io/kubelet/pkg/apis/podresources/v1"
 	"net"
 	"time"
 )
