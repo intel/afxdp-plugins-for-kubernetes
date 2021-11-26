@@ -7,6 +7,7 @@ require (
 	github.com/containernetworking/plugins v1.0.1
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-cmd/cmd v1.3.0
+	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/pkg/errors v0.9.1

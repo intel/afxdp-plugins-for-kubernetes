@@ -17,15 +17,22 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/intel/cndp_device_plugin/pkg/logging"
 	"github.com/intel/cndp_device_plugin/pkg/networking"
 	"io/ioutil"
+	"regexp"
 	"strings"
 )
 
-var driversTypes = []string{"i40e", "E810"}
-var excludedInfs = []string{"eno", "eth", "lo", "docker", "flannel", "cni"}
-var assignedInfs []string
+var (
+	driversTypes = []string{"i40e", "E810"}
+	excludedInfs = []string{"eno", "eth", "lo", "docker", "flannel", "cni"}
+	logLevels    = []string{"debug", "info", "warning", "error"}
+	assignedInfs []string
+)
 
 /*
 PoolConfig is  contains the pool name and device list
@@ -41,8 +48,8 @@ Config contains the overall configuration for the device plugin
 */
 type Config struct {
 	Pools    []*PoolConfig `json:"pools"`
-	LogFile  string        `json:"logFile,omitempty"`
-	LogLevel string        `json:"logLevel,omitempty"`
+	LogFile  string        `json:"logFile"`
+	LogLevel string        `json:"logLevel"`
 }
 
 /*
@@ -55,11 +62,17 @@ func GetConfig(configFile string) (Config, error) {
 	raw, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		logging.Errorf("Error reading config file: %v", err)
-	} else {
-		if err := json.Unmarshal(raw, &cfg); err != nil {
-			logging.Errorf("Error unmarshalling config data: %v", err)
-			return cfg, err
-		}
+		return cfg, err
+	}
+
+	if err := json.Unmarshal(raw, &cfg); err != nil {
+		logging.Errorf("Error unmarshalling config data: %v", err)
+		return cfg, err
+	}
+
+	if err := cfg.Validate(); err != nil {
+		logging.Errorf("Config validation error: %v", err)
+		return cfg, err
 	}
 
 	if cfg.LogFile != "" {
@@ -136,6 +149,61 @@ func GetConfig(configFile string) (Config, error) {
 		}
 	}
 	return cfg, nil
+}
+
+/*
+Validate validates the contents of the PoolConfig struct
+*/
+func (c PoolConfig) Validate() error {
+	return validation.ValidateStruct(&c,
+		validation.Field(
+			&c.Name,
+			validation.Required.Error("pools must have a name"),
+			is.Alphanumeric.Error("pool names can only contain letters and numbers"),
+		),
+		validation.Field(
+			&c.Devices,
+			validation.Each(
+				validation.Required.Error("devices must have a name"),
+				is.Alphanumeric.Error("device names can only contain letters and numbers"),
+			),
+			validation.Required.When(len(c.Drivers) == 0).Error("pools must contain devices or drivers"),
+		),
+		validation.Field(
+			&c.Drivers,
+			validation.Each(
+				validation.Required.Error("drivers must have a name"),
+				is.Alphanumeric.Error("driver names must only contain letters and numbers"),
+			),
+		),
+	)
+}
+
+/*
+Validate validates the contents of the Config struct
+*/
+func (c Config) Validate() error {
+	var iLogLevels []interface{} = make([]interface{}, len(logLevels))
+	for i, hello := range logLevels {
+		iLogLevels[i] = hello
+	}
+
+	return validation.ValidateStruct(&c,
+		validation.Field(
+			&c.Pools,
+			validation.Each(
+				validation.NotNil.Error("cannot be null"),
+			),
+		),
+		validation.Field(
+			&c.LogFile,
+			validation.Match(regexp.MustCompile("^/$|^(/[a-zA-Z0-9._-]+)+$")).Error("must be a valid filepath"),
+		),
+		validation.Field(
+			&c.LogLevel,
+			validation.In(iLogLevels...).Error("must be "+fmt.Sprintf("%v", iLogLevels)),
+		),
+	)
 }
 
 func deviceDiscovery(requiredDriver string) ([]string, error) {
