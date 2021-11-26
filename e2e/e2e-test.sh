@@ -135,7 +135,7 @@ run() {
 		echo "***** Netdevs attached to pod (ip a) *****"
 		echo
 		kubectl exec -i cndp-e2e-test -- ip a
-		sleep 2
+		sleep 10
 		echo
 		echo "***** Netdevs attached to pod (ip l) *****"
 		echo

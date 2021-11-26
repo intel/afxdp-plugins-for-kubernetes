@@ -1,0 +1,25 @@
+name: Build Test
+
+on: [push, pull_request]
+
+jobs:
+
+  build:
+    runs-on: self-hosted
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+        
+    - name: Go test
+      run: go test ./...  
+      
+    - name: e2e
+      run: |
+       make e2e
+        cd e2e/
+        ./e2e-test.sh
+       ./e2e-test.sh -d
