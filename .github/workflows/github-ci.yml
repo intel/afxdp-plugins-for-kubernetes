@@ -1,0 +1,28 @@
+name: AF_XDP K8s Plugins CI
+on: push
+
+jobs:
+  static-analysis:
+    runs-on: self-hosted
+    steps:
+      - name: Static Analysis
+        run: make static
+
+  build:
+    runs-on: self-hosted
+    steps:
+      - name: Build
+        run: make build
+
+  unit-tests:
+    runs-on: self-hosted
+    steps:
+      - name: Unit Tests
+        run: make test
+
+  end-to-end:
+    runs-on: self-hosted
+    steps:
+      - name: Host binary, full test
+        run: cd e2e && ./e2e-test.sh
+
