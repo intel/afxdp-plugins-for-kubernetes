@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
-#include <bpf/xsk.h>	   // for xsk_setup_xdp_prog, bpf_set_link_xdp_fd
-#include <linux/if_link.h> // for XDP_FLAGS_UPDATE_IF_NOEXIST
-#include <net/if.h>	   // for if_nametoindex
+#include <bpf/xsk.h>              // for xsk_setup_xdp_prog, bpf_set_link_xdp_fd
+#include <linux/if_link.h>        // for XDP_FLAGS_UPDATE_IF_NOEXIST
+#include <net/if.h>               // for if_nametoindex
 
 #include "bpfWrapper.h"
 #include "log.h"
@@ -24,6 +24,7 @@
 #define SO_BUSY_POLL_BUDGET 70
 
 int Load_bpf_send_xsk_map(char *ifname) {
+
 	int fd = -1;
 	int if_index, ret;
 
@@ -60,6 +61,7 @@ int Load_bpf_send_xsk_map(char *ifname) {
 }
 
 int Configure_busy_poll(int fd, int busy_timeout, int busy_budget) {
+
 	int sock_opt = 1;
 	int ret;
 
@@ -125,6 +127,7 @@ err_timeout:
 			  __FUNCTION__, fd, ret);
 		return 1;
 	}
+	return 0;
 }
 
 int Clean_bpf(char *ifname) {

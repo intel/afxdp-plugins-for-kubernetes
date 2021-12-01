@@ -19,20 +19,20 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#define foreach_log_level                                                                          \
-	_(0, PANIC, panic)                                                                         \
-	_(1, ERR, err)                                                                             \
-	_(2, WARNING, warn)                                                                        \
-	_(3, INFO, info)                                                                           \
-	_(4, DEBUG, debug)
-
+#define foreach_log_level \
+    _(0, PANIC, panic)    \
+    _(1, ERR, err)        \
+    _(2, WARNING, warn)   \
+    _(3, INFO, info)      \
+    _(4, DEBUG, debug)
+	
 typedef enum {
 #define _(n, uc, lc) LOG_LEVEL_##uc = n,
 	foreach_log_level
 #undef _
 } log_level_t;
 
-void log_fn(log_level_t level, char *fmt, ...);
+void log_fn(log_level_t level, const char *fmt, ...);
 
 #define Log_Panic(fmt, ...) log_fn(LOG_LEVEL_PANIC, fmt, __VA_ARGS__)
 #define Log_Error(fmt, ...) log_fn(LOG_LEVEL_ERR, fmt, __VA_ARGS__)

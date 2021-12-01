@@ -14,12 +14,22 @@
  */
 
 #include "log.h"
+#ifndef CNDP
 #include "_cgo_export.h"
+#endif
 
 // 256 is the maximum number of characters for vsnprintf
 #define LOG_SIZE 256
 
-void log_fn(log_level_t level, char *fmt, ...) {
+#ifdef CNDP
+#define Errorf(msg) printf("%s", msg)
+#define Infof(msg) printf("%s", msg)
+#define Debugf(msg) printf("%s", msg)
+#define Panicf(msg) printf("%s", msg)
+#define Warningf(msg) printf("%s", msg)
+#endif
+
+void log_fn(log_level_t level, const char *fmt, ...) {
 	char msg[LOG_SIZE];
 	va_list args;
 	va_start(args, fmt);
