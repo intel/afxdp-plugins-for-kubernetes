@@ -28,10 +28,11 @@ import (
 )
 
 var (
-	driversTypes = []string{"i40e", "E810"}
-	excludedInfs = []string{"eno", "eth", "lo", "docker", "flannel", "cni"}
-	logLevels    = []string{"debug", "info", "warning", "error"}
-	assignedInfs []string
+	driversTypes = []string{"i40e", "E810"}                                 // drivers we search for by default if none configured
+	excludedInfs = []string{"eno", "eth", "lo", "docker", "flannel", "cni"} // interfaces we never add to a pool
+	logLevels    = []string{"debug", "info", "warning", "error"}            // acceptable log levels
+	logDir       = "/var/log/cndp/"                                         // acceptable log directory
+	assignedInfs []string                                                   // keeps track of devices that are assigned to pools
 )
 
 /*
@@ -184,8 +185,8 @@ Validate validates the contents of the Config struct
 */
 func (c Config) Validate() error {
 	var iLogLevels []interface{} = make([]interface{}, len(logLevels))
-	for i, hello := range logLevels {
-		iLogLevels[i] = hello
+	for i, logLevel := range logLevels {
+		iLogLevels[i] = logLevel
 	}
 
 	return validation.ValidateStruct(&c,
@@ -198,6 +199,10 @@ func (c Config) Validate() error {
 		validation.Field(
 			&c.LogFile,
 			validation.Match(regexp.MustCompile("^/$|^(/[a-zA-Z0-9._-]+)+$")).Error("must be a valid filepath"),
+		),
+		validation.Field(
+			&c.LogFile,
+			validation.Match(regexp.MustCompile("^"+logDir)).Error("must in directory "+logDir),
 		),
 		validation.Field(
 			&c.LogLevel,
