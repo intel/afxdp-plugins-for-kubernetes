@@ -23,6 +23,6 @@ jobs:
   end-to-end:
     runs-on: self-hosted
     steps:
-      - name: Host binary, full test
+      - name: Host binary, single run
         run: cd e2e && ./e2e-test.sh
 
