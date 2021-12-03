@@ -23,6 +23,12 @@ jobs:
   end-to-end:
     runs-on: self-hosted
     steps:
-      - name: Host binary, single run
+      - name: Delete previous logs
+        run: rm -f /var/log/cndp/cndp-cni-e2e.log && rm -f /var/log/cndp/cndp-dp-e2e.log
+      - name: e2e test, single run
         run: cd e2e && ./e2e-test.sh
+      - name: CNI logs
+        run: cat /var/log/cndp/cndp-cni-e2e.log
+      - name: Device Plugin logs
+        run: cat /var/log/cndp/cndp-dp-e2e.log
 
