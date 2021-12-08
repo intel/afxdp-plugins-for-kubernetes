@@ -5,30 +5,37 @@ jobs:
   static-analysis:
     runs-on: self-hosted
     steps:
+      - name: Checkout
+        uses: "actions/checkout@v2"
       - name: Static Analysis
         run: make static
 
   build:
     runs-on: self-hosted
     steps:
+      - name: Checkout
+        uses: "actions/checkout@v2"
       - name: Build
         run: make build
 
   unit-tests:
     runs-on: self-hosted
     steps:
+      - name: Checkout
+        uses: "actions/checkout@v2"
       - name: Unit Tests
         run: make test
 
   end-to-end:
     runs-on: self-hosted
     steps:
+      - name: Checkout
+        uses: "actions/checkout@v2"
       - name: Delete previous logs
         run: rm -f /var/log/cndp/cndp-cni-e2e.log && rm -f /var/log/cndp/cndp-dp-e2e.log
       - name: e2e test, single run
-        run: cd e2e && ./e2e-test.sh
+        run: make e2e
       - name: CNI logs
         run: cat /var/log/cndp/cndp-cni-e2e.log
       - name: Device Plugin logs
         run: cat /var/log/cndp/cndp-dp-e2e.log
-

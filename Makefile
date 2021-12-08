@@ -55,7 +55,7 @@ deploy: image undeploy
 	@echo
 	@echo
 
-test:
+test: buildc
 	@echo "******    Unit Tests     ******"
 	@echo
 	go test $(shell go list ./... | grep -v "/e2e" | grep -v "/pkg/resourcesapi")
