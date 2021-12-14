@@ -46,15 +46,15 @@ func TestGetConfig(t *testing.T) {
 	}{
 		{
 			name:      "load good config 1",
-			config:    `{"cniVersion":"0.3.0","deviceID":"dev_1","name":"test-network","pciBusID":"","type":"cndp"}`,
-			expConfig: &netConfig{NetConf: netConf, Device: "dev_1"},
+			config:    `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"cndp"}`,
+			expConfig: &netConfig{NetConf: netConf, Device: "dev1"},
 		},
 
 		{
 			name:      "load no config",
 			config:    `{ }`,
 			expConfig: nil,
-			expErr:    errors.New("loadConf(): no device specified"),
+			expErr:    errors.New("validate(): no device specified"),
 		},
 
 		{
@@ -74,7 +74,7 @@ func TestGetConfig(t *testing.T) {
 			name:      "load bad config 3 - empty braces",
 			config:    `{}`,
 			expConfig: nil,
-			expErr:    errors.New("loadConf(): no device specified"),
+			expErr:    errors.New("validate(): no device specified"),
 		},
 		{
 			name:      "load bad config 4 - incorrect JSON format",
@@ -135,7 +135,7 @@ func TestCmdAdd(t *testing.T) {
 			name:       "fail to parse netConf - no arguments",
 			netConfStr: "{}",
 			netNS:      "",
-			expError:   "loadConf(): no device specified",
+			expError:   "validate(): no device specified",
 		},
 
 		{
@@ -144,16 +144,17 @@ func TestCmdAdd(t *testing.T) {
 			netNS:      "",
 			expError:   "loadConf(): failed to load network configuration: unexpected end of JSON input",
 		},
+
 		{
-			name:       "fail to open netns -  no device name",
-			netConfStr: `{"cniVersion":"0.3.0","deviceID":" ","name":"test-network","pciBusID":"","type":"cndp"}`,
+			name:       "no device name",
+			netConfStr: `{"cniVersion":"0.3.0","deviceID":"","name":"test-network","pciBusID":"","type":"cndp"}`,
 			netNS:      "",
-			expError:   "cmdAdd(): failed to open container netns \"\": failed to Statfs \"\": no such file or directory",
+			expError:   "validate(): no device specified",
 		},
 
 		{
-			name:       "fail to open netns -  bad netns",
-			netConfStr: `{"cniVersion":"0.3.0","deviceID":"dev_1","name":"test-network","pciBusID":"","type":"cndp"}`,
+			name:       "fail to open netns - bad netns",
+			netConfStr: `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"cndp"}`,
 			netNS:      "B@dN%eTNS",
 			expError:   "cmdAdd(): failed to open container netns \"B@dN%eTNS\": failed to Statfs \"B@dN%eTNS\": no such file or directory",
 		},
@@ -196,7 +197,7 @@ func TestCmdDel(t *testing.T) {
 		{
 			name:       "bad load configuration - no arguments and no no device specified",
 			netConfStr: "{} ",
-			expError:   "loadConf(): no device specified",
+			expError:   "validate(): no device specified",
 		},
 
 		{

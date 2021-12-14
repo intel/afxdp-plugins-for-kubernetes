@@ -199,9 +199,6 @@ func (c Config) Validate() error {
 		validation.Field(
 			&c.LogFile,
 			validation.Match(regexp.MustCompile("^/$|^(/[a-zA-Z0-9._-]+)+$")).Error("must be a valid filepath"),
-		),
-		validation.Field(
-			&c.LogFile,
 			validation.Match(regexp.MustCompile("^"+logDir)).Error("must in directory "+logDir),
 		),
 		validation.Field(

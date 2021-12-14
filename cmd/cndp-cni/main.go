@@ -62,7 +62,7 @@ func loadConf(bytes []byte) (*netConfig, error) {
 
 	if err := n.Validate(); err != nil {
 		logging.Errorf("Config validation error: %v", err)
-		return n, err
+		return nil, err
 	}
 
 	if n.LogFile != "" {
@@ -74,10 +74,6 @@ func loadConf(bytes []byte) (*netConfig, error) {
 	}
 
 	logging.SetPluginName("CNDP-CNI")
-
-	if n.Device == "" {
-		return nil, fmt.Errorf("loadConf(): no device specified")
-	}
 
 	return n, nil
 }
@@ -93,15 +89,12 @@ func (n netConfig) Validate() error {
 	return validation.ValidateStruct(&n,
 		validation.Field(
 			&n.Device,
-			validation.Required.Error("devices must have a name"),
-			is.Alphanumeric.Error("device names can only contain letters and numbers"),
+			validation.Required.Error("validate(): no device specified"),
+			is.Alphanumeric.Error("validate(): device names can only contain letters and numbers"),
 		),
 		validation.Field(
 			&n.LogFile,
 			validation.Match(regexp.MustCompile("^/$|^(/[a-zA-Z0-9._-]+)+$")).Error("must be a valid filepath"),
-		),
-		validation.Field(
-			&n.LogFile,
 			validation.Match(regexp.MustCompile("^"+logDir)).Error("must in directory "+logDir),
 		),
 		validation.Field(
