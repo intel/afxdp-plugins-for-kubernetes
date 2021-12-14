@@ -28,7 +28,7 @@ import "C"
 
 import (
 	"errors"
-	"github.com/intel/cndp_device_plugin/pkg/logging"
+	logging "github.com/sirupsen/logrus"
 )
 
 /*

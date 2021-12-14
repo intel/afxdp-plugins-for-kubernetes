@@ -17,7 +17,7 @@ package main
 
 import (
 	"flag"
-	"github.com/intel/cndp_device_plugin/pkg/logging"
+	logging "github.com/sirupsen/logrus"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"os"
 	"os/signal"
@@ -39,8 +39,7 @@ func main() {
 	flag.StringVar(&configFile, "config", defaultConfigFile, "Location of the device plugin configuration file")
 	flag.Parse()
 
-	logging.SetPluginName("CNDP-DP")
-	logging.SetLogLevel("info")
+	logging.SetLevel(logging.InfoLevel)
 
 	logging.Infof("Starting CNDP Device Plugin")
 	cfg, err := GetConfig(configFile)

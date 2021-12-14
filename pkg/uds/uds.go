@@ -16,7 +16,7 @@
 package uds
 
 import (
-	"github.com/intel/cndp_device_plugin/pkg/logging"
+	logging "github.com/sirupsen/logrus"
 	"net"
 	"os"
 	"strconv"

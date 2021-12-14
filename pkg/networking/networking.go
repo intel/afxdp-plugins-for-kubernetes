@@ -17,7 +17,7 @@ package networking
 
 import (
 	"github.com/go-cmd/cmd"
-	"github.com/intel/cndp_device_plugin/pkg/logging"
+	logging "github.com/sirupsen/logrus"
 	"net"
 	"strings"
 )

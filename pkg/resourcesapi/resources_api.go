@@ -16,7 +16,7 @@
 package resourcesapi
 
 import (
-	"github.com/intel/cndp_device_plugin/pkg/logging"
+	logging "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	api "k8s.io/kubelet/pkg/apis/podresources/v1"

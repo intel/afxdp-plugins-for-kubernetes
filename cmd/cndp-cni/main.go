@@ -18,23 +18,23 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
-	"runtime"
-
-	"github.com/vishvananda/netlink"
-
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/containernetworking/cni/pkg/version"
-	validation "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/go-ozzo/ozzo-validation/v4/is"
-	"github.com/intel/cndp_device_plugin/pkg/bpf"
-	"github.com/intel/cndp_device_plugin/pkg/logging"
-
 	"github.com/containernetworking/plugins/pkg/ipam"
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/containernetworking/plugins/pkg/utils/buildversion"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"github.com/intel/cndp_device_plugin/pkg/bpf"
+	logging "github.com/sirupsen/logrus"
+	"github.com/vishvananda/netlink"
+	"os"
+	"path"
+	"regexp"
+	"runtime"
+	"strconv"
 )
 
 var (
@@ -56,6 +56,13 @@ func init() {
 
 func loadConf(bytes []byte) (*netConfig, error) {
 	n := &netConfig{}
+	logging.SetReportCaller(true)
+	logging.SetFormatter(&logging.TextFormatter{
+		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
+			fileName := path.Base(frame.File) + ":" + strconv.Itoa(frame.Line)
+			return "", fileName
+		},
+	})
 	if err := json.Unmarshal(bytes, n); err != nil {
 		return nil, fmt.Errorf("loadConf(): failed to load network configuration: %w", err)
 	}
@@ -66,14 +73,20 @@ func loadConf(bytes []byte) (*netConfig, error) {
 	}
 
 	if n.LogFile != "" {
-		logging.SetLogFile(n.LogFile)
+		fp, err := os.OpenFile(n.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		if err != nil {
+			return nil, fmt.Errorf("loadConf(): cannot open logfile %s: %w", n.LogFile, err)
+		}
+		logging.SetOutput(fp)
 	}
 
 	if n.LogLevel != "" {
-		logging.SetLogLevel(n.LogLevel)
+		ll, err := logging.ParseLevel(n.LogLevel)
+		if err != nil {
+			return nil, fmt.Errorf("loadConf(): cannot set log level: %w", err)
+		}
+		logging.SetLevel(ll)
 	}
-
-	logging.SetPluginName("CNDP-CNI")
 
 	return n, nil
 }
@@ -110,7 +123,6 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 	logging.Debugf("cmdAdd(): loaded config: %v", cfg)
-
 	logging.Infof("cmdAdd(): getting container network namespace")
 	containerNs, err := ns.GetNS(args.Netns)
 	if err != nil {
@@ -329,5 +341,6 @@ func cmdCheck(args *skel.CmdArgs) error {
 }
 
 func main() {
+
 	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, version.All, buildversion.BuildString("cndp-cni"))
 }

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"github.com/intel/cndp_device_plugin/pkg/bpf"
 	"github.com/intel/cndp_device_plugin/pkg/cndp"
-	"github.com/intel/cndp_device_plugin/pkg/logging"
+	logging "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"

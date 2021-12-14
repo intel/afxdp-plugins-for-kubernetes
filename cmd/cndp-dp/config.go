@@ -20,10 +20,15 @@ import (
 	"fmt"
 	"github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
-	"github.com/intel/cndp_device_plugin/pkg/logging"
 	"github.com/intel/cndp_device_plugin/pkg/networking"
+	logging "github.com/sirupsen/logrus"
+	"io"
 	"io/ioutil"
+	"os"
+	"path"
 	"regexp"
+	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -58,6 +63,14 @@ GetConfig returns the overall config for the device plugin. Host devices are dis
 */
 func GetConfig(configFile string) (Config, error) {
 	var cfg Config
+	logging.SetReportCaller(true)
+	logging.SetFormatter(&logging.TextFormatter{
+		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
+			fileName := path.Base(frame.File) + ":" + strconv.Itoa(frame.Line)
+			return "", fileName
+		},
+	})
+
 
 	logging.Infof("Reading config file: %s", configFile)
 	raw, err := ioutil.ReadFile(configFile)
@@ -77,11 +90,26 @@ func GetConfig(configFile string) (Config, error) {
 	}
 
 	if cfg.LogFile != "" {
-		logging.SetLogFile(cfg.LogFile)
+		logging.SetReportCaller(true)
+		logging.SetFormatter(&logging.TextFormatter{
+			CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
+				fileName := path.Base(frame.File) + ":" + strconv.Itoa(frame.Line)
+				return "", fileName
+			},
+		})
+		fp, err := os.OpenFile(cfg.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		if err != nil {
+			return cfg, err
+		}
+		logging.SetOutput(io.MultiWriter(fp, os.Stdout))
 	}
 
 	if cfg.LogLevel != "" {
-		logging.SetLogLevel(cfg.LogLevel)
+		ll, err := logging.ParseLevel(cfg.LogLevel)
+		if err != nil {
+			return cfg, err
+		}
+		logging.SetLevel(ll)
 	}
 
 	logging.Infof("Checking pools for manually assigned devices")
