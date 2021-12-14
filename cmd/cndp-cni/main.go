@@ -18,6 +18,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"runtime"
 
 	"github.com/vishvananda/netlink"
@@ -26,6 +27,8 @@ import (
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
 	"github.com/containernetworking/cni/pkg/version"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/intel/cndp_device_plugin/pkg/bpf"
 	"github.com/intel/cndp_device_plugin/pkg/logging"
 
@@ -34,7 +37,11 @@ import (
 	"github.com/containernetworking/plugins/pkg/utils/buildversion"
 )
 
-var bpfHanfler = bpf.NewHandler()
+var (
+	logLevels  = []string{"debug", "info", "warning", "error"} // acceptable log levels
+	logDir     = "/var/log/cndp/"                              // acceptable log directory
+	bpfHanfler = bpf.NewHandler()
+)
 
 type netConfig struct {
 	types.NetConf
@@ -53,6 +60,11 @@ func loadConf(bytes []byte) (*netConfig, error) {
 		return nil, fmt.Errorf("loadConf(): failed to load network configuration: %w", err)
 	}
 
+	if err := n.Validate(); err != nil {
+		logging.Errorf("Config validation error: %v", err)
+		return n, err
+	}
+
 	if n.LogFile != "" {
 		logging.SetLogFile(n.LogFile)
 	}
@@ -68,6 +80,35 @@ func loadConf(bytes []byte) (*netConfig, error) {
 	}
 
 	return n, nil
+}
+
+/*
+Validate validates the contents of the Config struct
+*/
+func (n netConfig) Validate() error {
+	var iLogLevels []interface{} = make([]interface{}, len(logLevels))
+	for i, logLevel := range logLevels {
+		iLogLevels[i] = logLevel
+	}
+	return validation.ValidateStruct(&n,
+		validation.Field(
+			&n.Device,
+			validation.Required.Error("devices must have a name"),
+			is.Alphanumeric.Error("device names can only contain letters and numbers"),
+		),
+		validation.Field(
+			&n.LogFile,
+			validation.Match(regexp.MustCompile("^/$|^(/[a-zA-Z0-9._-]+)+$")).Error("must be a valid filepath"),
+		),
+		validation.Field(
+			&n.LogFile,
+			validation.Match(regexp.MustCompile("^"+logDir)).Error("must in directory "+logDir),
+		),
+		validation.Field(
+			&n.LogLevel,
+			validation.In(iLogLevels...).Error("must be "+fmt.Sprintf("%v", iLogLevels)),
+		),
+	)
 }
 
 func cmdAdd(args *skel.CmdArgs) error {
