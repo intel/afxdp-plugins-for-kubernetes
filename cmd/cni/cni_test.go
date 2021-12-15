@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package main
+package cni
 
 import (
 	"errors"
@@ -41,13 +41,13 @@ func TestGetConfig(t *testing.T) {
 	testCases := []struct {
 		name      string
 		config    string
-		expConfig *netConfig
+		expConfig *NetConfig
 		expErr    error
 	}{
 		{
 			name:      "load good config 1",
 			config:    `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"cndp"}`,
-			expConfig: &netConfig{NetConf: netConf, Device: "dev1"},
+			expConfig: &NetConfig{NetConf: netConf, Device: "dev1"},
 		},
 
 		{
@@ -166,7 +166,7 @@ func TestCmdAdd(t *testing.T) {
 
 			args.StdinData = []byte(tc.netConfStr)
 			args.Netns = tc.netNS
-			err := cmdAdd(args)
+			err := CmdAdd(args)
 
 			if tc.expError == " " {
 				require.Error(t, err, "Unexpected error")
@@ -214,7 +214,7 @@ func TestCmdDel(t *testing.T) {
 			bpfHanfler = bpf.NewFakeHandler()
 			args.StdinData = []byte(tc.netConfStr)
 			args.Netns = tc.netNS
-			err := cmdDel(args)
+			err := CmdDel(args)
 
 			if tc.expError == " " {
 				require.Error(t, err, "Unexpected error")

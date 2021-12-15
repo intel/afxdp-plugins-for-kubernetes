@@ -2,7 +2,7 @@
 set -e
 
 pids=( )
-run_dp="./../bin/cndp-dp"
+run_dp="./../../bin/cndp-dp"
 full_run=false
 daemonset=false
 
@@ -39,7 +39,7 @@ build() {
 	echo "*****************************************************"
 	echo
 	echo "***** CNI Install *****"
-	cp ./../bin/cndp /opt/cni/bin/cndp-e2e
+	cp ./../../bin/cndp /opt/cni/bin/cndp-e2e
 	echo "***** Network Attachment Definition *****"
 	kubectl create -f ./nad.yaml
 	echo "***** Test App *****"

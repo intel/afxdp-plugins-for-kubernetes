@@ -21,7 +21,7 @@ package bpf
 //#include <bpf/xsk.h>
 //#include <stdlib.h>
 //#cgo CFLAGS: -I.
-//#cgo LDFLAGS: -L. -lwrapper -lbpf
+//#cgo LDFLAGS: -L. -lbpf
 //#include "bpfWrapper.h"
 //#include "log.h"
 import "C"

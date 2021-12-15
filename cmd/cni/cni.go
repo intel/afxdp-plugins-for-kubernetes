@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package main
+package cni
 
 import (
 	"encoding/json"
@@ -21,10 +21,8 @@ import (
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
-	"github.com/containernetworking/cni/pkg/version"
 	"github.com/containernetworking/plugins/pkg/ipam"
 	"github.com/containernetworking/plugins/pkg/ns"
-	"github.com/containernetworking/plugins/pkg/utils/buildversion"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/intel/cndp_device_plugin/pkg/bpf"
@@ -42,7 +40,10 @@ var (
 	bpfHanfler = bpf.NewHandler()
 )
 
-type netConfig struct {
+/*
+NetConfig holds the config passed via stdin
+*/
+type NetConfig struct {
 	types.NetConf
 	Device   string `json:"deviceID"`
 	LogFile  string `json:"logFile,omitempty"`
@@ -56,7 +57,7 @@ func init() {
 /*
 Validate validates the contents of the Config struct
 */
-func (n netConfig) Validate() error {
+func (n NetConfig) Validate() error {
 	var iLogLevels []interface{} = make([]interface{}, len(logLevels))
 	for i, logLevel := range logLevels {
 		iLogLevels[i] = logLevel
@@ -79,9 +80,8 @@ func (n netConfig) Validate() error {
 	)
 }
 
-func loadConf(bytes []byte) (*netConfig, error) {
-	n := &netConfig{}
-
+func loadConf(bytes []byte) (*NetConfig, error) {
+	n := &NetConfig{}
 	logging.SetReportCaller(true)
 	logging.SetFormatter(logformats.Default)
 
@@ -117,12 +117,16 @@ func loadConf(bytes []byte) (*netConfig, error) {
 	return n, nil
 }
 
-func cmdAdd(args *skel.CmdArgs) error {
+/*
+CmdAdd is called by kublet during pod create
+*/
+func CmdAdd(args *skel.CmdArgs) error {
 	cfg, err := loadConf(args.StdinData)
 	if err != nil {
 		return err
 	}
-	logging.Debugf("cmdAdd(): loaded config: %v", cfg)
+
+	logging.Debugf("cmdAdd(): loaded config: %+v", cfg)
 	logging.Infof("cmdAdd(): getting container network namespace")
 	containerNs, err := ns.GetNS(args.Netns)
 	if err != nil {
@@ -181,7 +185,10 @@ func cmdAdd(args *skel.CmdArgs) error {
 	return printLink(device, cfg.CNIVersion, containerNs)
 }
 
-func cmdDel(args *skel.CmdArgs) error {
+/*
+CmdDel is called by kublet during pod delete
+*/
+func CmdDel(args *skel.CmdArgs) error {
 	cfg, err := loadConf(args.StdinData)
 	if err != nil {
 		err = fmt.Errorf("error loading config data: %w", err)
@@ -267,7 +274,7 @@ func printLink(dev netlink.Link, cniVersion string, containerNs ns.NetNS) error 
 	return types.PrintResult(&result, cniVersion)
 }
 
-func configureIPAM(args *skel.CmdArgs, cfg *netConfig, device netlink.Link, netns ns.NetNS) (*current.Result, error) {
+func configureIPAM(args *skel.CmdArgs, cfg *NetConfig, device netlink.Link, netns ns.NetNS) (*current.Result, error) {
 	var result *current.Result
 
 	logging.Infof("configureIPAM(): running IPAM plugin: " + cfg.IPAM.Type)
@@ -336,11 +343,9 @@ func configureIPAM(args *skel.CmdArgs, cfg *netConfig, device netlink.Link, netn
 	return result, nil
 }
 
-func cmdCheck(args *skel.CmdArgs) error {
+/*
+CmdCheck is currently unused
+*/
+func CmdCheck(args *skel.CmdArgs) error {
 	return nil
-}
-
-func main() {
-
-	skel.PluginMain(cmdAdd, cmdCheck, cmdDel, version.All, buildversion.BuildString("cndp-cni"))
 }

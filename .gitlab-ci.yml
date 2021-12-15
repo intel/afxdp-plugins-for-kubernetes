@@ -65,6 +65,6 @@ e2e:
     - make image
     - sudo rm -f /var/log/cndp-cni-e2e.log
     - sudo rm -f /var/log/cndp-dp-e2e.log
-    - cd e2e/
+    - cd test/e2e/
     - sudo -E ./e2e-test.sh --full
     - sudo -E ./e2e-test.sh --full --daemonset

@@ -30,7 +30,7 @@ build: format buildc
 	@echo
 	@echo "******     Build CNI     ******"
 	@echo
-	go build -o ./bin/cndp ./cmd/cndp-cni
+	go build -o ./bin/cndp ./cmd/cni/main
 	@echo
 	@echo
 
@@ -58,14 +58,21 @@ deploy: image undeploy
 test: buildc
 	@echo "******    Unit Tests     ******"
 	@echo
-	go test $(shell go list ./... | grep -v "/e2e" | grep -v "/pkg/resourcesapi")
+	go test $(shell go list ./... | grep -v "/test" | grep -v "/pkg/resourcesapi")
 	@echo
 	@echo
 
 e2e: build
 	@echo "******     E2e Test      ******"
 	@echo
-	cd e2e && ./e2e-test.sh
+	cd test/e2e/ && ./e2e-test.sh
+	@echo
+	@echo
+
+fuzzcni:
+	@echo "******     Fuzz CNI      ******"
+	@echo
+	cd test/fuzz/cni && ./fuzz.sh
 	@echo
 	@echo
 

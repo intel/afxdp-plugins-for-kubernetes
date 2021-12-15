@@ -1,0 +1,16 @@
+{
+    "cniVersion": "0.3.1",
+    "type": "cndp",
+    "logFile": "/var/log/cndp/fuzz.log",
+    "logLevel": "info",
+    "ipam": {
+        "type": "host-local",
+        "subnet": "192.168.1.0/24",
+        "rangeStart": "192.168.1.220",
+        "rangeEnd": "192.168.1.240",
+        "routes": [
+            { "dst": "0.0.0.0/0" }
+        ],
+        "gateway": "192.168.1.1"
+    }
+}
