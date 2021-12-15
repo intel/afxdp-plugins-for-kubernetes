@@ -60,12 +60,12 @@ func (pm *PoolManager) Init(config *PoolConfig) error {
 	if err := pm.registerWithKubelet(); err != nil {
 		return err
 	}
-	logging.Infof(devicePrefix+"/%s registered with Kubelet", pm.Name)
+	logging.Infof("Pool "+devicePrefix+"/%s registered with Kubelet", pm.Name)
 
 	if err := pm.startGRPC(); err != nil {
 		return err
 	}
-	logging.Infof(devicePrefix+"/%s started serving", pm.Name)
+	logging.Infof("Pool "+devicePrefix+"/%s started serving", pm.Name)
 
 	for _, device := range config.Devices {
 		newdev := pluginapi.Device{ID: device, Health: pluginapi.Healthy}
@@ -100,15 +100,15 @@ ListAndWatch should return the new list.
 func (pm *PoolManager) ListAndWatch(empty *pluginapi.Empty,
 	stream pluginapi.DevicePlugin_ListAndWatchServer) error {
 
-	logging.Infof(devicePrefix+"/%s ListAndWatch started", pm.Name)
+	logging.Debugf("Pool "+devicePrefix+"/%s ListAndWatch started", pm.Name)
 
 	for {
 		<-pm.UpdateSignal
 		resp := new(pluginapi.ListAndWatchResponse)
-		logging.Infof(devicePrefix+"/%s device list:", pm.Name)
+		logging.Debugf("Pool "+devicePrefix+"/%s device list:", pm.Name)
 
 		for _, dev := range pm.Devices {
-			logging.Infof("\t" + dev.ID + ", " + dev.Health)
+			logging.Debugf("      " + dev.ID + ", " + dev.Health)
 			resp.Devices = append(resp.Devices, dev)
 		}
 

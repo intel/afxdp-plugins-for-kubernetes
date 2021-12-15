@@ -20,15 +20,13 @@ import (
 	"fmt"
 	"github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"github.com/intel/cndp_device_plugin/pkg/logformats"
 	"github.com/intel/cndp_device_plugin/pkg/networking"
 	logging "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"os"
-	"path"
 	"regexp"
-	"runtime"
-	"strconv"
 	"strings"
 )
 
@@ -63,14 +61,6 @@ GetConfig returns the overall config for the device plugin. Host devices are dis
 */
 func GetConfig(configFile string) (Config, error) {
 	var cfg Config
-	logging.SetReportCaller(true)
-	logging.SetFormatter(&logging.TextFormatter{
-		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
-			fileName := path.Base(frame.File) + ":" + strconv.Itoa(frame.Line)
-			return "", fileName
-		},
-	})
-
 
 	logging.Infof("Reading config file: %s", configFile)
 	raw, err := ioutil.ReadFile(configFile)
@@ -79,43 +69,47 @@ func GetConfig(configFile string) (Config, error) {
 		return cfg, err
 	}
 
+	logging.Infof("Unmarshalling config data")
 	if err := json.Unmarshal(raw, &cfg); err != nil {
 		logging.Errorf("Error unmarshalling config data: %v", err)
 		return cfg, err
 	}
 
+	logging.Infof("Validating config data")
 	if err := cfg.Validate(); err != nil {
 		logging.Errorf("Config validation error: %v", err)
 		return cfg, err
 	}
 
 	if cfg.LogFile != "" {
-		logging.SetReportCaller(true)
-		logging.SetFormatter(&logging.TextFormatter{
-			CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
-				fileName := path.Base(frame.File) + ":" + strconv.Itoa(frame.Line)
-				return "", fileName
-			},
-		})
+		logging.Infof("Setting log file: %s", cfg.LogFile)
 		fp, err := os.OpenFile(cfg.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 		if err != nil {
+			logging.Errorf("Error setting log file: %v", err)
 			return cfg, err
 		}
 		logging.SetOutput(io.MultiWriter(fp, os.Stdout))
 	}
 
 	if cfg.LogLevel != "" {
-		ll, err := logging.ParseLevel(cfg.LogLevel)
+		logging.Infof("Setting log level: %s", cfg.LogLevel)
+		level, err := logging.ParseLevel(cfg.LogLevel)
 		if err != nil {
+			logging.Errorf("Error setting log level: %v", err)
 			return cfg, err
 		}
-		logging.SetLevel(ll)
+		logging.SetLevel(level)
+
+		if cfg.LogLevel == "debug" {
+			logging.SetFormatter(logformats.Debug)
+			logging.Debugf("Using debug log format")
+		}
 	}
 
-	logging.Infof("Checking pools for manually assigned devices")
+	logging.Debugf("Checking pools for manually assigned devices")
 	for _, pool := range cfg.Pools {
 		for _, device := range pool.Devices {
-			logging.Infof("Device " + device + " has been manually assigned to pool " + pool.Name)
+			logging.Debugf("Device " + device + " has been manually assigned to pool " + pool.Name)
 
 			if contains(assignedInfs, device) {
 				logging.Warningf("Device " + device + " is already assigned to another pool, removing from " + pool.Name)
@@ -127,13 +121,13 @@ func GetConfig(configFile string) (Config, error) {
 		}
 	}
 
-	logging.Infof("Checking pools for assigned drivers")
+	logging.Debugf("Checking pools for assigned drivers")
 	for _, pool := range cfg.Pools {
 		if len(pool.Drivers) > 0 {
-			logging.Infof("Pool " + pool.Name + " has drivers assigned")
+			logging.Debugf("Pool " + pool.Name + " has drivers assigned")
 
 			for _, driver := range pool.Drivers {
-				logging.Infof("Pool " + pool.Name + " discovering devices of type " + driver)
+				logging.Debugf("Pool " + pool.Name + " discovering devices of type " + driver)
 				devices, err := deviceDiscovery(driver)
 				if err != nil {
 					logging.Errorf("Error discovering devices: %v", err.Error())
@@ -259,7 +253,7 @@ func deviceDiscovery(requiredDriver string) ([]string, error) {
 		}
 
 		if deviceDriver == requiredDriver {
-			logging.Infof("Device %s is type %s", hostDevice.Name, requiredDriver)
+			logging.Debugf("Device %s is type %s", hostDevice.Name, requiredDriver)
 
 			if contains(assignedInfs, hostDevice.Name) {
 				logging.Infof("Device %s is an already assigned to a pool, skipping", hostDevice.Name)
@@ -278,7 +272,7 @@ func deviceDiscovery(requiredDriver string) ([]string, error) {
 			}
 
 			poolDevices = append(poolDevices, hostDevice.Name)
-			logging.Infof("Device %s appended to the device list", hostDevice.Name)
+			logging.Debugf("Device %s appended to the device list", hostDevice.Name)
 		} else {
 			logging.Debugf("%s has the wrong driver type: %s", hostDevice.Name, deviceDriver)
 		}

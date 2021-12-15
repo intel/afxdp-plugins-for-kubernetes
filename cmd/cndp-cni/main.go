@@ -28,13 +28,12 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/intel/cndp_device_plugin/pkg/bpf"
+	"github.com/intel/cndp_device_plugin/pkg/logformats"
 	logging "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
 	"os"
-	"path"
 	"regexp"
 	"runtime"
-	"strconv"
 )
 
 var (
@@ -52,43 +51,6 @@ type netConfig struct {
 
 func init() {
 	runtime.LockOSThread()
-}
-
-func loadConf(bytes []byte) (*netConfig, error) {
-	n := &netConfig{}
-	logging.SetReportCaller(true)
-	logging.SetFormatter(&logging.TextFormatter{
-		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
-			fileName := path.Base(frame.File) + ":" + strconv.Itoa(frame.Line)
-			return "", fileName
-		},
-	})
-	if err := json.Unmarshal(bytes, n); err != nil {
-		return nil, fmt.Errorf("loadConf(): failed to load network configuration: %w", err)
-	}
-
-	if err := n.Validate(); err != nil {
-		logging.Errorf("Config validation error: %v", err)
-		return nil, err
-	}
-
-	if n.LogFile != "" {
-		fp, err := os.OpenFile(n.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-		if err != nil {
-			return nil, fmt.Errorf("loadConf(): cannot open logfile %s: %w", n.LogFile, err)
-		}
-		logging.SetOutput(fp)
-	}
-
-	if n.LogLevel != "" {
-		ll, err := logging.ParseLevel(n.LogLevel)
-		if err != nil {
-			return nil, fmt.Errorf("loadConf(): cannot set log level: %w", err)
-		}
-		logging.SetLevel(ll)
-	}
-
-	return n, nil
 }
 
 /*
@@ -115,6 +77,44 @@ func (n netConfig) Validate() error {
 			validation.In(iLogLevels...).Error("must be "+fmt.Sprintf("%v", iLogLevels)),
 		),
 	)
+}
+
+func loadConf(bytes []byte) (*netConfig, error) {
+	n := &netConfig{}
+
+	logging.SetReportCaller(true)
+	logging.SetFormatter(logformats.Default)
+
+	if err := json.Unmarshal(bytes, n); err != nil {
+		return nil, fmt.Errorf("loadConf(): failed to load network configuration: %w", err)
+	}
+
+	if err := n.Validate(); err != nil {
+		logging.Errorf("Config validation error: %v", err)
+		return nil, err
+	}
+
+	if n.LogFile != "" {
+		fp, err := os.OpenFile(n.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		if err != nil {
+			return nil, fmt.Errorf("loadConf(): cannot open logfile %s: %w", n.LogFile, err)
+		}
+		logging.SetOutput(fp)
+	}
+
+	if n.LogLevel != "" {
+		level, err := logging.ParseLevel(n.LogLevel)
+		if err != nil {
+			return nil, fmt.Errorf("loadConf(): cannot set log level: %w", err)
+		}
+		logging.SetLevel(level)
+
+		if n.LogLevel == "debug" {
+			logging.SetFormatter(logformats.Debug)
+		}
+	}
+
+	return n, nil
 }
 
 func cmdAdd(args *skel.CmdArgs) error {
