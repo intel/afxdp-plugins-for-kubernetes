@@ -16,7 +16,7 @@
 package main
 
 import (
-	"github.com/intel/cndp_device_plugin/pkg/uds"
+	"github.com/intel/cndp_device_plugin/internal/uds"
 	"os"
 	"strconv"
 	"strings"

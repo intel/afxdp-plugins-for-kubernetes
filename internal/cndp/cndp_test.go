@@ -16,8 +16,8 @@
 package cndp
 
 import (
-	"github.com/intel/cndp_device_plugin/pkg/resourcesapi"
-	"github.com/intel/cndp_device_plugin/pkg/uds"
+	"github.com/intel/cndp_device_plugin/internal/resourcesapi"
+	"github.com/intel/cndp_device_plugin/internal/uds"
 	"gotest.tools/assert"
 	"testing"
 )

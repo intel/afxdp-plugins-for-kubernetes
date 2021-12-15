@@ -19,7 +19,7 @@ import (
 	"errors"
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
-	"github.com/intel/cndp_device_plugin/pkg/bpf"
+	"github.com/intel/cndp_device_plugin/internal/bpf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"

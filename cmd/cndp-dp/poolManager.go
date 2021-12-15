@@ -18,8 +18,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/intel/cndp_device_plugin/pkg/bpf"
-	"github.com/intel/cndp_device_plugin/pkg/cndp"
+	"github.com/intel/cndp_device_plugin/internal/bpf"
+	"github.com/intel/cndp_device_plugin/internal/cndp"
 	logging "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"

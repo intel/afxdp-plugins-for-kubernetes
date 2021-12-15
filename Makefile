@@ -10,15 +10,15 @@ format:
 	@echo
 	@echo "******   Clang Format    ******"
 	@echo
-	-clang-format -i -style=file pkg/bpf/*.c pkg/bpf/*.h
+	-clang-format -i -style=file internal/bpf/*.c internal/bpf/*.h
 	@echo
 	@echo
 
 buildc:
 	@echo "******     Build BPF     ******"
 	@echo
-	gcc ./pkg/bpf/bpfWrapper.c -lbpf -c -o ./pkg/bpf/bpfWrapper.o
-	ar rs ./pkg/bpf/libwrapper.a ./pkg/bpf/bpfWrapper.o  &> /dev/null
+	gcc ./internal/bpf/bpfWrapper.c -lbpf -c -o ./internal/bpf/bpfWrapper.o
+	ar rs ./internal/bpf/libwrapper.a ./internal/bpf/bpfWrapper.o  &> /dev/null
 	@echo
 	@echo
 
@@ -58,7 +58,7 @@ deploy: image undeploy
 test: buildc
 	@echo "******    Unit Tests     ******"
 	@echo
-	go test $(shell go list ./... | grep -v "/test" | grep -v "/pkg/resourcesapi")
+	go test $(shell go list ./... | grep -v "/e2e" | grep -v "/internal/resourcesapi")
 	@echo
 	@echo
 
@@ -115,7 +115,7 @@ clean:
 	@echo
 	rm -f ./bin/cndp
 	rm -f ./bin/cndp-dp
-	rm -f ./pkg/bpf/bpfWrapper.o
-	rm -f ./pkg/bpf/libwrapper.a
+	rm -f ./internal/bpf/bpfWrapper.o
+	rm -f ./internal/bpf/libwrapper.a
 	@echo
 	@echo

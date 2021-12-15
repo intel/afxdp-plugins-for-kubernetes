@@ -17,7 +17,7 @@ package main
 
 import (
 	"flag"
-	"github.com/intel/cndp_device_plugin/pkg/logformats"
+	"github.com/intel/cndp_device_plugin/internal/logformats"
 	logging "github.com/sirupsen/logrus"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"os"

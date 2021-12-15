@@ -18,9 +18,9 @@ package cndp
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/intel/cndp_device_plugin/pkg/bpf"
-	"github.com/intel/cndp_device_plugin/pkg/resourcesapi"
-	"github.com/intel/cndp_device_plugin/pkg/uds"
+	"github.com/intel/cndp_device_plugin/internal/bpf"
+	"github.com/intel/cndp_device_plugin/internal/resourcesapi"
+	"github.com/intel/cndp_device_plugin/internal/uds"
 	logging "github.com/sirupsen/logrus"
 	"net"
 	"os"

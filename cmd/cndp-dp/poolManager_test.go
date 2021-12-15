@@ -18,8 +18,8 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"github.com/intel/cndp_device_plugin/pkg/bpf"
-	"github.com/intel/cndp_device_plugin/pkg/cndp"
+	"github.com/intel/cndp_device_plugin/internal/bpf"
+	"github.com/intel/cndp_device_plugin/internal/cndp"
 	"github.com/stretchr/testify/assert"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"testing"
