@@ -36,6 +36,7 @@ var (
 	logLevels    = []string{"debug", "info", "warning", "error"}            // acceptable log levels
 	logDir       = "/var/log/cndp/"                                         // acceptable log directory
 	assignedInfs []string                                                   // keeps track of devices that are assigned to pools
+	netHandler   networking.Handler
 )
 
 /*
@@ -59,8 +60,9 @@ type Config struct {
 /*
 GetConfig returns the overall config for the device plugin. Host devices are discovered if not explicitly set in the config file
 */
-func GetConfig(configFile string) (Config, error) {
+func GetConfig(configFile string, networking networking.Handler) (Config, error) {
 	var cfg Config
+	netHandler = networking
 
 	logging.Infof("Reading config file: %s", configFile)
 	raw, err := ioutil.ReadFile(configFile)
@@ -232,7 +234,6 @@ func (c Config) Validate() error {
 
 func deviceDiscovery(requiredDriver string) ([]string, error) {
 	var poolDevices []string
-	netHandler := networking.NewHandler()
 
 	hostDevices, err := netHandler.GetHostDevices()
 	if err != nil {
@@ -260,7 +261,7 @@ func deviceDiscovery(requiredDriver string) ([]string, error) {
 				continue
 			}
 
-			addrs, err := hostDevice.Addrs()
+			addrs, err := netHandler.GetAddresses(hostDevice)
 			if err != nil {
 				logging.Errorf("Error getting device IP: %v", err.Error())
 				return poolDevices, err

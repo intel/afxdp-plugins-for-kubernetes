@@ -18,6 +18,7 @@ package main
 import (
 	"flag"
 	"github.com/intel/cndp_device_plugin/internal/logformats"
+	"github.com/intel/cndp_device_plugin/internal/networking"
 	logging "github.com/sirupsen/logrus"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"os"
@@ -44,7 +45,7 @@ func main() {
 	logging.SetFormatter(logformats.Default)
 
 	logging.Infof("Starting CNDP Device Plugin")
-	cfg, err := GetConfig(configFile)
+	cfg, err := GetConfig(configFile, networking.NewHandler())
 	if err != nil {
 		logging.Errorf("Error getting device plugin config: %v", err)
 		logging.Errorf("Device plugin will exit")

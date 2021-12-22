@@ -30,6 +30,7 @@ against a fake API.
 type Handler interface {
 	GetHostDevices() ([]net.Interface, error)
 	GetDeviceDriver(interfaceName string) (string, error)
+	GetAddresses(interfaceName net.Interface) ([]net.Addr, error)
 }
 
 /*
@@ -75,4 +76,9 @@ func (r *handler) GetDeviceDriver(interfaceName string) (string, error) {
 
 	// trim whitespace and return
 	return strings.TrimSpace(driver), nil
+}
+
+func (r *handler) GetAddresses(interfaceName net.Interface) ([]net.Addr, error) {
+
+	return interfaceName.Addrs()
 }
