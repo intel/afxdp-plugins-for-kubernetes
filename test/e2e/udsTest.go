@@ -69,6 +69,14 @@ func main() {
 	makeRequest("/connect, " + hostname)
 	time.Sleep(requestDelay)
 
+	if 1 == 1 { //TODO - update this - "if we want a timeout"
+		println("Test App - Pausing for 20 seconds to force a timeout")
+		time.Sleep(20 * time.Second)
+		println("Test App - Timeout error should have occured")
+		println("Test App - Exit")
+		os.Exit(0)
+	}
+
 	// request version
 	makeRequest("/version")
 	time.Sleep(requestDelay)

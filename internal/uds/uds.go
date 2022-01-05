@@ -48,7 +48,6 @@ type handler struct {
 	conn       *net.UnixConn
 	msgBufSize int
 	ctlBufSize int
-	udsFD      int
 	timeout    time.Duration
 	protocol   string
 }
@@ -122,11 +121,6 @@ func (h *handler) Listen() (CleanupFunc, error) {
 		return func() { h.cleanup() }, err
 	}
 
-	if err := h.setUdsFD(); err != nil {
-		logging.Errorf("Error setting UDS file descriptor: %v", err)
-		return func() { h.cleanup() }, err
-	}
-
 	return func() { h.cleanup() }, nil
 }
 
@@ -145,10 +139,7 @@ func (h *handler) Dial() (CleanupFunc, error) {
 		return func() { h.cleanup() }, err
 	}
 
-	if err := h.setUdsFD(); err != nil {
-		logging.Errorf("Error setting UDS file descriptor: %v", err)
-		return func() { h.cleanup() }, err
-	}
+
 
 	return func() { h.cleanup() }, nil
 
@@ -172,9 +163,7 @@ func (h *handler) Read() (string, int, error) {
 			return request, fd, err
 		}
 	}
-
-	// read request message
-	n, _, _, _, err := syscall.Recvmsg(h.udsFD, msgBuf, ctrlBuf, 0)
+	n, _, _, _, err := h.conn.ReadMsgUnix(msgBuf, ctrlBuf)
 	if err != nil {
 		logging.Errorf("Recvmsg error: %v", err)
 		return request, fd, err
@@ -213,16 +202,13 @@ func (h *handler) Write(response string, fd int) error {
 	if fd > 0 {
 		logging.Debugf("Response: %s, FD: %s", response, strconv.Itoa(fd))
 		rights := syscall.UnixRights(fd)
-		if err := syscall.Sendmsg(h.udsFD, []byte(response), rights, nil, 0); err != nil {
-			logging.Errorf("Sendmsg error: %v", err)
-			return err
-		}
+
+		h.conn.WriteMsgUnix([]byte(response), rights, nil) //TODO check for error 
+
 	} else {
 		logging.Debugf("Response: %s", response)
-		if err := syscall.Sendmsg(h.udsFD, []byte(response), nil, nil, 0); err != nil {
-			logging.Errorf("Sendmsg error: %v", err)
-			return err
-		}
+
+		h.conn.WriteMsgUnix([]byte(response), nil, nil) //TODO check for error 
 	}
 	return nil
 }
@@ -236,18 +222,6 @@ func (h *handler) cleanup() {
 	h.socketFile.Close()
 	logging.Debugf("Removing socket file")
 	os.Remove(h.socketPath)
-}
-
-func (h *handler) setUdsFD() error {
-	var err error
-
-	h.socketFile, err = h.conn.File()
-	if err != nil {
-		logging.Errorf("Error getting socket file descriptor: %v", err)
-		return err
-	}
-	h.udsFD = int(h.socketFile.Fd())
-	return nil
 }
 
 func ctrlBufHasValue(s []byte) bool {
