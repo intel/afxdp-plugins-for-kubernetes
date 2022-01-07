@@ -48,7 +48,6 @@ type handler struct {
 	conn       *net.UnixConn
 	msgBufSize int
 	ctlBufSize int
-	udsFD      int
 	timeout    time.Duration
 	protocol   string
 }
@@ -122,11 +121,6 @@ func (h *handler) Listen() (CleanupFunc, error) {
 		return func() { h.cleanup() }, err
 	}
 
-	if err := h.setUdsFD(); err != nil {
-		logging.Errorf("Error setting UDS file descriptor: %v", err)
-		return func() { h.cleanup() }, err
-	}
-
 	return func() { h.cleanup() }, nil
 }
 
@@ -145,13 +139,7 @@ func (h *handler) Dial() (CleanupFunc, error) {
 		return func() { h.cleanup() }, err
 	}
 
-	if err := h.setUdsFD(); err != nil {
-		logging.Errorf("Error setting UDS file descriptor: %v", err)
-		return func() { h.cleanup() }, err
-	}
-
 	return func() { h.cleanup() }, nil
-
 }
 
 /*
@@ -165,7 +153,6 @@ func (h *handler) Read() (string, int, error) {
 	msgBuf := make([]byte, h.msgBufSize)
 	ctrlBuf := make([]byte, syscall.CmsgSpace(h.ctlBufSize))
 
-	// set connection timeout
 	if h.timeout > 0 {
 		if err := h.conn.SetDeadline(time.Now().Add(h.timeout)); err != nil {
 			logging.Errorf("Error setting connection timeout: %v", err)
@@ -173,10 +160,9 @@ func (h *handler) Read() (string, int, error) {
 		}
 	}
 
-	// read request message
-	n, _, _, _, err := syscall.Recvmsg(h.udsFD, msgBuf, ctrlBuf, 0)
+	n, _, _, _, err := h.conn.ReadMsgUnix(msgBuf, ctrlBuf)
 	if err != nil {
-		logging.Errorf("Recvmsg error: %v", err)
+		logging.Errorf("ReadMsgUnix error: %v", err)
 		return request, fd, err
 	}
 
@@ -209,18 +195,21 @@ Write will take a string, convert it to byte array and write to UDS
 If a file descriptor is included, Write will configure and include it
 */
 func (h *handler) Write(response string, fd int) error {
-	// write response with or without file descriptor
+
 	if fd > 0 {
 		logging.Debugf("Response: %s, FD: %s", response, strconv.Itoa(fd))
 		rights := syscall.UnixRights(fd)
-		if err := syscall.Sendmsg(h.udsFD, []byte(response), rights, nil, 0); err != nil {
-			logging.Errorf("Sendmsg error: %v", err)
+
+		if _, _, err := h.conn.WriteMsgUnix([]byte(response), rights, nil); err != nil {
+			logging.Errorf("WriteMsgUnix error: %v", err)
 			return err
 		}
+
 	} else {
 		logging.Debugf("Response: %s", response)
-		if err := syscall.Sendmsg(h.udsFD, []byte(response), nil, nil, 0); err != nil {
-			logging.Errorf("Sendmsg error: %v", err)
+
+		if _, _, err := h.conn.WriteMsgUnix([]byte(response), nil, nil); err != nil {
+			logging.Errorf("WriteMsgUnix error: %v", err)
 			return err
 		}
 	}
@@ -236,18 +225,6 @@ func (h *handler) cleanup() {
 	h.socketFile.Close()
 	logging.Debugf("Removing socket file")
 	os.Remove(h.socketPath)
-}
-
-func (h *handler) setUdsFD() error {
-	var err error
-
-	h.socketFile, err = h.conn.File()
-	if err != nil {
-		logging.Errorf("Error getting socket file descriptor: %v", err)
-		return err
-	}
-	h.udsFD = int(h.socketFile.Fd())
-	return nil
 }
 
 func ctrlBufHasValue(s []byte) bool {

@@ -56,7 +56,7 @@ const (
 	udsProtocol    = "unixpacket"      // "unix"=SOCK_STREAM, "unixdomain"=SOCK_DGRAM, "unixpacket"=SOCK_SEQPACKET
 	usdSockDir     = "/tmp/cndp_dp/"   // if changing, remember to update daemonset to mount this dir
 	udsDirFileMode = os.FileMode(0700) // drwx------
-	udsIdleTimeout = 0 * time.Second   // TODO make configurable
+	udsIdleTimeout = 15 * time.Second  // TODO make configurable
 )
 
 /*
