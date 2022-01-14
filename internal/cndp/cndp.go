@@ -56,7 +56,6 @@ const (
 	udsProtocol    = "unixpacket"      // "unix"=SOCK_STREAM, "unixdomain"=SOCK_DGRAM, "unixpacket"=SOCK_SEQPACKET
 	usdSockDir     = "/tmp/cndp_dp/"   // if changing, remember to update daemonset to mount this dir
 	udsDirFileMode = os.FileMode(0700) // drwx------
-	udsIdleTimeout = 15 * time.Second  // TODO make configurable
 )
 
 /*
@@ -75,20 +74,21 @@ container is created the factory will create a Server to serve the associated Un
 domain socket.
 */
 type ServerFactory interface {
-	CreateServer(deviceType string) (Server, string, error)
+	CreateServer(deviceType string, timeout int) (Server, string, error)
 }
 
 /*
 server implements the Server interface. It is the main type for this package.
 */
 type server struct {
-	podName    string
-	deviceType string
-	devices    map[string]int
-	udsPath    string
-	uds        uds.Handler
-	bpf        bpf.Handler
-	podRes     resourcesapi.Handler
+	podName        string
+	deviceType     string
+	devices        map[string]int
+	udsPath        string
+	uds            uds.Handler
+	bpf            bpf.Handler
+	podRes         resourcesapi.Handler
+	udsIdleTimeout time.Duration
 }
 
 /*
@@ -109,22 +109,24 @@ func NewServerFactory() ServerFactory {
 CreateServer creates, initialises, and returns an implementation of the Server interface.
 It also returns the filepath of the UDS being served.
 */
-func (f *serverFactory) CreateServer(deviceType string) (Server, string, error) {
+func (f *serverFactory) CreateServer(deviceType string, timeout int) (Server, string, error) {
 	subDir := strings.ReplaceAll(deviceType, "/", "_")
 	udsPath, err := generateSocketPath(usdSockDir + subDir + "/")
 	if err != nil {
 		logging.Errorf("Error generating socket file path: %v", err)
 		return &server{}, "", err
 	}
+	timeoutSeconds := time.Duration(timeout) * time.Second
 
 	server := &server{
-		podName:    "unvalidated",
-		deviceType: deviceType,
-		devices:    make(map[string]int),
-		udsPath:    udsPath,
-		uds:        uds.NewHandler(),
-		bpf:        bpf.NewHandler(),
-		podRes:     resourcesapi.NewHandler(),
+		podName:        "unvalidated",
+		deviceType:     deviceType,
+		devices:        make(map[string]int),
+		udsPath:        udsPath,
+		uds:            uds.NewHandler(),
+		bpf:            bpf.NewHandler(),
+		podRes:         resourcesapi.NewHandler(),
+		udsIdleTimeout: timeoutSeconds,
 	}
 
 	return server, udsPath, nil
@@ -154,7 +156,7 @@ func (s *server) start() {
 	logging.Debugf("Initialising Unix domain socket: " + s.udsPath)
 
 	// init
-	if err := s.uds.Init(s.udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, udsIdleTimeout); err != nil {
+	if err := s.uds.Init(s.udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, s.udsIdleTimeout); err != nil {
 		logging.Errorf("Error Initialising UDS: %v", err)
 		return
 	}

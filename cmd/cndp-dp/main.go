@@ -63,6 +63,7 @@ func main() {
 			DpAPISocket:   pluginapi.DevicePluginPath + devicePrefix + "-" + poolConfig.Name + ".sock",
 			DpAPIEndpoint: devicePrefix + "-" + poolConfig.Name + ".sock",
 			UpdateSignal:  make(chan bool),
+			Timeout:       cfg.Timeout,
 		}
 
 		if err := pm.Init(poolConfig); err != nil {

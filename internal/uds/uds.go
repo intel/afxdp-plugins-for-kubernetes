@@ -162,6 +162,10 @@ func (h *handler) Read() (string, int, error) {
 
 	n, _, _, _, err := h.conn.ReadMsgUnix(msgBuf, ctrlBuf)
 	if err != nil {
+		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+			logging.Errorf("Connection timed out: %v", err)
+			return request, fd, err
+		}
 		logging.Errorf("ReadMsgUnix error: %v", err)
 		return request, fd, err
 	}
@@ -219,8 +223,10 @@ func (h *handler) Write(response string, fd int) error {
 func (h *handler) cleanup() {
 	logging.Debugf("Closing Unix listener")
 	h.listener.Close()
-	logging.Debugf("Closing connection")
-	h.conn.Close()
+	if h.conn != nil {
+		logging.Debugf("Closing connection")
+		h.conn.Close()
+	}
 	logging.Debugf("Closing socket file")
 	h.socketFile.Close()
 	logging.Debugf("Removing socket file")

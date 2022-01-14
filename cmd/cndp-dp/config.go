@@ -30,6 +30,11 @@ import (
 	"strings"
 )
 
+const (
+	maxTimeout     = 300 // Maximum timeout set to seconds
+	defaultTimeout = 30  // Default timeout for unset timeout value in config.json.
+)
+
 var (
 	driversTypes = []string{"i40e", "E810"}                                 // drivers we search for by default if none configured
 	excludedInfs = []string{"eno", "eth", "lo", "docker", "flannel", "cni"} // interfaces we never add to a pool
@@ -55,6 +60,7 @@ type Config struct {
 	Pools    []*PoolConfig `json:"pools"`
 	LogFile  string        `json:"logFile"`
 	LogLevel string        `json:"logLevel"`
+	Timeout  int           `json:"timeout"`
 }
 
 /*
@@ -106,6 +112,13 @@ func GetConfig(configFile string, networking networking.Handler) (Config, error)
 			logging.SetFormatter(logformats.Debug)
 			logging.Debugf("Using debug log format")
 		}
+	}
+
+	if cfg.Timeout != 0 {
+		logging.Debugf("Timeout is set to: %d seconds", cfg.Timeout)
+	} else {
+		cfg.Timeout = defaultTimeout
+		logging.Debugf("Using default value, timeout set to: %d seconds", cfg.Timeout)
 	}
 
 	logging.Debugf("Checking pools for manually assigned devices")
@@ -228,6 +241,10 @@ func (c Config) Validate() error {
 		validation.Field(
 			&c.LogLevel,
 			validation.In(iLogLevels...).Error("must be "+fmt.Sprintf("%v", iLogLevels)),
+		),
+		validation.Field(
+			&c.Timeout,
+			validation.Min(0), validation.Max(maxTimeout),
 		),
 	)
 }

@@ -1,6 +1,7 @@
 {
 	"logLevel": "debug",
 	"logFile": "/var/log/cndp/cndp-dp-e2e.log",
+	"timeout": 30,
 	"pools" : [
 		{
 			"name" : "e2e",

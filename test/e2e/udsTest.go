@@ -24,17 +24,31 @@ import (
 )
 
 const (
-	udsProtocol    = "unixpacket"
-	udsPath        = "/tmp/cndp.sock"
-	udsMsgBufSize  = 64
-	udsCtlBufSize  = 4
-	udsIdleTimeout = 0 * time.Second
-	requestDelay   = 100 * time.Millisecond // not required but keeps things in nice order when DP and this test app are both printing to screen
+	udsProtocol     = "unixpacket"
+	udsPath         = "/tmp/cndp.sock"
+	udsMsgBufSize   = 64
+	udsCtlBufSize   = 4
+	udsIdleTimeout  = 0 * time.Second
+	requestDelay    = 100 * time.Millisecond // not required but keeps things in nice order when DP and this test app are both printing to screen
+	timeoutDuration = 40                     // For UDS timeout test - timeoutDuration must exceed timeout value set in config.json.
 )
 
 var udsHandler uds.Handler
 
 func main() {
+	timeoutAfterConnect := false
+	timeoutBeforeConnect := false
+	// Command line argument to set timeout test
+	timeoutArgs := os.Args[1:]
+	for _, arg := range timeoutArgs {
+		if arg == "-timeout-before-connect" {
+			timeoutBeforeConnect = true
+		}
+		if arg == "-timeout-after-connect" {
+			timeoutAfterConnect = true
+		}
+	}
+
 	//Get environment variable device values
 	devicesVar, exists := os.LookupEnv("CNDP_DEVICES")
 	if !exists {
@@ -57,6 +71,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Execute timeoutBeforeConnect when set to true
+	if timeoutBeforeConnect {
+		println("Test App - Executing timeout before connect")
+		timeout()
+	}
+
 	cleanup, err := udsHandler.Dial()
 	if err != nil {
 		println("Test App Error: UDS Dial error:: ", err)
@@ -69,12 +89,10 @@ func main() {
 	makeRequest("/connect, " + hostname)
 	time.Sleep(requestDelay)
 
-	if 1 == 0 { //TODO - update this - "if we want a timeout"
-		println("Test App - Pausing for 20 seconds to force a timeout")
-		time.Sleep(20 * time.Second)
-		println("Test App - Timeout error should have occured")
-		println("Test App - Exit")
-		os.Exit(0)
+	// Execute timeoutAfterConnect when set to true
+	if timeoutAfterConnect {
+		println("Test App - Executing timeout after connect")
+		timeout()
 	}
 
 	// request version
@@ -99,6 +117,14 @@ func main() {
 	// finish
 	makeRequest("/fin")
 	time.Sleep(requestDelay)
+}
+
+func timeout() {
+	println("Test App - Pausing for", timeoutDuration, "seconds to force timeout")
+	println("Test App - Expecting timeout error to occur")
+	time.Sleep(timeoutDuration * time.Second)
+	println("Test App - Exiting")
+	os.Exit(0)
 }
 
 func makeRequest(request string) {

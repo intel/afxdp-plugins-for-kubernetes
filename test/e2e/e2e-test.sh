@@ -90,7 +90,7 @@ run() {
 	echo
 	echo "***** UDS Test *****"
 	echo
-	kubectl exec -i cndp-e2e-test --container cndp -- udsTest 
+	kubectl exec -i cndp-e2e-test --container cndp -- udsTest
 	echo "***** Delete Pod *****"
 	kubectl delete pod --grace-period 0 --ignore-not-found=true cndp-e2e-test &> /dev/null
 
@@ -123,7 +123,6 @@ run() {
 		echo
 		echo "***** Delete Pod *****"
 		kubectl delete pod --grace-period 0 --ignore-not-found=true cndp-e2e-test &> /dev/null
-
 		sleep 5
 		echo
 		echo "*****************************************************"
@@ -135,7 +134,7 @@ run() {
 		echo "***** Netdevs attached to pod (ip a) *****"
 		echo
 		kubectl exec -i cndp-e2e-test -- ip a
-		sleep 10
+		sleep 2
 		echo
 		echo "***** Netdevs attached to pod (ip l) *****"
 		echo
@@ -157,6 +156,36 @@ run() {
 		echo "***** UDS Test: Container 2 *****"
 		echo
 		kubectl exec -i cndp-e2e-test --container cndp2 -- udsTest
+		echo
+		echo "***** Delete Pod *****"
+		kubectl delete pod --grace-period 0 --ignore-not-found=true cndp-e2e-test &> /dev/null
+		sleep 5
+		echo
+		echo "*****************************************************"
+		echo "*          Run Pod: Timeout (never connect)         *"
+		echo "*****************************************************"
+		echo "***** Expect Timeout Execution *****"
+		kubectl create -f pod-1c1d.yaml
+		sleep 10
+		echo
+		echo "***** UDS Test *****"
+		echo
+		kubectl exec -i cndp-e2e-test --container cndp -- udsTest -timeout-before-connect
+		echo
+		echo "***** Delete Pod *****"
+		kubectl delete pod --grace-period 0 --ignore-not-found=true cndp-e2e-test &> /dev/null
+		sleep 5
+		echo
+		echo "******************************************************************"
+		echo "*          Run Pod: Timeout (after connect)                      *"
+		echo "******************************************************************"
+		echo "***** Expect Timeout Execution *****"
+		kubectl create -f pod-1c1d.yaml
+		sleep 10
+		echo
+		echo "***** UDS Test *****"
+		echo
+		kubectl exec -i cndp-e2e-test --container cndp -- udsTest -timeout-after-connect
 		echo
 		echo "***** Delete Pod *****"
 		kubectl delete pod --grace-period 0 --ignore-not-found=true cndp-e2e-test &> /dev/null

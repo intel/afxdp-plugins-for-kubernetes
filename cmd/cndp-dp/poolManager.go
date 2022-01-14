@@ -48,6 +48,7 @@ type PoolManager struct {
 	DpAPIServer   *grpc.Server
 	ServerFactory cndp.ServerFactory
 	BpfHandler    bpf.Handler
+	Timeout       int
 }
 
 /*
@@ -129,7 +130,7 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 	response := pluginapi.AllocateResponse{}
 
 	logging.Infof("New allocate request. Creating new UDS server.")
-	cndpServer, udsPath, err := pm.ServerFactory.CreateServer(devicePrefix + "/" + pm.Name)
+	cndpServer, udsPath, err := pm.ServerFactory.CreateServer(devicePrefix+"/"+pm.Name, pm.Timeout)
 	if err != nil {
 		logging.Errorf("Error Creating new UDS server: %v", err)
 		return &response, err
