@@ -63,9 +63,30 @@ test: buildc
 	@echo
 
 e2e: build
-	@echo "******     E2e Test      ******"
+	@echo "******     Basic E2E     ******"
 	@echo
 	cd test/e2e/ && ./e2e-test.sh
+	@echo
+	@echo
+
+e2efull: build
+	@echo "******     Full E2E      ******"
+	@echo
+	cd test/e2e/ && ./e2e-test.sh --full
+	@echo
+	@echo
+
+e2edaemon: image
+	@echo "******   E2E Daemonset   ******"
+	@echo
+	cd test/e2e/ && ./e2e-test.sh --daemonset
+	@echo
+	@echo
+
+e2efulldaemon: image
+	@echo "****** Full E2E DaemSet  ******"
+	@echo
+	cd test/e2e/ && ./e2e-test.sh --full --daemonset
 	@echo
 	@echo
 
