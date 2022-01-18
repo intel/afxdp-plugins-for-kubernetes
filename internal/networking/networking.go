@@ -16,10 +16,12 @@
 package networking
 
 import (
-	"github.com/go-cmd/cmd"
-	logging "github.com/sirupsen/logrus"
 	"net"
 	"strings"
+
+	"github.com/go-cmd/cmd"
+	logging "github.com/sirupsen/logrus"
+	"github.com/vishvananda/netlink"
 )
 
 /*
@@ -31,6 +33,7 @@ type Handler interface {
 	GetHostDevices() ([]net.Interface, error)
 	GetDeviceDriver(interfaceName string) (string, error)
 	GetAddresses(interfaceName net.Interface) ([]net.Addr, error)
+	CycleDevice(interfaceName string) error
 }
 
 /*
@@ -79,6 +82,28 @@ func (r *handler) GetDeviceDriver(interfaceName string) (string, error) {
 }
 
 func (r *handler) GetAddresses(interfaceName net.Interface) ([]net.Addr, error) {
-
 	return interfaceName.Addrs()
+}
+
+/*
+CycleDevice takes a netdave name and sets the device 'UP', then 'DOWN'
+Primerally used to workaround error - 22 of loading bpf prog onto a device
+that was never 'UP', e.g. after a reboot
+Equivalent to 'ip link set <interface_name> down' and 'ip link set <interface_name> up'
+*/
+func (r *handler) CycleDevice(interfaceName string) error {
+	device, err := netlink.LinkByName(interfaceName)
+	if err != nil {
+		return err
+	}
+
+	if err := netlink.LinkSetUp(device); err != nil {
+		return err
+	}
+
+	if err := netlink.LinkSetDown(device); err != nil {
+		return err
+	}
+
+	return nil
 }

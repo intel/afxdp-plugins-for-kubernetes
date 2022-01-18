@@ -45,7 +45,7 @@ func NewFakeHandler() FakeHandler {
 }
 
 /*
-GetHostDevices returns a list of net.Interface, representing the devices on the host.
+GetHostDevices returns a list of fake net.Interface, representing the devices on the host.
 */
 func (r *fakeHandler) GetHostDevices() ([]net.Interface, error) {
 	var returnList []net.Interface
@@ -78,7 +78,7 @@ func (r *fakeHandler) SetHostDevices(interfaceMap map[string][]string) {
 }
 
 /*
-GetDriverName takes a netdev name and returns the driver type
+GetDriverName takes a netdev name and returns a fake driver type
 It executes the command: ethtool -i <interface_name>
 */
 func (r *fakeHandler) GetDeviceDriver(interfaceName string) (string, error) {
@@ -94,10 +94,18 @@ func (r *fakeHandler) GetDeviceDriver(interfaceName string) (string, error) {
 }
 
 /*
-GetAddresses gets a netdave ip addresses and returns the ip addresses to be used by config.go
+GetAddresses gets a netdave ip addresses and returns the fake ip addresses to be used by config.go for unit testing
 */
 func (r *fakeHandler) GetAddresses(interfaceName net.Interface) ([]net.Addr, error) {
 	var addrs []net.Addr
 
 	return addrs, nil
+}
+
+/*
+CycleDevice is a mocked func that returns nil
+*/
+func (r *fakeHandler) CycleDevice(interfaceName string) error {
+
+	return nil
 }

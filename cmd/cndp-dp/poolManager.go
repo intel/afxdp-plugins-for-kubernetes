@@ -18,17 +18,19 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/intel/cndp_device_plugin/internal/bpf"
-	"github.com/intel/cndp_device_plugin/internal/cndp"
-	logging "github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/intel/cndp_device_plugin/internal/bpf"
+	"github.com/intel/cndp_device_plugin/internal/cndp"
+	"github.com/intel/cndp_device_plugin/internal/networking"
+	logging "github.com/sirupsen/logrus"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
 const (
@@ -57,6 +59,7 @@ Init is called it initialise the PoolManager.
 func (pm *PoolManager) Init(config *PoolConfig) error {
 	pm.ServerFactory = cndp.NewServerFactory()
 	pm.BpfHandler = bpf.NewHandler()
+	netHandler := networking.NewHandler()
 
 	if err := pm.registerWithKubelet(); err != nil {
 		return err
@@ -69,6 +72,13 @@ func (pm *PoolManager) Init(config *PoolConfig) error {
 	logging.Infof("Pool "+devicePrefix+"/%s started serving", pm.Name)
 
 	for _, device := range config.Devices {
+		logging.Debugf("Cycling state of device %s", device)
+		if err := netHandler.CycleDevice(device); err != nil {
+			logging.Errorf("Error cycling the state of device %s: %v", device, err)
+			logging.Errorf("Device %s was not added to pool %s", device, pm.Name)
+			continue
+		}
+
 		newdev := pluginapi.Device{ID: device, Health: pluginapi.Healthy}
 		pm.Devices[device] = &newdev
 	}
