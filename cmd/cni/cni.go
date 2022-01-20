@@ -36,6 +36,7 @@ import (
 
 var (
 	logLevels  = []string{"debug", "info", "warning", "error"} // acceptable log levels
+	modes      = []string{"cndp"}                              // acceptable modes
 	logDir     = "/var/log/cndp/"                              // acceptable log directory
 	bpfHanfler = bpf.NewHandler()
 )
@@ -46,6 +47,7 @@ NetConfig holds the config passed via stdin
 type NetConfig struct {
 	types.NetConf
 	Device   string `json:"deviceID"`
+	Mode     string `json:"mode"`
 	LogFile  string `json:"logFile,omitempty"`
 	LogLevel string `json:"logLevel,omitempty"`
 }
@@ -59,9 +61,16 @@ Validate validates the contents of the Config struct
 */
 func (n NetConfig) Validate() error {
 	var iLogLevels []interface{} = make([]interface{}, len(logLevels))
+	var iModes []interface{} = make([]interface{}, len(modes))
+
 	for i, logLevel := range logLevels {
 		iLogLevels[i] = logLevel
 	}
+
+	for i, mode := range modes {
+		iModes[i] = mode
+	}
+
 	return validation.ValidateStruct(&n,
 		validation.Field(
 			&n.Device,
@@ -71,11 +80,16 @@ func (n NetConfig) Validate() error {
 		validation.Field(
 			&n.LogFile,
 			validation.Match(regexp.MustCompile("^/$|^(/[a-zA-Z0-9._-]+)+$")).Error("must be a valid filepath"),
-			validation.Match(regexp.MustCompile("^"+logDir)).Error("must in directory "+logDir),
+			validation.Match(regexp.MustCompile("^"+logDir)).Error("validate(): must in directory "+logDir),
 		),
 		validation.Field(
 			&n.LogLevel,
-			validation.In(iLogLevels...).Error("must be "+fmt.Sprintf("%v", iLogLevels)),
+			validation.In(iLogLevels...).Error("validate(): must be "+fmt.Sprintf("%v", iLogLevels)),
+		),
+		validation.Field(
+			&n.Mode,
+			//validation.Required.Error("validate(): Mode is required"), // TODO make required once more modes available
+			validation.In(iModes...).Error("validate(): must be "+fmt.Sprintf("%v", iModes)),
 		),
 	)
 }
@@ -90,8 +104,7 @@ func loadConf(bytes []byte) (*NetConfig, error) {
 	}
 
 	if err := n.Validate(); err != nil {
-		logging.Errorf("Config validation error: %v", err)
-		return nil, err
+		return nil, fmt.Errorf("loadConf(): Config validation error: %v", err)
 	}
 
 	if n.LogFile != "" {
@@ -112,6 +125,10 @@ func loadConf(bytes []byte) (*NetConfig, error) {
 		if n.LogLevel == "debug" {
 			logging.SetFormatter(logformats.Debug)
 		}
+	}
+
+	if n.Mode != "" {
+		logging.Debugf("loadConf(): Mode is set to: %s", n.Mode)
 	}
 
 	return n, nil

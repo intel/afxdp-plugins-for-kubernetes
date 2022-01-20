@@ -46,8 +46,8 @@ func TestGetConfig(t *testing.T) {
 	}{
 		{
 			name:      "load good config 1",
-			config:    `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"cndp"}`,
-			expConfig: &NetConfig{NetConf: netConf, Device: "dev1"},
+			config:    `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"cndp","mode":"cndp"}`,
+			expConfig: &NetConfig{NetConf: netConf, Device: "dev1", Mode: "cndp"},
 		},
 
 		{
@@ -147,14 +147,14 @@ func TestCmdAdd(t *testing.T) {
 
 		{
 			name:       "no device name",
-			netConfStr: `{"cniVersion":"0.3.0","deviceID":"","name":"test-network","pciBusID":"","type":"cndp"}`,
+			netConfStr: `{"cniVersion":"0.3.0","deviceID":"","name":"test-network","pciBusID":"","type":"cndp","mode":"cndp"}`,
 			netNS:      "",
 			expError:   "validate(): no device specified",
 		},
 
 		{
 			name:       "fail to open netns - bad netns",
-			netConfStr: `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"cndp"}`,
+			netConfStr: `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"cndp","mode":"cndp"}`,
 			netNS:      "B@dN%eTNS",
 			expError:   "cmdAdd(): failed to open container netns \"B@dN%eTNS\": failed to Statfs \"B@dN%eTNS\": no such file or directory",
 		},
