@@ -209,7 +209,6 @@ func (h *handler) Write(response string, fd int) error {
 			logging.Errorf("WriteMsgUnix error: %v", err)
 			return err
 		}
-
 	} else {
 		logging.Debugf("Response: %s", response)
 

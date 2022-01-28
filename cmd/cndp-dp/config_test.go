@@ -38,7 +38,8 @@ func TestGetConfig(t *testing.T) {
 	}{
 		{
 			name: "get config : one pool two manually set devices",
-			configFile: `{  
+			configFile: `{
+							"mode": "cndp",
 							"timeout": 30,
 							"logLevel": "debug",
 							"logFile": "/var/log/cndp/file.log",
@@ -57,6 +58,7 @@ func TestGetConfig(t *testing.T) {
 						Devices: []string{"dev1", "dev2"},
 					},
 				},
+				Mode:     "cndp",
 				Timeout:  30,
 				LogFile:  "/var/log/cndp/file.log",
 				LogLevel: "debug",
@@ -66,6 +68,7 @@ func TestGetConfig(t *testing.T) {
 		{
 			name: "get config : one pool two manually set devices, the rest in pool 2",
 			configFile: `{
+							"mode": "cndp",
 							"timeout": 30,
 							"logLevel": "debug",
 							"logFile": "/var/log/cndp/file.log",
@@ -93,6 +96,7 @@ func TestGetConfig(t *testing.T) {
 						Drivers: []string{"i40e"},
 					},
 				},
+				Mode:     "cndp",
 				Timeout:  30,
 				LogFile:  "/var/log/cndp/file.log",
 				LogLevel: "debug",
@@ -102,6 +106,7 @@ func TestGetConfig(t *testing.T) {
 		{
 			name: "get config : mix of devices and drivers",
 			configFile: `{
+							"mode": "cndp",
 							"timeout": 30,
 							"logLevel": "debug",
 							"logFile": "/var/log/cndp/file.log",
@@ -132,6 +137,7 @@ func TestGetConfig(t *testing.T) {
 						Drivers: []string{"E810"},
 					},
 				},
+				Mode:     "cndp",
 				Timeout:  30,
 				LogFile:  "/var/log/cndp/file.log",
 				LogLevel: "debug",
@@ -141,6 +147,7 @@ func TestGetConfig(t *testing.T) {
 		{
 			name: "get config : one_pool three_devices",
 			configFile: `{
+							"mode": "cndp",
 							"timeout": 30,
 							"logLevel": "debug",
 							"logFile": "/var/log/cndp/file.log",
@@ -159,6 +166,7 @@ func TestGetConfig(t *testing.T) {
 						Devices: []string{"dev1", "dev2", "dev3"},
 					},
 				},
+				Mode:     "cndp",
 				Timeout:  30,
 				LogFile:  "/var/log/cndp/file.log",
 				LogLevel: "debug",
@@ -168,6 +176,7 @@ func TestGetConfig(t *testing.T) {
 		{
 			name: "get config : two_pools four_devices",
 			configFile: `{
+								"mode": "cndp",
 								"timeout": 30,
 								"logLevel": "debug",
 								"logFile": "/var/log/cndp/file.log",
@@ -196,6 +205,7 @@ func TestGetConfig(t *testing.T) {
 						Drivers: []string{"E810"},
 					},
 				},
+				Mode:     "cndp",
 				Timeout:  30,
 				LogFile:  "/var/log/cndp/file.log",
 				LogLevel: "debug",
@@ -205,7 +215,8 @@ func TestGetConfig(t *testing.T) {
 		{
 			name: "get config : two_pools six_devices",
 			configFile: `{
-							"timeout": 30,
+							"mode": "cndp",
+							"timeout": 30,	
 							"logLevel": "debug",
 							"logFile": "/var/log/cndp/file.log",
 							"pools": [{
@@ -233,6 +244,7 @@ func TestGetConfig(t *testing.T) {
 						Drivers: []string{"E810"},
 					},
 				},
+				Mode:     "cndp",
 				Timeout:  30,
 				LogFile:  "/var/log/cndp/file.log",
 				LogLevel: "debug",
@@ -242,19 +254,20 @@ func TestGetConfig(t *testing.T) {
 
 		{
 			name:       "load bad config : device  field missing",
-			configFile: `{"timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log","pools":[{"name":"pool1",:["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
+			configFile: `{"mode": "cndp","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log","pools":[{"name":"pool1",:["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
 			expErr:     errors.New("invalid character ':' looking for beginning of object key string"),
 		},
 
 		{
 			name:       "load bad config : invalid JSON",
-			configFile: `{"timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log","pools":[{"name":" "["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
-			expErr:     errors.New("invalid character '[' after object key:value pair"),
+			configFile: `{"mode": "cndp","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log","pools":[{"name":" "["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
+
+			expErr: errors.New("invalid character '[' after object key:value pair"),
 		},
 
 		{
 			name:       "load bad config : no pools",
-			configFile: `{"timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log", :[{"name: ["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
+			configFile: `{"mode": "cndp","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log", :[{"name: ["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
 			expErr:     errors.New("invalid character ':' looking for beginning of object key string"),
 		},
 

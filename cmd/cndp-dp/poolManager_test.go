@@ -27,7 +27,7 @@ import (
 )
 
 func TestAllocate(t *testing.T) {
-	pm := &PoolManager{Timeout: 30}
+	pm := &PoolManager{Mode: "cndp", Timeout: 30}
 	pm.ServerFactory = cndp.NewFakeServerFactory()
 	pm.BpfHandler = bpf.NewFakeHandler()
 

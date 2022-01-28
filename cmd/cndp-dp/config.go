@@ -41,6 +41,7 @@ var (
 	excludedInfs = []string{"eno", "eth", "lo", "docker", "flannel", "cni"} // interfaces we never add to a pool
 	logLevels    = []string{"debug", "info", "warning", "error"}            // acceptable log levels
 	logDir       = "/var/log/cndp/"                                         // acceptable log directory
+	modes        = []string{"cndp"}                                         // acceptable modes
 	assignedInfs []string                                                   // keeps track of devices that are assigned to pools
 	netHandler   networking.Handler
 )
@@ -59,6 +60,7 @@ Config contains the overall configuration for the device plugin
 */
 type Config struct {
 	Pools    []*PoolConfig `json:"pools"`
+	Mode     string        `json:"mode"`
 	LogFile  string        `json:"logFile"`
 	LogLevel string        `json:"logLevel"`
 	Timeout  int           `json:"timeout"`
@@ -114,6 +116,8 @@ func GetConfig(configFile string, networking networking.Handler) (Config, error)
 			logging.Debugf("Using debug log format")
 		}
 	}
+
+	logging.Infof("Mode is set to: %s", cfg.Mode)
 
 	if cfg.Timeout != 0 {
 		logging.Debugf("Timeout is set to: %d seconds", cfg.Timeout)
@@ -223,8 +227,13 @@ Validate validates the contents of the Config struct
 */
 func (c Config) Validate() error {
 	var iLogLevels []interface{} = make([]interface{}, len(logLevels))
+	var iModes []interface{} = make([]interface{}, len(modes))
+
 	for i, logLevel := range logLevels {
 		iLogLevels[i] = logLevel
+	}
+	for i, mode := range modes {
+		iModes[i] = mode
 	}
 
 	return validation.ValidateStruct(&c,
@@ -246,6 +255,11 @@ func (c Config) Validate() error {
 		validation.Field(
 			&c.Timeout,
 			validation.Min(0), validation.Max(maxTimeout),
+		),
+		validation.Field(
+			&c.Mode,
+			//validation.Required.Error("validate(): Mode is required"), // TODO make required once more modes available
+			validation.In(iModes...).Error("validate(): must be "+fmt.Sprintf("%v", iModes)),
 		),
 	)
 }

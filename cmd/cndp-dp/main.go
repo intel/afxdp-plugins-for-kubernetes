@@ -60,6 +60,7 @@ func main() {
 	for _, poolConfig := range cfg.Pools {
 		pm := PoolManager{
 			Name:          poolConfig.Name,
+			Mode:          cfg.Mode,
 			Devices:       make(map[string]*pluginapi.Device),
 			DpAPISocket:   pluginapi.DevicePluginPath + devicePrefix + "-" + poolConfig.Name + ".sock",
 			DpAPIEndpoint: devicePrefix + "-" + poolConfig.Name + ".sock",

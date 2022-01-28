@@ -151,6 +151,76 @@ A log file and log level can be configured for the device plugin. As above, thes
 {
     "logLevel": "debug",
     "logFile": "/var/log/cndp/cndp-dp.log",
+    "timeout": 30,
+    "pools" : [
+        {
+            "name" : "i40e",
+            "drivers" : ["i40e"]
+        }
+    ]
+}
+```
+
+### Mode
+
+The device plugin allows for different modes of operation. CNDP is the only mode at present, with additional modes to be implemented in due course.
+Mode type must be configured for both device plugin and CNI. 
+
+Mode setting for device plugin is set via the `config.json` file. Please see example below:
+
+```
+{
+    "mode": "cndp"
+    "pools" : [
+        {
+            "name" : "i40e",
+            "drivers" : ["i40e"]
+        }
+    ]
+}
+```
+
+Mode setting for CNI is set via the network-attachment-definition(NAD) file `NAD.yml`. Please see example below:
+
+```
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: cndp-e2e-test
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: cndp/e2e
+spec:
+  config: '{
+      "cniVersion": "0.3.0",
+      "type": "cndp-e2e",
+      "mode": "cndp",
+      "logFile": "/var/log/cndp/cndp-cni-e2e.log",
+      "logLevel": "debug",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "192.168.1.0/24",
+        "rangeStart": "192.168.1.200",
+        "rangeEnd": "192.168.1.216",
+        "routes": [
+          { "dst": "0.0.0.0/0" }
+        ],
+        "gateway": "192.168.1.1"
+      }
+    }
+```
+
+###Timeout 
+The device plugin includes a timeout action for the unix domain sockets(UDS). 
+Once the timeout is invoked, the UDS is closed and disconnected.
+
+The timeout is configured to a default of 90 seconds. 
+Setting the timeout to zero will disable the timeout action, which will allow the UDS to remain idle.
+
+The timeout value is set in the `config.json` file. Please see example below.
+
+```
+{
+    "timeout": 30,
     "pools" : [
         {
             "name" : "i40e",

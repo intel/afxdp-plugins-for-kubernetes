@@ -43,6 +43,7 @@ Each PoolManager registers with Kubernetes as a different device type.
 */
 type PoolManager struct {
 	Name          string
+	Mode          string
 	Devices       map[string]*pluginapi.Device
 	UpdateSignal  chan bool
 	DpAPISocket   string
@@ -137,13 +138,34 @@ the Device available in the container.
 */
 func (pm *PoolManager) Allocate(ctx context.Context,
 	rqt *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
+	var err error
+	var response *pluginapi.AllocateResponse
+
+	logging.Debugf("New allocate request")
+	if pm.Mode == "cndp" {
+		response, err = pm.allocateCndp(ctx, rqt)
+		if err != nil {
+			logging.Errorf("Error during CNDP pod allocation: %v", err)
+			return response, err
+		}
+
+		return response, nil
+	}
+
+	err = fmt.Errorf("Unrecognised device plugin mode")
+	logging.Errorf("Allocate error: %v", err)
+
+	return nil, err
+}
+
+func (pm *PoolManager) allocateCndp(ctx context.Context,
+	rqt *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
 	response := pluginapi.AllocateResponse{}
 
-	logging.Infof("New allocate request. Creating new UDS server.")
+	logging.Infof("New CNDP allocate request. Creating new UDS server")
 	cndpServer, udsPath, err := pm.ServerFactory.CreateServer(devicePrefix+"/"+pm.Name, pm.Timeout)
 	if err != nil {
 		logging.Errorf("Error Creating new UDS server: %v", err)
-		return &response, err
 	}
 
 	logging.Infof("UDS socket path: %s", udsPath)

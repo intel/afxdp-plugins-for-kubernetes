@@ -179,7 +179,7 @@ func (s *server) start() {
 
 	logging.Infof("New connection accepted. Waiting for requests.")
 
-	// read incomming request
+	// read incoming request
 	request, _, err := s.read()
 	if err != nil {
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
