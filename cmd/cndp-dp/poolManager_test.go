@@ -1,5 +1,5 @@
 /*
- * Copyright(c) 2021 Intel Corporation.
+ * Copyright(c) 2022 Intel Corporation.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,11 +18,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"testing"
+
 	"github.com/intel/cndp_device_plugin/internal/bpf"
 	"github.com/intel/cndp_device_plugin/internal/cndp"
 	"github.com/stretchr/testify/assert"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
-	"testing"
 )
 
 func TestAllocate(t *testing.T) {
