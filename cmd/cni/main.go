@@ -18,7 +18,7 @@ package main
 import (
 	"github.com/containernetworking/cni/pkg/skel"
 	cniversion "github.com/containernetworking/cni/pkg/version"
-	"github.com/intel/cndp_device_plugin/cmd/cni"
+	"github.com/intel/cndp_device_plugin/internal/cni"
 )
 
 func main() {

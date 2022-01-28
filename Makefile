@@ -25,12 +25,12 @@ buildc:
 build: format buildc
 	@echo "******     Build DP      ******"
 	@echo
-	go build -o ./bin/cndp-dp ./cmd/cndp-dp
+	go build -o ./bin/cndp-dp ./cmd/deviceplugin
 	@echo
 	@echo
 	@echo "******     Build CNI     ******"
 	@echo
-	go build -o ./bin/cndp ./cmd/cni/main
+	go build -o ./bin/cndp ./cmd/cni
 	@echo
 	@echo
 

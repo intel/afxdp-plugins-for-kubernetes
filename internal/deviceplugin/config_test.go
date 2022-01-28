@@ -14,18 +14,17 @@ limitations under the License.paulina
 
 */
 
-package main
+package deviceplugin
 
 import (
 	"errors"
+	"github.com/intel/cndp_device_plugin/internal/networking"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/intel/cndp_device_plugin/internal/networking"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestGetConfig(t *testing.T) {

@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/containernetworking/cni/pkg/skel"
-	"github.com/intel/cndp_device_plugin/cmd/cni"
+	"github.com/intel/cndp_device_plugin/internal/cni"
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
@@ -34,7 +34,7 @@ const (
 /*
 FuzzAdd sends fuzzed data into the cni CmdAdd function
 The input data is considered:
- - uninteresting if is caught by an exesting error
+ - uninteresting if is caught by an existing error
  - interesting if it does not result in an error, input priority increases for subsequent fuzzing
  - discard if it will not unmarshall, so we don't just end up testing the json.Unmarshall function
 */

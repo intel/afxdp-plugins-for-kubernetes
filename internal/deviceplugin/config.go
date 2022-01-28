@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package main
+package deviceplugin
 
 import (
 	"encoding/json"

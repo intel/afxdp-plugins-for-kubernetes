@@ -13,17 +13,11 @@
  * limitations under the License.
  */
 
-package main
+package deviceplugin
 
 import (
 	"encoding/json"
 	"fmt"
-	"net"
-	"os"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/intel/cndp_device_plugin/internal/bpf"
 	"github.com/intel/cndp_device_plugin/internal/cndp"
 	"github.com/intel/cndp_device_plugin/internal/networking"
@@ -31,6 +25,11 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
+	"net"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 const (
@@ -52,6 +51,7 @@ type PoolManager struct {
 	ServerFactory cndp.ServerFactory
 	BpfHandler    bpf.Handler
 	Timeout       int
+	DevicePrefix  string
 }
 
 /*
@@ -65,12 +65,12 @@ func (pm *PoolManager) Init(config *PoolConfig) error {
 	if err := pm.registerWithKubelet(); err != nil {
 		return err
 	}
-	logging.Infof("Pool "+devicePrefix+"/%s registered with Kubelet", pm.Name)
+	logging.Infof("Pool "+pm.DevicePrefix+"/%s registered with Kubelet", pm.Name)
 
 	if err := pm.startGRPC(); err != nil {
 		return err
 	}
-	logging.Infof("Pool "+devicePrefix+"/%s started serving", pm.Name)
+	logging.Infof("Pool "+pm.DevicePrefix+"/%s started serving", pm.Name)
 
 	for _, device := range config.Devices {
 		logging.Debugf("Cycling state of device %s", device)
@@ -99,7 +99,7 @@ func (pm *PoolManager) Terminate() error {
 	if err := pm.cleanup(); err != nil {
 		logging.Infof("Cleanup error: %v", err)
 	}
-	logging.Infof(devicePrefix + "/" + pm.Name + " terminated")
+	logging.Infof(pm.DevicePrefix + "/" + pm.Name + " terminated")
 
 	return nil
 }
@@ -112,12 +112,12 @@ ListAndWatch should return the new list.
 func (pm *PoolManager) ListAndWatch(empty *pluginapi.Empty,
 	stream pluginapi.DevicePlugin_ListAndWatchServer) error {
 
-	logging.Debugf("Pool "+devicePrefix+"/%s ListAndWatch started", pm.Name)
+	logging.Debugf("Pool "+pm.DevicePrefix+"/%s ListAndWatch started", pm.Name)
 
 	for {
 		<-pm.UpdateSignal
 		resp := new(pluginapi.ListAndWatchResponse)
-		logging.Debugf("Pool "+devicePrefix+"/%s device list:", pm.Name)
+		logging.Debugf("Pool "+pm.DevicePrefix+"/%s device list:", pm.Name)
 
 		for _, dev := range pm.Devices {
 			logging.Debugf("      " + dev.ID + ", " + dev.Health)
@@ -163,9 +163,10 @@ func (pm *PoolManager) allocateCndp(ctx context.Context,
 	response := pluginapi.AllocateResponse{}
 
 	logging.Infof("New CNDP allocate request. Creating new UDS server")
-	cndpServer, udsPath, err := pm.ServerFactory.CreateServer(devicePrefix+"/"+pm.Name, pm.Timeout)
+	cndpServer, udsPath, err := pm.ServerFactory.CreateServer(pm.DevicePrefix+"/"+pm.Name, pm.Timeout)
 	if err != nil {
 		logging.Errorf("Error Creating new UDS server: %v", err)
+		return &response, err
 	}
 
 	logging.Infof("UDS socket path: %s", udsPath)
@@ -250,7 +251,7 @@ func (pm *PoolManager) registerWithKubelet() error {
 	reqt := &pluginapi.RegisterRequest{
 		Version:      pluginapi.Version,
 		Endpoint:     pm.DpAPIEndpoint,
-		ResourceName: devicePrefix + "/" + pm.Name,
+		ResourceName: pm.DevicePrefix + "/" + pm.Name,
 	}
 
 	_, err = client.Register(context.Background(), reqt)
@@ -290,7 +291,7 @@ func (pm *PoolManager) startGRPC() error {
 		return err
 	}
 	conn.Close()
-	logging.Debugf(devicePrefix+"/%s started serving on %s", pm.Name, pm.DpAPISocket)
+	logging.Debugf(pm.DevicePrefix+"/%s started serving on %s", pm.Name, pm.DpAPISocket)
 
 	return nil
 }

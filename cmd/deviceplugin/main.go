@@ -17,14 +17,14 @@ package main
 
 import (
 	"flag"
-	"os"
-	"os/signal"
-	"syscall"
-
+	"github.com/intel/cndp_device_plugin/internal/deviceplugin"
 	"github.com/intel/cndp_device_plugin/internal/logformats"
 	"github.com/intel/cndp_device_plugin/internal/networking"
 	logging "github.com/sirupsen/logrus"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 const (
@@ -33,7 +33,7 @@ const (
 )
 
 type devicePlugin struct {
-	pools map[string]PoolManager
+	pools map[string]deviceplugin.PoolManager
 }
 
 func main() {
@@ -46,7 +46,7 @@ func main() {
 	logging.SetFormatter(logformats.Default)
 
 	logging.Infof("Starting CNDP Device Plugin")
-	cfg, err := GetConfig(configFile, networking.NewHandler())
+	cfg, err := deviceplugin.GetConfig(configFile, networking.NewHandler())
 	if err != nil {
 		logging.Errorf("Error getting device plugin config: %v", err)
 		logging.Errorf("Device plugin will exit")
@@ -54,11 +54,11 @@ func main() {
 	}
 
 	dp := devicePlugin{
-		pools: make(map[string]PoolManager),
+		pools: make(map[string]deviceplugin.PoolManager),
 	}
 
 	for _, poolConfig := range cfg.Pools {
-		pm := PoolManager{
+		pm := deviceplugin.PoolManager{
 			Name:          poolConfig.Name,
 			Mode:          cfg.Mode,
 			Devices:       make(map[string]*pluginapi.Device),
@@ -66,6 +66,7 @@ func main() {
 			DpAPIEndpoint: devicePrefix + "-" + poolConfig.Name + ".sock",
 			UpdateSignal:  make(chan bool),
 			Timeout:       cfg.Timeout,
+			DevicePrefix:  devicePrefix,
 		}
 
 		if err := pm.Init(poolConfig); err != nil {
