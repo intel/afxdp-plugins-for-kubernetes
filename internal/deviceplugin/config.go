@@ -18,17 +18,16 @@ package deviceplugin
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"os"
-	"regexp"
-	"strings"
-
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/intel/cndp_device_plugin/internal/logformats"
 	"github.com/intel/cndp_device_plugin/internal/networking"
 	logging "github.com/sirupsen/logrus"
+	"io"
+	"io/ioutil"
+	"os"
+	"regexp"
+	"strings"
 )
 
 const (
@@ -59,11 +58,12 @@ type PoolConfig struct {
 Config contains the overall configuration for the device plugin
 */
 type Config struct {
-	Pools    []*PoolConfig `json:"pools"`
-	Mode     string        `json:"mode"`
-	LogFile  string        `json:"logFile"`
-	LogLevel string        `json:"logLevel"`
-	Timeout  int           `json:"timeout"`
+	Pools                  []*PoolConfig `json:"pools"`
+	Mode                   string        `json:"mode"`
+	LogFile                string        `json:"logFile"`
+	LogLevel               string        `json:"logLevel"`
+	Timeout                int           `json:"timeout"`
+	RequireUnprivilegedBpf bool          `json:"requireUnprivilegedBpf"`
 }
 
 /*

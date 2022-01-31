@@ -17,19 +17,24 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/intel/cndp_device_plugin/internal/deviceplugin"
+	"github.com/intel/cndp_device_plugin/internal/host"
 	"github.com/intel/cndp_device_plugin/internal/logformats"
 	"github.com/intel/cndp_device_plugin/internal/networking"
 	logging "github.com/sirupsen/logrus"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 )
 
 const (
 	defaultConfigFile = "./config.json"
 	devicePrefix      = "cndp"
+	minLinuxVersion   = "4.18.0" // Minimum Linux version for AF_XDP support
 )
 
 type devicePlugin struct {
@@ -46,11 +51,88 @@ func main() {
 	logging.SetFormatter(logformats.Default)
 
 	logging.Infof("Starting CNDP Device Plugin")
+
+	host := host.NewHandler()
+
+	// kernel
+	linuxVersion, err := host.KernelVersion()
+	if err != nil {
+		logging.Errorf("Error checking kernel version: %v", err)
+		logging.Errorf("Device plugin will exit")
+		os.Exit(1)
+	}
+	logging.Infof("Kernel version: %v", linuxVersion)
+
+	linuxInt, err := intVersion(linuxVersion)
+	if err != nil {
+		logging.Errorf("Error converting kernel version: %v", err)
+		logging.Errorf("Device plugin will exit")
+		os.Exit(1)
+	}
+
+	minLinuxInt, err := intVersion(minLinuxVersion)
+	if err != nil {
+		logging.Errorf("Error converting kernel version: %v", err)
+		logging.Errorf("Device plugin will exit")
+		os.Exit(1)
+	}
+
+	if linuxInt < minLinuxInt {
+		logging.Errorf("Kernel version %v is below minimum requirement", linuxVersion)
+		logging.Errorf("Device plugin will exit")
+		os.Exit(1)
+	}
+
+	// libbpf
+	bpfInstalled, err := host.HasLibbpf()
+	if err != nil {
+		logging.Errorf("Error checking bpfInstalled: %v", err)
+		logging.Errorf("Device plugin will exit")
+		os.Exit(1)
+	}
+	if bpfInstalled {
+		logging.Infof("Libbpf present on host")
+	} else {
+		logging.Errorf("Libbpf not found on host")
+		logging.Errorf("Device plugin will exit")
+		os.Exit(1)
+	}
+
+	// ethtool
+	ethInstalled, err := host.HasEthtool()
+	if err != nil {
+		logging.Errorf("Error checking ethInstalled: %v", err)
+	}
+	if ethInstalled {
+		logging.Infof("Ethtool present on host")
+	} else {
+		logging.Errorf("Ethtool not found on host")
+		logging.Errorf("Device plugin will exit")
+		os.Exit(1)
+	}
+
+	// get config
 	cfg, err := deviceplugin.GetConfig(configFile, networking.NewHandler())
 	if err != nil {
 		logging.Errorf("Error getting device plugin config: %v", err)
 		logging.Errorf("Device plugin will exit")
 		os.Exit(1)
+	}
+
+	// unprivileged_bpf_disabled
+	unprivBpfAllowed, err := host.AllowsUnprivilegedBpf()
+	if err != nil {
+		logging.Errorf("Error checking if host allows Unprivileged BPF operations: %v", err)
+	}
+	if unprivBpfAllowed {
+		logging.Infof("Unprivileged BPF is allowed")
+	} else {
+		logging.Warningf("Unprivileged BPF is disabled")
+		if cfg.RequireUnprivilegedBpf {
+			logging.Errorf("Unprivileged bpf is required")
+			logging.Errorf("Device plugin will exit")
+			os.Exit(1)
+		}
 	}
 
 	dp := devicePlugin{
@@ -87,4 +169,21 @@ func main() {
 			logging.Errorf("Termination error: %v", err)
 		}
 	}
+}
+
+func intVersion(version string) (int64, error) { // example "5.4.0-89-generic"
+	stripped := strings.Split(version, "-")[0] // "5.4.0"
+	split := strings.Split(stripped, ".")      // [5 4 0]
+
+	padded := ""
+	for _, val := range split { // 000500040000
+		padded += fmt.Sprintf("%04s", val)
+	}
+
+	value, err := strconv.ParseInt(padded, 10, 64) // 500040000
+	if err != nil {
+		return -1, err
+	}
+
+	return value, nil
 }
