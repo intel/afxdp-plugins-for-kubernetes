@@ -29,8 +29,8 @@ import (
 	"github.com/containernetworking/plugins/pkg/ns"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
-	"github.com/intel/cndp_device_plugin/internal/bpf"
-	"github.com/intel/cndp_device_plugin/internal/logformats"
+	"github.com/intel/afxdp_k8s_plugins/internal/bpf"
+	"github.com/intel/afxdp_k8s_plugins/internal/logformats"
 	logging "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
 )
@@ -38,7 +38,7 @@ import (
 var (
 	logLevels  = []string{"debug", "info", "warning", "error"} // acceptable log levels
 	modes      = []string{"cndp"}                              // acceptable modes
-	logDir     = "/var/log/cndp/"                              // acceptable log directory
+	logDir     = "/var/log/afxdp-k8s-plugins/"                 // acceptable log directory
 	bpfHanfler = bpf.NewHandler()
 )
 

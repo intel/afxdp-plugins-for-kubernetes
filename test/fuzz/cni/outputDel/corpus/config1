@@ -1,6 +1,6 @@
 {
     "cniVersion": "0.3.0",
-    "type": "cndp",
+    "type": "afxdp",
     "mode": "cndp",
     "ipam": {
         "type": "host-local",

@@ -5,7 +5,7 @@ all: build test static
 format:
 	@echo "******     Go Format     ******"
 	@echo
-	-go fmt github.com/intel/cndp_device_plugin/...
+	-go fmt github.com/intel/afxdp_k8s_plugins/...
 	@echo
 	@echo
 	@echo "******   Clang Format    ******"
@@ -25,12 +25,12 @@ buildc:
 build: format buildc
 	@echo "******     Build DP      ******"
 	@echo
-	go build -o ./bin/cndp-dp ./cmd/deviceplugin
+	go build -o ./bin/afxdp-dp ./cmd/deviceplugin
 	@echo
 	@echo
 	@echo "******     Build CNI     ******"
 	@echo
-	go build -o ./bin/cndp ./cmd/cni
+	go build -o ./bin/afxdp ./cmd/cni
 	@echo
 	@echo
 
@@ -110,7 +110,7 @@ static:
 	@echo
 	@echo "******      Go Vet       ******"
 	@echo
-	for pkg in $$(go list github.com/intel/cndp_device_plugin/...); do echo $$pkg && go vet $$pkg; done
+	for pkg in $$(go list github.com/intel/afxdp_k8s_plugins/...); do echo $$pkg && go vet $$pkg; done
 	@echo
 	@echo
 	@echo "******     Hadolint      ******"
@@ -134,8 +134,8 @@ cloc: format
 clean:
 	@echo "******      Cleanup      ******"
 	@echo
-	rm -f ./bin/cndp
-	rm -f ./bin/cndp-dp
+	rm -f ./bin/afxdp
+	rm -f ./bin/afxdp-dp
 	rm -f ./internal/bpf/bpfWrapper.o
 	rm -f ./internal/bpf/libwrapper.a
 	@echo

@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/intel/cndp_device_plugin/internal/uds"
+	"github.com/intel/afxdp_k8s_plugins/internal/uds"
 )
 
 const (

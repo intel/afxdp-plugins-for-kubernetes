@@ -1,6 +1,6 @@
 {
     "cniVersion": "0.3.1",
-    "type": "cndp",
+    "type": "afxdp",
     "mode": "cndp",
     "logFile": "/var/log/cndp/fuzz.log",
     "logLevel": "info",

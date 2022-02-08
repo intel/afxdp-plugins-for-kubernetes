@@ -21,7 +21,7 @@ import (
 
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
-	"github.com/intel/cndp_device_plugin/internal/bpf"
+	"github.com/intel/afxdp_k8s_plugins/internal/bpf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

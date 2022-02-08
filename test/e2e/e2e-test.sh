@@ -2,7 +2,7 @@
 set -e
 
 pids=( )
-run_dp="./../../bin/cndp-dp"
+run_dp="./../../bin/afxdp-dp"
 full_run=false
 daemonset=false
 
@@ -16,7 +16,7 @@ cleanup() {
 	echo "Delete Test App"
 	rm -f ./udsTest &> /dev/null
 	echo "Delete CNI"
-	rm -f /opt/cni/bin/cndp-e2e &> /dev/null
+	rm -f /opt/cni/bin/afxdp-e2e &> /dev/null
 	echo "Delete Network Attachment Definition"
 	kubectl delete network-attachment-definition --ignore-not-found=true cndp-e2e-test &> /dev/null
 	echo "Delete Docker Image"
@@ -39,7 +39,7 @@ build() {
 	echo "*****************************************************"
 	echo
 	echo "***** CNI Install *****"
-	cp ./../../bin/cndp /opt/cni/bin/cndp-e2e
+	cp ./../../bin/afxdp /opt/cni/bin/afxdp-e2e
 	echo "***** Network Attachment Definition *****"
 	kubectl create -f ./nad.yaml
 	echo "***** Test App *****"
@@ -57,7 +57,7 @@ run() {
 		echo "***** Deploying Device Plugin as daemonset *****"
 		echo
 		echo "Note that device plugin logs will not be printed to screen on a daemonset run"
-		echo "Logs can be viewed separately in /var/log/cndp/cndp-dp-e2e.log"
+		echo "Logs can be viewed separately in /var/log/afxdp-k8s-plugins/cndp-dp-e2e.log"
 		echo
 		kubectl create -f ./daemonset.yml
 	else

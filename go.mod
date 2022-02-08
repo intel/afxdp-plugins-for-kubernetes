@@ -1,4 +1,4 @@
-module github.com/intel/cndp_device_plugin
+module github.com/intel/afxdp_k8s_plugins
 
 go 1.13
 

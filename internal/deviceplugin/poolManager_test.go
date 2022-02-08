@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/intel/cndp_device_plugin/internal/bpf"
-	"github.com/intel/cndp_device_plugin/internal/cndp"
+	"github.com/intel/afxdp_k8s_plugins/internal/bpf"
+	"github.com/intel/afxdp_k8s_plugins/internal/cndp"
 	"github.com/stretchr/testify/assert"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )

@@ -18,7 +18,7 @@ package deviceplugin
 
 import (
 	"errors"
-	"github.com/intel/cndp_device_plugin/internal/networking"
+	"github.com/intel/afxdp_k8s_plugins/internal/networking"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
@@ -41,7 +41,7 @@ func TestGetConfig(t *testing.T) {
 							"mode": "cndp",
 							"timeout": 30,
 							"logLevel": "debug",
-							"logFile": "/var/log/cndp/file.log",
+							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
 							"pools": [{
 								"name": "pool1",
 								"devices": ["dev1", "dev2"]
@@ -59,7 +59,7 @@ func TestGetConfig(t *testing.T) {
 				},
 				Mode:     "cndp",
 				Timeout:  30,
-				LogFile:  "/var/log/cndp/file.log",
+				LogFile:  "/var/log/afxdp-k8s-plugins/file.log",
 				LogLevel: "debug",
 			},
 			expErr: nil,
@@ -70,7 +70,7 @@ func TestGetConfig(t *testing.T) {
 							"mode": "cndp",
 							"timeout": 30,
 							"logLevel": "debug",
-							"logFile": "/var/log/cndp/file.log",
+							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
 							"pools": [{
 								"name": "pool1",
 								"devices": ["dev1", "dev2"]
@@ -97,7 +97,7 @@ func TestGetConfig(t *testing.T) {
 				},
 				Mode:     "cndp",
 				Timeout:  30,
-				LogFile:  "/var/log/cndp/file.log",
+				LogFile:  "/var/log/afxdp-k8s-plugins/file.log",
 				LogLevel: "debug",
 			},
 			expErr: nil,
@@ -108,7 +108,7 @@ func TestGetConfig(t *testing.T) {
 							"mode": "cndp",
 							"timeout": 30,
 							"logLevel": "debug",
-							"logFile": "/var/log/cndp/file.log",
+							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
 							"pools": [{
 								"name": "pool1",
 								"devices": ["dev5", "dev6"],
@@ -138,7 +138,7 @@ func TestGetConfig(t *testing.T) {
 				},
 				Mode:     "cndp",
 				Timeout:  30,
-				LogFile:  "/var/log/cndp/file.log",
+				LogFile:  "/var/log/afxdp-k8s-plugins/file.log",
 				LogLevel: "debug",
 			},
 			expErr: nil,
@@ -149,7 +149,7 @@ func TestGetConfig(t *testing.T) {
 							"mode": "cndp",
 							"timeout": 30,
 							"logLevel": "debug",
-							"logFile": "/var/log/cndp/file.log",
+							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
 							"pools": [{
 								"name": "pool1",
 								"devices": ["dev1", "dev2","dev3"]
@@ -167,7 +167,7 @@ func TestGetConfig(t *testing.T) {
 				},
 				Mode:     "cndp",
 				Timeout:  30,
-				LogFile:  "/var/log/cndp/file.log",
+				LogFile:  "/var/log/afxdp-k8s-plugins/file.log",
 				LogLevel: "debug",
 			},
 			expErr: nil,
@@ -178,7 +178,7 @@ func TestGetConfig(t *testing.T) {
 								"mode": "cndp",
 								"timeout": 30,
 								"logLevel": "debug",
-								"logFile": "/var/log/cndp/file.log",
+								"logFile": "/var/log/afxdp-k8s-plugins/file.log",
 								"pools": [{
 									"name": "pool1",
 									"drivers": ["i40e"]
@@ -206,7 +206,7 @@ func TestGetConfig(t *testing.T) {
 				},
 				Mode:     "cndp",
 				Timeout:  30,
-				LogFile:  "/var/log/cndp/file.log",
+				LogFile:  "/var/log/afxdp-k8s-plugins/file.log",
 				LogLevel: "debug",
 			},
 			expErr: nil,
@@ -217,7 +217,7 @@ func TestGetConfig(t *testing.T) {
 							"mode": "cndp",
 							"timeout": 30,	
 							"logLevel": "debug",
-							"logFile": "/var/log/cndp/file.log",
+							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
 							"pools": [{
 								"name": "pool1",
 								"drivers": ["i40e"]
@@ -245,7 +245,7 @@ func TestGetConfig(t *testing.T) {
 				},
 				Mode:     "cndp",
 				Timeout:  30,
-				LogFile:  "/var/log/cndp/file.log",
+				LogFile:  "/var/log/afxdp-k8s-plugins/file.log",
 				LogLevel: "debug",
 			},
 			expErr: nil,

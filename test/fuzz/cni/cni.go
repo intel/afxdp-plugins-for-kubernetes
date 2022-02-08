@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/containernetworking/cni/pkg/skel"
-	"github.com/intel/cndp_device_plugin/internal/cni"
+	"github.com/intel/afxdp_k8s_plugins/internal/cni"
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 

@@ -24,13 +24,13 @@ RUN git clone ${LIBBPF_GIT_REPO} ${LIBBPF_DIR} \
       && apk del git
 
 # Copy Plugin binaries and scripts
-COPY ./bin/cndp /cndp/cndp
-COPY ./bin/cndp-dp /cndp/cndp-dp
-COPY ./images/entrypoint.sh /cndp/entrypoint.sh
+COPY ./bin/afxdp /afxdp/afxdp
+COPY ./bin/afxdp-dp /afxdp/afxdp-dp
+COPY ./images/entrypoint.sh /afxdp/entrypoint.sh
 
 ENV LD_CONFIG_DIR=
 ENV LIBBPF_DIR=
 ENV LIBBPF_SRC_DIR=
 ENV LIBBPF_GIT_REPO=
 
-ENTRYPOINT ["/cndp/entrypoint.sh"]
+ENTRYPOINT ["/afxdp/entrypoint.sh"]

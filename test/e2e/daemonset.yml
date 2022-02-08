@@ -1,14 +1,14 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: cndp-dp-config
+  name: afxdp-dp-config
   namespace: kube-system
 data:
   config.json: |
     {
         "mode": "cndp",
         "logLevel": "debug",
-        "logFile": "/var/log/cndp/cndp-dp-e2e.log",
+        "logFile": "/var/log/afxdp-k8s-plugins/cndp-dp-e2e.log",
         "pools" : [
             {
                 "name" : "e2e",
@@ -31,7 +31,7 @@ metadata:
   namespace: kube-system
   labels:
     tier: node
-    app: cndp
+    app: afxdp
 spec:
   selector:
     matchLabels:
@@ -41,7 +41,7 @@ spec:
       labels:
         name: cndp-device-plugin
         tier: node
-        app: cndp
+        app: afxdp
     spec:
       hostNetwork: true
       nodeSelector:
@@ -71,21 +71,21 @@ spec:
               memory: "200Mi"
           volumeMounts:
             - name: unixsock
-              mountPath: /tmp/cndp_dp/
+              mountPath: /tmp/afxdp_dp/
             - name: devicesock
               mountPath: /var/lib/kubelet/device-plugins/
             - name: resources
               mountPath: /var/lib/kubelet/pod-resources/
             - name: config-volume
-              mountPath: /cndp/config
+              mountPath: /afxdp/config
             - name: log
-              mountPath: /var/log/cndp/
+              mountPath: /var/log/afxdp-k8s-plugins/
             - name: cnibin
               mountPath: /opt/cni/bin/
       volumes:
         - name: unixsock
           hostPath:
-            path: /tmp/cndp_dp/
+            path: /tmp/afxdp_dp/
         - name: devicesock
           hostPath:
             path: /var/lib/kubelet/device-plugins/
@@ -94,13 +94,13 @@ spec:
             path: /var/lib/kubelet/pod-resources/
         - name: config-volume
           configMap:
-            name: cndp-dp-config
+            name: afxdp-dp-config
             items:
               - key: config.json
                 path: config.json
         - name: log
           hostPath:
-            path: /var/log/cndp/
+            path: /var/log/afxdp-k8s-plugins/
         - name: cnibin
           hostPath:
             path: /opt/cni/bin/

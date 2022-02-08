@@ -11,7 +11,7 @@ The `fuzz.sh` script will:
  - Execute 2 test programs simultaneously, testing both CNI functions in parallel.
  - Cleans up the test network namespace after the tests.
 
-**CAUTION:** Fuzzing will result in the CNI placing a lot of randomly named log files under `/var/log/cndp/`. These will need to be manually cleaned. The CNI has input validation that should ensure log files cannot be generated anywhere outside of this directory. Nonetheless caution is advised, and fuzzing should not be performed on a production system.
+**CAUTION:** Fuzzing will result in the CNI placing a lot of randomly named log files under `/var/log/afxdp-k8s-plugins/`. These will need to be manually cleaned. The CNI has input validation that should ensure log files cannot be generated anywhere outside of this directory. Nonetheless caution is advised, and fuzzing should not be performed on a production system.
 
 ## Files and directories
 

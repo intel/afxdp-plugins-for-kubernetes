@@ -31,18 +31,18 @@ jobs:
       - name: Checkout
         uses: "actions/checkout@v2"
       - name: Delete previous logs
-        run: rm -f /var/log/cndp/cndp-cni-e2e.log && rm -f /var/log/cndp/cndp-dp-e2e.log
+        run: rm -f /var/log/afxdp-k8s-plugins/cndp-cni-e2e.log && rm -f /var/log/afxdp-k8s-plugins/cndp-dp-e2e.log
       - name: E2E Test (full host run)
         run: ulimit -l 65536 && make e2efull
       - name: E2E Test (full daemonset run)
         run: ulimit -l 65536 && make e2efulldaemon
       - name: CNI logs
         if: always()
-        run: cat /var/log/cndp/cndp-cni-e2e.log
+        run: cat /var/log/afxdp-k8s-plugins/cndp-cni-e2e.log
       - name: Device Plugin logs
         if: always()
-        run: cat /var/log/cndp/cndp-dp-e2e.log
+        run: cat /var/log/afxdp-k8s-plugins/cndp-dp-e2e.log
       - name: UDS Directory
         if: always()
-        run: ls -la /tmp/cndp_dp/cndp_e2e/ 
+        run: ls -la /tmp/afxdp_dp/cndp_e2e/
 

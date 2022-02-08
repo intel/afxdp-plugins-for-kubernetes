@@ -139,7 +139,7 @@ This is not scalable over many nodes and is intended only for development and te
 
 ### Logging
 A log file and log level can be configured for the device plugin. As above, these are set in the config map at the top of the [daemonset.yml](./deployments/daemonset.yml) file. Or, as above, a `config.json` file.
-- The log file is set using `logFile`. This file should be placed under `/var/log/cndp/`. 
+- The log file is set using `logFile`. This file should be placed under `/var/log/afxdp-k8s-plugins/`. 
 - The log level is set using `logLevel`. Available options are:
 	- `error` - Only logs errors.
 	- `warning` - Logs errors and warnings.
@@ -150,7 +150,7 @@ A log file and log level can be configured for the device plugin. As above, thes
 ```
 {
     "logLevel": "debug",
-    "logFile": "/var/log/cndp/cndp-dp.log",
+    "logFile": "/var/log/afxdp-k8s-plugins/cndp-dp.log",
     "timeout": 30,
     "pools" : [
         {
@@ -194,7 +194,7 @@ spec:
       "cniVersion": "0.3.0",
       "type": "cndp-e2e",
       "mode": "cndp",
-      "logFile": "/var/log/cndp/cndp-cni-e2e.log",
+      "logFile": "/var/log/afxdp-k8s-plugins/cndp-cni-e2e.log",
       "logLevel": "debug",
       "ipam": {
         "type": "host-local",
@@ -209,7 +209,7 @@ spec:
     }
 ```
 
-###Timeout 
+### Timeout 
 The device plugin includes a timeout action for the unix domain sockets(UDS). 
 Once the timeout is invoked, the UDS is closed and disconnected.
 

@@ -18,9 +18,9 @@ package deviceplugin
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/intel/cndp_device_plugin/internal/bpf"
-	"github.com/intel/cndp_device_plugin/internal/cndp"
-	"github.com/intel/cndp_device_plugin/internal/networking"
+	"github.com/intel/afxdp_k8s_plugins/internal/bpf"
+	"github.com/intel/afxdp_k8s_plugins/internal/cndp"
+	"github.com/intel/afxdp_k8s_plugins/internal/networking"
 	logging "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"

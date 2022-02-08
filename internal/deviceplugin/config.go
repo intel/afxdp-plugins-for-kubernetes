@@ -20,8 +20,8 @@ import (
 	"fmt"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
-	"github.com/intel/cndp_device_plugin/internal/logformats"
-	"github.com/intel/cndp_device_plugin/internal/networking"
+	"github.com/intel/afxdp_k8s_plugins/internal/logformats"
+	"github.com/intel/afxdp_k8s_plugins/internal/networking"
 	logging "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
@@ -31,15 +31,17 @@ import (
 )
 
 const (
-	maxTimeout     = 300 // Maximum timeout set to seconds
-	defaultTimeout = 30  // Default timeout for unset timeout value in config.json.
+	maxTimeout        = 300  // Maximum timeout set to seconds
+	defaultTimeout    = 30   // Default timeout for unset timeout value in config.json.
+	logDirPermission  = 0744 // Permissions for setting log directory.
+	logFilePermission = 0644 // Permissions for setting log file.
 )
 
 var (
 	driversTypes = []string{"i40e", "E810"}                                 // drivers we search for by default if none configured
 	excludedInfs = []string{"eno", "eth", "lo", "docker", "flannel", "cni"} // interfaces we never add to a pool
 	logLevels    = []string{"debug", "info", "warning", "error"}            // acceptable log levels
-	logDir       = "/var/log/cndp/"                                         // acceptable log directory
+	logDir       = "/var/log/afxdp-k8s-plugins/"                            // acceptable log directory
 	modes        = []string{"cndp"}                                         // acceptable modes
 	assignedInfs []string                                                   // keeps track of devices that are assigned to pools
 	netHandler   networking.Handler
@@ -92,9 +94,14 @@ func GetConfig(configFile string, networking networking.Handler) (Config, error)
 		return cfg, err
 	}
 
+	err = os.MkdirAll(logDir, logDirPermission)
+	if err != nil {
+		logging.Errorf("Error setting log directory: %v", err)
+	}
+
 	if cfg.LogFile != "" {
 		logging.Infof("Setting log file: %s", cfg.LogFile)
-		fp, err := os.OpenFile(cfg.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		fp, err := os.OpenFile(cfg.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, logFilePermission)
 		if err != nil {
 			logging.Errorf("Error setting log file: %v", err)
 			return cfg, err

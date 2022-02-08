@@ -24,9 +24,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/intel/cndp_device_plugin/internal/bpf"
-	"github.com/intel/cndp_device_plugin/internal/resourcesapi"
-	"github.com/intel/cndp_device_plugin/internal/uds"
+	"github.com/intel/afxdp_k8s_plugins/internal/bpf"
+	"github.com/intel/afxdp_k8s_plugins/internal/resourcesapi"
+	"github.com/intel/afxdp_k8s_plugins/internal/uds"
 	logging "github.com/sirupsen/logrus"
 )
 
@@ -55,7 +55,7 @@ const (
 	udsMsgBufSize  = 64
 	udsCtlBufSize  = 4
 	udsProtocol    = "unixpacket"      // "unix"=SOCK_STREAM, "unixdomain"=SOCK_DGRAM, "unixpacket"=SOCK_SEQPACKET
-	usdSockDir     = "/tmp/cndp_dp/"   // if changing, remember to update daemonset to mount this dir
+	usdSockDir     = "/tmp/afxdp_dp/"  // if changing, remember to update daemonset to mount this dir
 	udsDirFileMode = os.FileMode(0700) // drwx------
 )
 
