@@ -1,3 +1,18 @@
+# Copyright(c) 2022 Intel Corporation.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+excluded_from_utests = "/test/e2e|/test/fuzz|/cmd/cni|/internal/bpf|/internal/logformats|internal/host|/internal/networking"
+
 .PHONY: all e2e
 
 all: build test static
@@ -58,7 +73,7 @@ deploy: image undeploy
 test: buildc
 	@echo "******    Unit Tests     ******"
 	@echo
-	go test $(shell go list ./... | grep -v "/e2e" | grep -v "/internal/resourcesapi")
+	go test $(shell go list ./... | grep -vE $(excluded_from_utests) | grep -v "/internal/resourcesapi")
 	@echo
 	@echo
 
