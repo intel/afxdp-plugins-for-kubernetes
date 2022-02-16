@@ -21,7 +21,7 @@ data:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: cndp-device-plugin
+  name: afxdp-device-plugin
   namespace: kube-system
 ---
 apiVersion: apps/v1
@@ -35,11 +35,11 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: cndp-device-plugin
+      name: afxdp-device-plugin
   template:
     metadata:
       labels:
-        name: cndp-device-plugin
+        name: afxdp-device-plugin
         tier: node
         app: afxdp
     spec:
@@ -50,10 +50,10 @@ spec:
         - key: node-role.kubernetes.io/master
           operator: Exists
           effect: NoSchedule
-      serviceAccountName: cndp-device-plugin
+      serviceAccountName: afxdp-device-plugin
       containers:
         - name: kube-cndp
-          image: cndp-device-plugin:latest
+          image: afxdp-device-plugin:latest
           imagePullPolicy: IfNotPresent
           securityContext:
             capabilities:

@@ -52,7 +52,7 @@ build: format buildc
 image: build
 	@echo "******   Docker Image    ******"
 	@echo
-	docker build -t cndp-device-plugin -f images/amd64.dockerfile .
+	docker build -t afxdp-device-plugin -f images/amd64.dockerfile .
 	@echo
 	@echo
 
