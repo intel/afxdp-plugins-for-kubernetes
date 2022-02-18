@@ -54,61 +54,16 @@ func main() {
 
 	host := host.NewHandler()
 
-	// kernel
-	linuxVersion, err := host.KernelVersion()
+	meetsRequirementsPreConfig, err := checkHostPreConfig(host)
 	if err != nil {
-		logging.Errorf("Error checking kernel version: %v", err)
+		logging.Errorf("Error checking host pre config: %v", err)
 		logging.Errorf("Device plugin will exit")
 		os.Exit(1)
 	}
-	logging.Infof("Kernel version: %v", linuxVersion)
-
-	linuxInt, err := intVersion(linuxVersion)
-	if err != nil {
-		logging.Errorf("Error converting kernel version: %v", err)
-		logging.Errorf("Device plugin will exit")
-		os.Exit(1)
-	}
-
-	minLinuxInt, err := intVersion(minLinuxVersion)
-	if err != nil {
-		logging.Errorf("Error converting kernel version: %v", err)
-		logging.Errorf("Device plugin will exit")
-		os.Exit(1)
-	}
-
-	if linuxInt < minLinuxInt {
-		logging.Errorf("Kernel version %v is below minimum requirement", linuxVersion)
-		logging.Errorf("Device plugin will exit")
-		os.Exit(1)
-	}
-
-	// libbpf
-	bpfInstalled, err := host.HasLibbpf()
-	if err != nil {
-		logging.Errorf("Error checking bpfInstalled: %v", err)
-		logging.Errorf("Device plugin will exit")
-		os.Exit(1)
-	}
-	if bpfInstalled {
-		logging.Infof("Libbpf present on host")
-	} else {
-		logging.Errorf("Libbpf not found on host")
-		logging.Errorf("Device plugin will exit")
-		os.Exit(1)
-	}
-
-	// ethtool
-	ethInstalled, err := host.HasEthtool()
-	if err != nil {
-		logging.Errorf("Error checking ethInstalled: %v", err)
-	}
-	if ethInstalled {
-		logging.Infof("Ethtool present on host")
-	} else {
-		logging.Errorf("Ethtool not found on host")
-		logging.Errorf("Device plugin will exit")
-		os.Exit(1)
+	if !meetsRequirementsPreConfig {
+		logging.Infof("Host does not meet requriements")
+		logging.Infof("Device plugin will exit")
+		os.Exit(0)
 	}
 
 	// get config
@@ -119,20 +74,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	// unprivileged_bpf_disabled
-	unprivBpfAllowed, err := host.AllowsUnprivilegedBpf()
+	meetsRequirementsPostConfig, err := checkHostPostConfig(host, cfg)
 	if err != nil {
-		logging.Errorf("Error checking if host allows Unprivileged BPF operations: %v", err)
+		logging.Errorf("Error checking host post config: %v", err)
+		logging.Errorf("Device plugin will exit")
+		os.Exit(1)
 	}
-	if unprivBpfAllowed {
-		logging.Infof("Unprivileged BPF is allowed")
-	} else {
-		logging.Warningf("Unprivileged BPF is disabled")
-		if cfg.RequireUnprivilegedBpf {
-			logging.Errorf("Unprivileged bpf is required")
-			logging.Errorf("Device plugin will exit")
-			os.Exit(1)
-		}
+	if !meetsRequirementsPostConfig {
+		logging.Infof("Host does not meet requriements")
+		logging.Infof("Device plugin will exit")
+		os.Exit(0)
 	}
 
 	dp := devicePlugin{
@@ -186,4 +137,80 @@ func intVersion(version string) (int64, error) { // example "5.4.0-89-generic"
 	}
 
 	return value, nil
+}
+
+func checkHostPreConfig(host host.Handler) (bool, error) {
+	// kernel
+	linuxVersion, err := host.KernelVersion()
+	if err != nil {
+		err := fmt.Errorf("Error checking kernel version: %v", err)
+		return false, err
+
+	}
+	logging.Infof("Kernel version: %v", linuxVersion)
+
+	linuxInt, err := intVersion(linuxVersion)
+	if err != nil {
+		err := fmt.Errorf("Error converting kernel version: %v", err)
+		return false, err
+
+	}
+
+	minLinuxInt, err := intVersion(minLinuxVersion)
+	if err != nil {
+		err := fmt.Errorf("Error converting kernel version: %v", err)
+		return false, err
+
+	}
+
+	if linuxInt < minLinuxInt {
+		logging.Warningf("Kernel version %v is below minimum requirement", linuxVersion)
+		return false, nil
+	}
+
+	// libbpf
+	bpfInstalled, err := host.HasLibbpf()
+	if err != nil {
+		err := fmt.Errorf("Libbpf not found on host")
+		return false, err
+	}
+	if bpfInstalled {
+		logging.Infof("Libbpf present on host")
+	} else {
+		logging.Warningf("Libbpf not found on host")
+		return false, nil
+	}
+
+	// ethtool
+	ethInstalled, err := host.HasEthtool()
+	if err != nil {
+		logging.Errorf("Error checking if Ethool is present on host: %v", err)
+		return false, err
+	}
+	if ethInstalled {
+		logging.Infof("Ethtool present on host")
+	} else {
+		logging.Warningf("Ethool not found on host")
+		return false, nil
+	}
+	return true, nil
+}
+
+func checkHostPostConfig(host host.Handler, cfg deviceplugin.Config) (bool, error) {
+	// unprivileged_bpf_disabled
+	unprivBpfAllowed, err := host.AllowsUnprivilegedBpf()
+	if err != nil {
+		logging.Errorf("Error checking if host allows Unprivileged BPF operations: %v", err)
+		return false, err
+	}
+	if unprivBpfAllowed {
+		logging.Infof("Unprivileged BPF is allowed")
+	} else {
+		logging.Warningf("Unprivileged BPF is disabled")
+		if cfg.RequireUnprivilegedBpf {
+			logging.Warningf("Unprivileged bpf is required")
+			return false, nil
+		}
+	}
+	return true, nil
 }
