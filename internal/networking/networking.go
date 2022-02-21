@@ -16,11 +16,12 @@
 package networking
 
 import (
-	"github.com/go-cmd/cmd"
-	logging "github.com/sirupsen/logrus"
-	"github.com/vishvananda/netlink"
-	"net"
-	"strings"
+        "github.com/go-cmd/cmd"
+        logging "github.com/sirupsen/logrus"
+        "github.com/vishvananda/netlink"
+        "net"
+        "strings"
+
 )
 
 /*
@@ -31,6 +32,7 @@ against a fake API.
 type Handler interface {
 	GetHostDevices() ([]net.Interface, error)
 	GetDeviceDriver(interfaceName string) (string, error)
+	GetDevicePci(interfaceName string) (string, error)
 	GetAddresses(interfaceName net.Interface) ([]net.Addr, error)
 	CycleDevice(interfaceName string) error
 }
@@ -78,6 +80,23 @@ func (r *handler) GetDeviceDriver(interfaceName string) (string, error) {
 
 	// trim whitespace and return
 	return strings.TrimSpace(driver), nil
+}
+
+/*
+GetDevicePci takes a netdave name and returns the pci address
+It executes the command: ethtool -i <interface_name>
+*/
+func (r *handler) GetDevicePci(interfaceName string) (string, error) {
+	// build the command
+	cmd := cmd.NewCmd("ethtool", "-i", interfaceName)
+
+	// run and wait for cmd to return status
+	status := <-cmd.Start()
+
+	pci := strings.Split(status.Stdout[4], "bus-info:")[1]
+
+	// trim whitespace and return
+	return strings.TrimSpace(pci), nil
 }
 
 func (r *handler) GetAddresses(interfaceName net.Interface) ([]net.Addr, error) {

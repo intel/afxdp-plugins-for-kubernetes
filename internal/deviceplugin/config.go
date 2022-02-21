@@ -16,18 +16,19 @@
 package deviceplugin
 
 import (
-	"encoding/json"
-	"fmt"
-	validation "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/go-ozzo/ozzo-validation/v4/is"
-	"github.com/intel/afxdp_k8s_plugins/internal/logformats"
-	"github.com/intel/afxdp_k8s_plugins/internal/networking"
-	logging "github.com/sirupsen/logrus"
-	"io"
-	"io/ioutil"
-	"os"
-	"regexp"
-	"strings"
+        "encoding/json"
+        "fmt"
+        validation "github.com/go-ozzo/ozzo-validation/v4"
+        "github.com/go-ozzo/ozzo-validation/v4/is"
+        "github.com/intel/afxdp_k8s_plugins/internal/logformats"
+        "github.com/intel/afxdp_k8s_plugins/internal/networking"
+        logging "github.com/sirupsen/logrus"
+        "io"
+        "io/ioutil"
+        "os"
+        "regexp"
+        "strings"
+
 )
 
 const (
@@ -291,6 +292,12 @@ func deviceDiscovery(requiredDriver string) ([]string, error) {
 			logging.Errorf("Error getting driver name: %v", err.Error())
 			return poolDevices, err
 		}
+
+		pciAddr, err := netHandler.GetDevicePci(hostDevice.Name)
+		if err != nil {
+			logging.Errorf("Error getting driver name: %v", err.Error())
+		}
+		logging.Infof("Device %s PCI address:%s", hostDevice.Name, pciAddr)
 
 		if deviceDriver == requiredDriver {
 			logging.Debugf("Device %s is type %s", hostDevice.Name, requiredDriver)

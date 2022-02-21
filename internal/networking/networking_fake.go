@@ -94,6 +94,15 @@ func (r *fakeHandler) GetDeviceDriver(interfaceName string) (string, error) {
 }
 
 /*
+GetDriverName takes a netdev name and returns a fake pci address
+It executes the command: ethtool -i <interface_name>
+*/
+func (r *fakeHandler) GetDevicePci(interfaceName string) (string, error) {
+	dummyPCIaddr := "0000:18:00.3"
+	return dummyPCIaddr, nil
+}
+
+/*
 GetAddresses gets a netdave ip addresses and returns the fake ip addresses to be used by config.go for unit testing
 */
 func (r *fakeHandler) GetAddresses(interfaceName net.Interface) ([]net.Addr, error) {
