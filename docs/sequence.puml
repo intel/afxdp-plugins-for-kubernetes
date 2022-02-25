@@ -1,81 +1,126 @@
 @startuml
 
-skinparam sequenceGroupBorderThickness 1
+skinparam noteBorderColor Black
+skinparam noteBorderThickness 1
+skinparam noteBackgroundColor Yellow
+skinparam legendBackgroundColor WhiteSmoke
+
+skinparam sequence {
+	BoxBorderColor Black
+	BoxFontSize 20
+
+	ArrowColor Black
+	ArrowThickness 1
+
+	ActorBorderColor Black
+	ActorBorderThickness 3
+	ActorBackgroundColor Business
+	ActorFontSize 15
+
+	ParticipantBorderColor Black
+	ParticipantBorderThickness 1
+	ParticipantBackgroundColor Business
+	ParticipantFontSize 15
+
+	LifeLineBorderColor Black
+	LifeLineBorderThickness 1
+	LifeLineBackgroundColor LightGray
+}
+
+legend top right
+|= |= Legend |
+|<back:LightBlue>   </back>| Participants from this project - Device Plugin and CNI |
+|<back:Dodgerblue>   </back>| Threads within Device Plugin |
+|<back:Business>   </back>| Participants external to this project |
+|<back:Turquoise>   </back>| Code waits, listening on socket |
+|<back:Yellow>   </back>| Notes |
+endlegend
 
 actor "User"
 participant "Linux"
 participant "Kubelet"
-box "Device Plugin"
-	participant "Device Plugin"
-	participant "UDS server"
+box "Device Plugin" #LightBlue
+	participant "DP Main Thread" #dodgerblue
+	participant "DP UDS Server Thread" #dodgerblue
 end box
-participant "CNI"
+participant "CNI" #LightBlue
 participant "Pod/CNDP App"
 
 == Initialization ==
 autonumber
 
 "User" -> "Kubelet": network attachment definition (CNI config)
-"User" -> "Device Plugin": deploy
-activate "Device Plugin"
+"User" -> "DP Main Thread": deploy
+activate "DP Main Thread"
 
-"Device Plugin" -> "Device Plugin": config.json
-"Device Plugin" -> "Linux": net.Interfaces()
-activate "Device Plugin" #DarkRed
-note right #DarkRed: <color #White>discover resources</color>
+"DP Main Thread" -> "DP Main Thread": config.json
+"DP Main Thread" -> "Linux": create log file
+"DP Main Thread" -> "Linux" : Check host for requirements
+"DP Main Thread" -> "Linux": net.Interfaces()
 
-"Linux" --> "Device Plugin": interface list
+activate "DP Main Thread" #DarkGray
+note right #DarkGray: <color #White>discover resources</color>
 
-"Device Plugin" -> "Linux": ethtool.DriverName()
-activate "Device Plugin" #FireBrick
-note right #FireBrick: <color #White>loop interfaces, build device list</color>
-"Linux" --> "Device Plugin": driver
-deactivate "Device Plugin"
+"Linux" --> "DP Main Thread": interface list
+"DP Main Thread" -> "Linux": ethtool.DriverName()
 
-"Device Plugin" [hidden]-> "Device Plugin"
+activate "DP Main Thread" #SlateGray
+note right #SlateGray: <color #White>loop interfaces, build device list</color>
 
+"Linux" --> "DP Main Thread": driver
 
-deactivate "Device Plugin"
+deactivate "DP Main Thread"
 
-"Device Plugin" -> "Device Plugin": start GRPC
-"Device Plugin" -> "Kubelet": GRPC: register
-"Device Plugin" -> "Kubelet": GRPC: device list
+autonumber stop
+"DP Main Thread" [hidden]-> "DP Main Thread"
+autonumber resume
 
-deactivate "Device Plugin"
+deactivate "DP Main Thread"
+
+"DP Main Thread" -> "Linux" : cycle devices (netlink up/down)
+"DP Main Thread" -> "DP Main Thread": start GRPC
+"DP Main Thread" -> "Kubelet": GRPC: register
+"DP Main Thread" -> "Kubelet": GRPC: device list
+
+deactivate "DP Main Thread"
 
 == Pod Creation ==
 autonumber
 
 "User" -> "Kubelet": create pod
-"Kubelet" -> "Device Plugin": GRPC: Allocate(ifname)
-activate "Device Plugin"
+"Kubelet" -> "DP Main Thread": GRPC: Allocate(ifname)
+activate "DP Main Thread"
 
-"Device Plugin" -> "Linux": net.if_nametoindex(ifname)
-"Linux" --> "Device Plugin": if_index
-"Device Plugin" -> "Linux": bpf.xsk_setup_xdp_prog(if_index)
-"Linux" --> "Device Plugin": XSK file descriptor
+"DP Main Thread" -> "Linux": net.if_nametoindex(ifname)
+"Linux" --> "DP Main Thread": if_index
+"DP Main Thread" -> "Linux": bpf.xsk_setup_xdp_prog(if_index)
+"Linux" --> "DP Main Thread": XSK file descriptor
 
-"Device Plugin" -> "Device Plugin": create UDS
-"Device Plugin" -> "UDS server" ** : create & start UDS server
-"Device Plugin" -> "UDS server" : ifname, XSK FD, UDS filepath
-hnote over "UDS server"
+"DP Main Thread" -> "DP Main Thread": create UDS
+"DP Main Thread" -> "DP UDS Server Thread" ** : create & start UDS server
+"DP Main Thread" -> "DP UDS Server Thread" : ifname, XSK FD, UDS filepath
+
+hnote over "DP UDS Server Thread" #Turquoise
 	  listen for
 	  connection
 endhnote
-"Device Plugin" --> "Kubelet": GRPC: AllocateResponse(UDS mount path, pod env vars)
 
-deactivate "Device Plugin"
+"DP Main Thread" --> "Kubelet": GRPC: AllocateResponse(UDS mount path, pod env vars)
+deactivate "DP Main Thread"
 
 autonumber stop
-"Kubelet" -[#deepSkyBlue]>> "Pod/CNDP App" : <color:deepSkyBlue>Kubelet starts creating the pod around now
+"Kubelet" -[#Red]>> "Pod/CNDP App" : <color:Red>Kubelet starts creating the pod around now
 autonumber resume
 
 "Kubelet" -> "CNI" : cmdAdd(ifname, namespace, config)
 activate "CNI"
 "CNI" -> "CNI" : cni.IPAM
-"CNI" -> "Linux" : ethtool.filters(ifname)
+"CNI" -> "Linux" : ethtool filters
+
+
 "CNI" -> "Pod/CNDP App" : place interface in pod netns
 "CNI" -> "Kubelet" : return 0
+
 deactivate "CNI"
 
 autonumber stop
@@ -86,53 +131,53 @@ autonumber stop
 "Pod/CNDP App" -> "Pod/CNDP App" : application start
 activate "Pod/CNDP App"
 
-"Pod/CNDP App" -> "UDS server": /connect,hostname
+"Pod/CNDP App" -> "DP UDS Server Thread": /connect,hostname
 note right
 	CNDP application starts
 	UDS handshake begins
 end note
-activate "UDS server"
-"UDS server" -> "Kubelet": podresources.ListPodResourcesRequest()
-"Kubelet" --> "UDS server": podresources.ListPodResourcesResponse()
-"UDS server" -> "UDS server": validate hostname against ifname
-"UDS server" --> "Pod/CNDP App": /host_ok
-deactivate "UDS server"
-hnote over "UDS server"
+activate "DP UDS Server Thread"
+"DP UDS Server Thread" -> "Kubelet": podresources.ListPodResourcesRequest()
+"Kubelet" --> "DP UDS Server Thread": podresources.ListPodResourcesResponse()
+"DP UDS Server Thread" -> "DP UDS Server Thread": validate hostname against ifname
+"DP UDS Server Thread" --> "Pod/CNDP App": /host_ok
+deactivate "DP UDS Server Thread"
+hnote over "DP UDS Server Thread" #Turquoise
 	listen for
 	request
 end note
 
-"Pod/CNDP App" -> "UDS server": /xsk_map_fd,ifname
-activate "UDS server"
-"UDS server" -> "UDS server": FD for ifname
-"UDS server" --> "Pod/CNDP App": /fd_ack,FD
-deactivate "UDS server"
+"Pod/CNDP App" -> "DP UDS Server Thread": /xsk_map_fd,ifname
+activate "DP UDS Server Thread"
+"DP UDS Server Thread" -> "DP UDS Server Thread": FD for ifname
+"DP UDS Server Thread" --> "Pod/CNDP App": /fd_ack,FD
+deactivate "DP UDS Server Thread"
 
-hnote over "UDS server"
+hnote over "DP UDS Server Thread" #Turquoise
 	listen for
 	request
 endhnote
 
-"Pod/CNDP App" -> "UDS server": /config_busy_poll,FD
-activate "UDS server"
-"UDS server" -> "Linux" : bpf.setsockopt(FD, BUSY_POLL)
-"Linux" --> "UDS server" : return 0
-"UDS server" --> "Pod/CNDP App": /config_busy_poll_ack
-deactivate "UDS server"
+"Pod/CNDP App" -> "DP UDS Server Thread": /config_busy_poll,FD
+activate "DP UDS Server Thread"
+"DP UDS Server Thread" -> "Linux" : bpf.setsockopt(FD, BUSY_POLL)
+"Linux" --> "DP UDS Server Thread" : return 0
+"DP UDS Server Thread" --> "Pod/CNDP App": /config_busy_poll_ack
+deactivate "DP UDS Server Thread"
 
-hnote over "UDS server"
+hnote over "DP UDS Server Thread" #Turquoise
 	listen for
 	request
 endhnote
 
-"Pod/CNDP App" -> "UDS server": /fin
-activate "UDS server"
-"UDS server" --> "Pod/CNDP App": /fin_ack
+"Pod/CNDP App" -> "DP UDS Server Thread": /fin
+activate "DP UDS Server Thread"
+"DP UDS Server Thread" --> "Pod/CNDP App": /fin_ack
 "Pod/CNDP App" [hidden]-> "Pod/CNDP App"
 note left: UDS handshake ends
-deactivate "UDS server"
+deactivate "DP UDS Server Thread"
 
-destroy "UDS server"
+destroy "DP UDS Server Thread"
 
 == Pod Deletion ==
 autonumber
@@ -149,11 +194,12 @@ activate "CNI"
 "Linux" --> "CNI": if_index
 "CNI" -> "Linux": bpf.set_link_xdp_fd(if_index, -1)
 "Linux" --> "CNI": return 0
+
+"CNI" -> "Linux" : clear ethtool filters
 "CNI" --> "Kubelet": return 0
 deactivate "CNI"
 
 "Kubelet" -> "Pod/CNDP App" : delete pod
 deactivate "Pod/CNDP App"
-
 
 @enduml
