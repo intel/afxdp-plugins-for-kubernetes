@@ -5,6 +5,7 @@ pids=( )
 run_dp="./../../bin/afxdp-dp"
 full_run=false
 daemonset=false
+ci_run=false
 
 cleanup() {
 	echo
@@ -54,12 +55,27 @@ run() {
 	echo "*              Run Device Plugin                    *"
 	echo "*****************************************************"
 	if [ "$daemonset" = true ]; then
-		echo "***** Deploying Device Plugin as daemonset *****"
-		echo
-		echo "Note that device plugin logs will not be printed to screen on a daemonset run"
-		echo "Logs can be viewed separately in /var/log/afxdp-k8s-plugins/cndp-dp-e2e.log"
-		echo
-		kubectl create -f ./daemonset.yml
+		if [ "$ci_run" = true ]; then
+			echo "*****   Pushing image to registry    *****"
+			echo
+			docker tag afxdp-device-plugin "$DOCKER_REG"/test/afxdp-device-plugin-e2e:latest
+			docker push "$DOCKER_REG"/test/afxdp-device-plugin-e2e:latest
+			echo "***** Deploying Device Plugin as daemonset *****"
+			echo
+			echo "Note that device plugin logs will not be printed to screen on a daemonset run"
+			echo "Logs can be viewed separately in /var/log/afxdp-k8s-plugins/cndp-dp-e2e.log"
+			echo
+			envsubst < ../../.github/daemonset.yml | kubectl apply -f -
+			echo "Sleeping for 20 seconds to allow image pull on worker nodes"
+			sleep 20
+		else
+			echo "***** Deploying Device Plugin as daemonset *****"
+			echo
+			echo "Note that device plugin logs will not be printed to screen on a daemonset run"
+			echo "Logs can be viewed separately in /var/log/afxdp-k8s-plugins/cndp-dp-e2e.log"
+			echo
+			kubectl create -f ./daemonset.yml
+		fi
 	else
 		echo "***** Starting Device Plugin as host binary *****"
 		echo
@@ -215,6 +231,9 @@ then
 			;;
 			-d|--daemonset)
 				daemonset=true
+			;;
+			-c|--ci)
+				ci_run=true
 			;;
 			-?*)
 				echo "Unknown argument $1"

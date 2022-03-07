@@ -53,8 +53,8 @@ spec:
       serviceAccountName: afxdp-device-plugin
       containers:
         - name: kube-cndp
-          image: afxdp-device-plugin:latest
-          imagePullPolicy: Never
+          image: $DOCKER_REG/test/afxdp-device-plugin-e2e:latest
+          imagePullPolicy: Always
           securityContext:
             capabilities:
               drop:

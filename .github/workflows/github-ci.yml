@@ -9,6 +9,7 @@ jobs:
         uses: "actions/checkout@v2"
       - name: Static Analysis
         run: make static
+
   build:
     runs-on: self-hosted
     steps:
@@ -27,6 +28,7 @@ jobs:
 
   end-to-end:
     runs-on: self-hosted
+    environment: AF_XDP CI
     steps:
       - name: Checkout
         uses: "actions/checkout@v2"
@@ -35,7 +37,9 @@ jobs:
       - name: E2E Test (full host run)
         run: ulimit -l 65536 && make e2efull
       - name: E2E Test (full daemonset run)
-        run: ulimit -l 65536 && make e2efulldaemon
+        env:
+          DOCKER_REG: ${{ secrets.DOCKER_REG }}
+        run: ulimit -l 65536 && make build && cd test/e2e/ && ./e2e-test.sh --full --daemonset --ci
       - name: CNI logs
         if: always()
         run: cat /var/log/afxdp-k8s-plugins/cndp-cni-e2e.log
