@@ -39,7 +39,7 @@ jobs:
       - name: E2E Test (full daemonset run)
         env:
           DOCKER_REG: ${{ secrets.DOCKER_REG }}
-        run: ulimit -l 65536 && make build && cd test/e2e/ && ./e2e-test.sh --full --daemonset --ci
+        run: ulimit -l 65536 && make image && cd test/e2e/ && ./e2e-test.sh --full --daemonset --ci
       - name: CNI logs
         if: always()
         run: cat /var/log/afxdp-k8s-plugins/cndp-cni-e2e.log
