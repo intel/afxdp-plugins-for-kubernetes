@@ -16,12 +16,11 @@
 package networking
 
 import (
-        "github.com/go-cmd/cmd"
-        logging "github.com/sirupsen/logrus"
-        "github.com/vishvananda/netlink"
-        "net"
-        "strings"
-
+	"github.com/go-cmd/cmd"
+	logging "github.com/sirupsen/logrus"
+	"github.com/vishvananda/netlink"
+	"net"
+	"strings"
 )
 
 /*

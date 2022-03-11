@@ -16,19 +16,18 @@
 package deviceplugin
 
 import (
-        "encoding/json"
-        "fmt"
-        validation "github.com/go-ozzo/ozzo-validation/v4"
-        "github.com/go-ozzo/ozzo-validation/v4/is"
-        "github.com/intel/afxdp_k8s_plugins/internal/logformats"
-        "github.com/intel/afxdp_k8s_plugins/internal/networking"
-        logging "github.com/sirupsen/logrus"
-        "io"
-        "io/ioutil"
-        "os"
-        "regexp"
-        "strings"
-
+	"encoding/json"
+	"fmt"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"github.com/intel/afxdp_k8s_plugins/internal/logformats"
+	"github.com/intel/afxdp_k8s_plugins/internal/networking"
+	logging "github.com/sirupsen/logrus"
+	"io"
+	"io/ioutil"
+	"os"
+	"regexp"
+	"strings"
 )
 
 const (

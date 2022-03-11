@@ -24,6 +24,7 @@ import (
 	logging "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"net"
 	"os"
@@ -237,7 +238,7 @@ func (pm *PoolManager) GetPreferredAllocation(context.Context, *pluginapi.Prefer
 
 func (pm *PoolManager) registerWithKubelet() error {
 	ctx := context.Background()
-	conn, err := grpc.DialContext(ctx, pluginapi.KubeletSocket, grpc.WithInsecure(),
+	conn, err := grpc.DialContext(ctx, pluginapi.KubeletSocket, grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			return (&net.Dialer{}).DialContext(ctx, "unix", addr)
 		}))
@@ -281,8 +282,8 @@ func (pm *PoolManager) startGRPC() error {
 	}()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	conn, err := grpc.DialContext(ctx, pm.DpAPISocket, grpc.WithInsecure(), grpc.WithBlock(),
-		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+	conn, err := grpc.DialContext(ctx, pm.DpAPISocket, grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock(), grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			return (&net.Dialer{}).DialContext(ctx, "unix", addr)
 		}),
 	)
