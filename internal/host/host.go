@@ -34,6 +34,7 @@ type Handler interface {
 	KernelVersion() (string, error)
 	HasEthtool() (bool, error)
 	HasLibbpf() (bool, error)
+	HasDevLink() (bool, error)
 }
 
 /*
@@ -98,4 +99,16 @@ func (r *handler) AllowsUnprivilegedBpf() (bool, error) {
 	boolValue, err := strconv.ParseBool(bpfStatus)
 
 	return !boolValue, err
+}
+
+func (r *handler) HasDevLink() (bool, error) {
+	path, err := exec.LookPath("devlink")
+	if err != nil {
+		logging.Errorf("Error checking devlink: %v", err)
+		return false, err
+	}
+	if path == "" {
+		return false, nil
+	}
+	return true, nil
 }

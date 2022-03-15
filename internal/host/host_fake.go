@@ -64,3 +64,10 @@ func (r *fakeHandler) AllowsUnprivilegedBpf() (bool, error) {
 	boolValue := false
 	return !boolValue, nil
 }
+
+/*
+ HasDevLink is a function used to mock and search for devlink
+*/
+func (r *fakeHandler) HasDevLink() (bool, error) {
+	return true, nil
+}
