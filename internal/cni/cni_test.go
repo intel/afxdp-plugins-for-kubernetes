@@ -30,7 +30,7 @@ func TestGetConfig(t *testing.T) {
 	netConf := types.NetConf{
 		CNIVersion: "0.3.0",
 		Name:       "test-network",
-		Type:       "cndp", Capabilities: map[string]bool(nil),
+		Type:       "afxdp", Capabilities: map[string]bool(nil),
 		IPAM: types.IPAM{Type: ""},
 		DNS: types.DNS{Nameservers: []string(nil), Domain: "",
 			Search:  []string(nil),
@@ -47,7 +47,7 @@ func TestGetConfig(t *testing.T) {
 	}{
 		{
 			name:      "load good config 1",
-			config:    `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"cndp","mode":"cndp"}`,
+			config:    `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"afxdp","mode":"cndp"}`,
 			expConfig: &NetConfig{NetConf: netConf, Device: "dev1", Mode: "cndp"},
 		},
 
@@ -85,13 +85,13 @@ func TestGetConfig(t *testing.T) {
 		},
 		{
 			name:      "load bad config 5 - invalid character",
-			config:    `{"cniVersion":"0.3.0","deviceID":"dev_1","name":"test-network","pciBusID":"","type":"cndp"}}`,
+			config:    `{"cniVersion":"0.3.0","deviceID":"dev_1","name":"test-network","pciBusID":"","type":"afxdp"}}`,
 			expConfig: nil,
 			expErr:    errors.New("loadConf(): failed to load network configuration: invalid character '}' after top-level value"),
 		},
 		{
 			name:      "load bad config 6 - invalid character 2",
-			config:    `{"cniVersion":"0.3.0",%"deviceID":"dev_1","name":"test-network",%"pciBusID":"","type":"cndp"}}`,
+			config:    `{"cniVersion":"0.3.0",%"deviceID":"dev_1","name":"test-network",%"pciBusID":"","type":"afxdp"}}`,
 			expConfig: nil,
 			expErr:    errors.New("loadConf(): failed to load network configuration: invalid character '%' looking for beginning of object key string"),
 		},
@@ -148,14 +148,14 @@ func TestCmdAdd(t *testing.T) {
 
 		{
 			name:       "no device name",
-			netConfStr: `{"cniVersion":"0.3.0","deviceID":"","name":"test-network","pciBusID":"","type":"cndp","mode":"cndp"}`,
+			netConfStr: `{"cniVersion":"0.3.0","deviceID":"","name":"test-network","pciBusID":"","type":"afxdp","mode":"cndp"}`,
 			netNS:      "",
 			expError:   "validate(): no device specified",
 		},
 
 		{
 			name:       "fail to open netns - bad netns",
-			netConfStr: `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"cndp","mode":"cndp"}`,
+			netConfStr: `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"afxdp","mode":"cndp"}`,
 			netNS:      "B@dN%eTNS",
 			expError:   "cmdAdd(): failed to open container netns \"B@dN%eTNS\": failed to Statfs \"B@dN%eTNS\": no such file or directory",
 		},
