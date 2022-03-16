@@ -28,10 +28,11 @@ import (
 
 func TestGetConfig(t *testing.T) {
 	netConf := types.NetConf{
-		CNIVersion: "0.3.0",
-		Name:       "test-network",
-		Type:       "afxdp", Capabilities: map[string]bool(nil),
-		IPAM: types.IPAM{Type: ""},
+		CNIVersion:   "0.3.0",
+		Name:         "test-network",
+		Type:         "afxdp",
+		Capabilities: map[string]bool(nil),
+		IPAM:         types.IPAM{Type: ""},
 		DNS: types.DNS{Nameservers: []string(nil), Domain: "",
 			Search:  []string(nil),
 			Options: []string(nil)},
@@ -47,8 +48,8 @@ func TestGetConfig(t *testing.T) {
 	}{
 		{
 			name:      "load good config 1",
-			config:    `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"afxdp","mode":"cndp"}`,
-			expConfig: &NetConfig{NetConf: netConf, Device: "dev1", Mode: "cndp"},
+			config:    `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"afxdp","mode":"cndp","Queues":"4"}`,
+			expConfig: &NetConfig{NetConf: netConf, Device: "dev1", Mode: "cndp", Queues: "4"},
 		},
 
 		{
@@ -148,16 +149,23 @@ func TestCmdAdd(t *testing.T) {
 
 		{
 			name:       "no device name",
-			netConfStr: `{"cniVersion":"0.3.0","deviceID":"","name":"test-network","pciBusID":"","type":"afxdp","mode":"cndp"}`,
+			netConfStr: `{"cniVersion":"0.3.0","deviceID":"","name":"test-network","pciBusID":"","type":"afxdp"}`,
 			netNS:      "",
 			expError:   "validate(): no device specified",
 		},
 
 		{
 			name:       "fail to open netns - bad netns",
-			netConfStr: `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"afxdp","mode":"cndp"}`,
+			netConfStr: `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"afxdp"}`,
 			netNS:      "B@dN%eTNS",
 			expError:   "cmdAdd(): failed to open container netns \"B@dN%eTNS\": failed to Statfs \"B@dN%eTNS\": no such file or directory",
+		},
+
+		{
+			name:       "queues required for cndp mode",
+			netConfStr: `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"cndp","mode":"cndp"}`,
+			netNS:      "",
+			expError:   "loadConf(): Config validation error: queues: Queues setting is required for CNDP mode.",
 		},
 	}
 

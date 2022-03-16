@@ -107,7 +107,6 @@ GetAddresses gets a netdave ip addresses and returns the fake ip addresses to be
 */
 func (r *fakeHandler) GetAddresses(interfaceName net.Interface) ([]net.Addr, error) {
 	var addrs []net.Addr
-
 	return addrs, nil
 }
 
@@ -115,6 +114,21 @@ func (r *fakeHandler) GetAddresses(interfaceName net.Interface) ([]net.Addr, err
 CycleDevice is a mocked func that returns nil
 */
 func (r *fakeHandler) CycleDevice(interfaceName string) error {
+	return nil
+}
 
+/*
+SetQueueSize sets the fake Queue size for the netdev
+It mocks the command: ethtool -X <interface_name> equal <num_of_queues> start <queue_id>
+*/
+func (r *fakeHandler) SetQueueSize(interfaceName string, size string) error {
+	return nil
+}
+
+/*
+SetDefaultQueueSize sets the fake Queue back to default settings
+It mocks the command: ethtool -X <interface_name> default
+*/
+func (r *fakeHandler) SetDefaultQueueSize(interfaceName string) error {
 	return nil
 }

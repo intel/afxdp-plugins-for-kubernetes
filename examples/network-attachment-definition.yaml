@@ -11,6 +11,7 @@ spec:
       "mode": "cndp",                                       # CNI mode setting (required)
       "logFile": "/var/log/afxdp-k8s-plugins/cndp-cni.log", # CNI log file location (optional)
       "logLevel": "debug",                                  # CNI logging level (optional)
+      "queues": "4",                                        # CNI queue level for Ethtool Filters
       "ipam": {                                             # CNI IPAM plugin and associated config (optional)
         "type": "host-local",
         "subnet": "192.168.1.0/24",

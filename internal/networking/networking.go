@@ -20,6 +20,7 @@ import (
 	logging "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
 	"net"
+	"os/exec"
 	"strings"
 )
 
@@ -34,6 +35,8 @@ type Handler interface {
 	GetDevicePci(interfaceName string) (string, error)
 	GetAddresses(interfaceName net.Interface) ([]net.Addr, error)
 	CycleDevice(interfaceName string) error
+	SetQueueSize(interfaceName string, size string) error
+	SetDefaultQueueSize(interfaceName string) error
 }
 
 /*
@@ -122,5 +125,36 @@ func (r *handler) CycleDevice(interfaceName string) error {
 		return err
 	}
 
+	return nil
+}
+
+/*
+SetQueueSize sets the queue size for the netdev
+It executes the command: ethtool -X <interface_name> equal <num_of_queues> start <queue_id>
+*/
+func (r *handler) SetQueueSize(interfaceName string, size string) error {
+	app := "ethtool"
+	args := "-X"
+	startQID := "4"
+	_, err := exec.Command(app, args, interfaceName, "equal", size, "start", startQID).Output()
+	if err != nil {
+		logging.Errorf("Error setting queue for device %s: %v", interfaceName, err.Error())
+		return err
+	}
+	return nil
+}
+
+/*
+SetDefaultQueueSize sets the netdev queue size back to default
+It executes the command: ethtool -X <interface_name> default
+*/
+func (r *handler) SetDefaultQueueSize(interfaceName string) error {
+	app := "ethtool"
+	args := "-X"
+	_, err := exec.Command(app, args, interfaceName, "default").Output()
+	if err != nil {
+		logging.Errorf("Error setting default queue for device %s: %v", interfaceName, err.Error())
+		return err
+	}
 	return nil
 }

@@ -11,6 +11,7 @@ spec:
       "mode": "cndp",
       "logFile": "/var/log/afxdp-k8s-plugins/cndp-cni-e2e.log",
       "logLevel": "debug",
+      "queues": "4",
       "ipam": {
         "type": "host-local",
         "subnet": "192.168.1.0/24",

@@ -18,10 +18,6 @@ package cni
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"regexp"
-	"runtime"
-
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
@@ -31,8 +27,12 @@ import (
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/intel/afxdp_k8s_plugins/internal/bpf"
 	"github.com/intel/afxdp_k8s_plugins/internal/logformats"
+	"github.com/intel/afxdp_k8s_plugins/internal/networking"
 	logging "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
+	"os"
+	"regexp"
+	"runtime"
 )
 
 var (
@@ -49,6 +49,7 @@ type NetConfig struct {
 	types.NetConf
 	Device   string `json:"deviceID"`
 	Mode     string `json:"mode"`
+	Queues   string `json:"queues,omitempty"`
 	LogFile  string `json:"logFile,omitempty"`
 	LogLevel string `json:"logLevel,omitempty"`
 }
@@ -77,6 +78,10 @@ func (n NetConfig) Validate() error {
 			&n.Device,
 			validation.Required.Error("validate(): no device specified"),
 			is.Alphanumeric.Error("validate(): device names can only contain letters and numbers"),
+		),
+		validation.Field(
+			&n.Queues,
+			validation.Required.When(n.Mode == "cndp").Error("Queues setting is required for CNDP mode"),
 		),
 		validation.Field(
 			&n.LogFile,
@@ -139,8 +144,13 @@ func loadConf(bytes []byte) (*NetConfig, error) {
 CmdAdd is called by kublet during pod create
 */
 func CmdAdd(args *skel.CmdArgs) error {
+	netHandler := networking.NewHandler()
+
 	cfg, err := loadConf(args.StdinData)
 	if err != nil {
+		err = fmt.Errorf("cmdAdd(): error loading config data: %w", err)
+		logging.Errorf(err.Error())
+
 		return err
 	}
 
@@ -162,6 +172,16 @@ func CmdAdd(args *skel.CmdArgs) error {
 		logging.Errorf(err.Error())
 
 		return err
+	}
+
+	if cfg.Queues != "" {
+		logging.Infof("cmdAdd(): setting queue size %s for device %s ", cfg.Queues, device.Attrs().Name)
+		if err := netHandler.SetQueueSize(device.Attrs().Name, cfg.Queues); err != nil {
+			err = fmt.Errorf("cmdAdd(): failed to set queue size: %w", err)
+			logging.Errorf(err.Error())
+
+			return err
+		}
 	}
 
 	logging.Infof("cmdAdd(): moving device from default to container network namespace")
@@ -207,9 +227,11 @@ func CmdAdd(args *skel.CmdArgs) error {
 CmdDel is called by kublet during pod delete
 */
 func CmdDel(args *skel.CmdArgs) error {
+	netHandler := networking.NewHandler()
+
 	cfg, err := loadConf(args.StdinData)
 	if err != nil {
-		err = fmt.Errorf("error loading config data: %w", err)
+		err = fmt.Errorf("cmdDel(): error loading config data: %w", err)
 		logging.Errorf(err.Error())
 
 		return err
@@ -258,6 +280,16 @@ func CmdDel(args *skel.CmdArgs) error {
 		return nil
 	}); err != nil {
 		return err
+	}
+
+	if cfg.Queues != "" {
+		logging.Infof("cmdDel(): setting queue size to default for device %s", cfg.Device)
+		if err := netHandler.SetDefaultQueueSize(cfg.Device); err != nil {
+			err = fmt.Errorf("cmdDel(): failed to set queue size to default: %w", err)
+			logging.Errorf(err.Error())
+
+			return err
+		}
 	}
 
 	logging.Infof("cmdDel(): cleaning IPAM config on device")
