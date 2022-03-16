@@ -29,11 +29,12 @@ import (
 
 func TestGetConfig(t *testing.T) {
 	testCases := []struct {
-		name       string
-		configFile string
-		expErr     error
-		expcfg     Config
-		hostNetDev map[string][]string
+		name         string
+		configFile   string
+		expGetCfgErr error
+		expBldPlsErr error
+		expcfg       Config
+		hostNetDev   map[string][]string
 	}{
 		{
 			name: "get config : one pool two manually set devices",
@@ -57,12 +58,18 @@ func TestGetConfig(t *testing.T) {
 						Devices: []string{"dev1", "dev2"},
 					},
 				},
-				Mode:     "cndp",
-				Timeout:  30,
-				LogFile:  "/var/log/afxdp-k8s-plugins/file.log",
-				LogLevel: "debug",
+				Mode:                   "cndp",
+				UdsTimeout:             30,
+				RequireUnprivilegedBpf: false,
+				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+				LogDirPermission:       0x1e4,
+				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFilePermission:      0x1a4,
+				LogLevel:               "debug",
+				MinLinuxVersion:        "4.18.0",
 			},
-			expErr: nil,
+			expGetCfgErr: nil,
+			expBldPlsErr: nil,
 		},
 		{
 			name: "get config : one pool two manually set devices, the rest in pool 2",
@@ -95,12 +102,18 @@ func TestGetConfig(t *testing.T) {
 						Drivers: []string{"i40e"},
 					},
 				},
-				Mode:     "cndp",
-				Timeout:  30,
-				LogFile:  "/var/log/afxdp-k8s-plugins/file.log",
-				LogLevel: "debug",
+				Mode:                   "cndp",
+				UdsTimeout:             30,
+				RequireUnprivilegedBpf: false,
+				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+				LogDirPermission:       0x1e4,
+				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFilePermission:      0x1a4,
+				LogLevel:               "debug",
+				MinLinuxVersion:        "4.18.0",
 			},
-			expErr: nil,
+			expGetCfgErr: nil,
+			expBldPlsErr: nil,
 		},
 		{
 			name: "get config : mix of devices and drivers",
@@ -136,12 +149,18 @@ func TestGetConfig(t *testing.T) {
 						Drivers: []string{"E810"},
 					},
 				},
-				Mode:     "cndp",
-				Timeout:  30,
-				LogFile:  "/var/log/afxdp-k8s-plugins/file.log",
-				LogLevel: "debug",
+				Mode:                   "cndp",
+				UdsTimeout:             30,
+				RequireUnprivilegedBpf: false,
+				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+				LogDirPermission:       0x1e4,
+				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFilePermission:      0x1a4,
+				LogLevel:               "debug",
+				MinLinuxVersion:        "4.18.0",
 			},
-			expErr: nil,
+			expGetCfgErr: nil,
+			expBldPlsErr: nil,
 		},
 		{
 			name: "get config : one_pool three_devices",
@@ -165,12 +184,18 @@ func TestGetConfig(t *testing.T) {
 						Devices: []string{"dev1", "dev2", "dev3"},
 					},
 				},
-				Mode:     "cndp",
-				Timeout:  30,
-				LogFile:  "/var/log/afxdp-k8s-plugins/file.log",
-				LogLevel: "debug",
+				Mode:                   "cndp",
+				UdsTimeout:             30,
+				RequireUnprivilegedBpf: false,
+				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+				LogDirPermission:       0x1e4,
+				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFilePermission:      0x1a4,
+				LogLevel:               "debug",
+				MinLinuxVersion:        "4.18.0",
 			},
-			expErr: nil,
+			expGetCfgErr: nil,
+			expBldPlsErr: nil,
 		},
 		{
 			name: "get config : two_pools four_devices",
@@ -204,12 +229,18 @@ func TestGetConfig(t *testing.T) {
 						Drivers: []string{"E810"},
 					},
 				},
-				Mode:     "cndp",
-				Timeout:  30,
-				LogFile:  "/var/log/afxdp-k8s-plugins/file.log",
-				LogLevel: "debug",
+				Mode:                   "cndp",
+				UdsTimeout:             30,
+				RequireUnprivilegedBpf: false,
+				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+				LogDirPermission:       0x1e4,
+				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFilePermission:      0x1a4,
+				LogLevel:               "debug",
+				MinLinuxVersion:        "4.18.0",
 			},
-			expErr: nil,
+			expGetCfgErr: nil,
+			expBldPlsErr: nil,
 		},
 		{
 			name: "get config : two_pools six_devices",
@@ -243,43 +274,58 @@ func TestGetConfig(t *testing.T) {
 						Drivers: []string{"E810"},
 					},
 				},
-				Mode:     "cndp",
-				Timeout:  30,
-				LogFile:  "/var/log/afxdp-k8s-plugins/file.log",
-				LogLevel: "debug",
+				Mode:                   "cndp",
+				UdsTimeout:             30,
+				RequireUnprivilegedBpf: false,
+				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+				LogDirPermission:       0x1e4,
+				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFilePermission:      0x1a4,
+				LogLevel:               "debug",
+				MinLinuxVersion:        "4.18.0",
 			},
-			expErr: nil,
+			expGetCfgErr: nil,
+			expBldPlsErr: nil,
 		},
 
 		{
-			name:       "load bad config : device  field missing",
-			configFile: `{"mode": "cndp","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log","pools":[{"name":"pool1",:["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
-			expErr:     errors.New("invalid character ':' looking for beginning of object key string"),
+			name:         "load bad config : device field missing",
+			configFile:   `{"mode": "cndp","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log","pools":[{"name":"pool1",:["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
+			expGetCfgErr: errors.New("invalid character ':' looking for beginning of object key string"),
+			expBldPlsErr: nil,
+			expcfg:       Config{LogDir: "/var/log/afxdp-k8s-plugins/", LogDirPermission: 0x1e4, LogFilePermission: 0x1a4, MinLinuxVersion: "4.18.0"},
 		},
 
 		{
-			name:       "load bad config : invalid JSON",
-			configFile: `{"mode": "cndp","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log","pools":[{"name":" "["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
-
-			expErr: errors.New("invalid character '[' after object key:value pair"),
+			name:         "load bad config : invalid JSON",
+			configFile:   `{"mode": "cndp","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log","pools":[{"name":" "["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
+			expGetCfgErr: errors.New("invalid character '[' after object key:value pair"),
+			expBldPlsErr: nil,
+			expcfg:       Config{LogDir: "/var/log/afxdp-k8s-plugins/", LogDirPermission: 0x1e4, LogFilePermission: 0x1a4, MinLinuxVersion: "4.18.0"},
 		},
 
 		{
-			name:       "load bad config : no pools",
-			configFile: `{"mode": "cndp","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log", :[{"name: ["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
-			expErr:     errors.New("invalid character ':' looking for beginning of object key string"),
+			name:         "load bad config : no pools",
+			configFile:   `{"mode": "cndp","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log", :[{"name: ["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
+			expGetCfgErr: errors.New("invalid character ':' looking for beginning of object key string"),
+			expBldPlsErr: nil,
+			expcfg:       Config{LogDir: "/var/log/afxdp-k8s-plugins/", LogDirPermission: 0x1e4, LogFilePermission: 0x1a4, MinLinuxVersion: "4.18.0"},
 		},
 
 		{
-			name:       "load bad config : empty pool ",
-			configFile: ` `,
-			expErr:     errors.New("unexpected end of JSON input"),
+			name:         "load bad config : empty pool ",
+			configFile:   ` `,
+			expGetCfgErr: errors.New("unexpected end of JSON input"),
+			expBldPlsErr: nil,
+			expcfg:       Config{LogDir: "/var/log/afxdp-k8s-plugins/", LogDirPermission: 0x1e4, LogFilePermission: 0x1a4, MinLinuxVersion: "4.18.0"},
 		},
 
 		{
-			name:       "load bad config : invalid character ",
-			configFile: "?",
-			expErr:     errors.New("invalid character '?' looking for beginning of value"),
+			name:         "load bad config : invalid character ",
+			configFile:   "?",
+			expGetCfgErr: errors.New("invalid character '?' looking for beginning of value"),
+			expBldPlsErr: nil,
+			expcfg:       Config{LogDir: "/var/log/afxdp-k8s-plugins/", LogDirPermission: 0x1e4, LogFilePermission: 0x1a4, MinLinuxVersion: "4.18.0"},
 		},
 	}
 	for _, tc := range testCases {
@@ -299,13 +345,21 @@ func TestGetConfig(t *testing.T) {
 
 			cfg, err := GetConfig(testDir, fakeNetHandler)
 			if err == nil {
-				assert.Equal(t, tc.expErr, err, "Error was expected")
+				assert.Equal(t, tc.expGetCfgErr, err, "Error was expected")
 			} else {
-				require.Error(t, tc.expErr, "Unexpected error returned")
-				assert.Contains(t, err.Error(), tc.expErr.Error(), "Unexpected error returned")
+				require.Error(t, tc.expGetCfgErr, "Unexpected error returned")
+				assert.Contains(t, err.Error(), tc.expGetCfgErr.Error(), "Unexpected error returned")
 			}
-			assert.Equal(t, tc.expcfg, cfg, "Error was expected: configs do not match")
 
+			err = cfg.BuildPools()
+			if err == nil {
+				assert.Equal(t, tc.expBldPlsErr, err, "Error was expected")
+			} else {
+				require.Error(t, tc.expBldPlsErr, "Unexpected error returned")
+				assert.Contains(t, err.Error(), tc.expBldPlsErr.Error(), "Unexpected error returned")
+			}
+
+			assert.Equal(t, tc.expcfg, cfg, "Error was expected: configs do not match")
 		})
 	}
 }

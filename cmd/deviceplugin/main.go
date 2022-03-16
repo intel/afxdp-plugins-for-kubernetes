@@ -23,6 +23,7 @@ import (
 	"github.com/intel/afxdp_k8s_plugins/internal/logformats"
 	"github.com/intel/afxdp_k8s_plugins/internal/networking"
 	logging "github.com/sirupsen/logrus"
+	"io"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"os"
 	"os/signal"
@@ -32,9 +33,13 @@ import (
 )
 
 const (
+	exitNormal        = 0
+	exitConfigError   = 1
+	exitLogError      = 2
+	exitHostError     = 3
+	exitPoolError     = 4
 	defaultConfigFile = "./config.json"
 	devicePrefix      = "cndp"
-	minLinuxVersion   = "4.18.0" // Minimum Linux version for AF_XDP support
 )
 
 type devicePlugin struct {
@@ -43,47 +48,45 @@ type devicePlugin struct {
 
 func main() {
 	var configFile string
-
 	flag.StringVar(&configFile, "config", defaultConfigFile, "Location of the device plugin configuration file")
 	flag.Parse()
-
 	logging.SetReportCaller(true)
 	logging.SetFormatter(logformats.Default)
 
-	logging.Infof("Starting CNDP Device Plugin")
-
-	host := host.NewHandler()
-
-	meetsRequirementsPreConfig, err := checkHostPreConfig(host)
-	if err != nil {
-		logging.Errorf("Error checking host pre config: %v", err)
-		logging.Errorf("Device plugin will exit")
-		os.Exit(1)
-	}
-	if !meetsRequirementsPreConfig {
-		logging.Infof("Host does not meet requriements")
-		logging.Infof("Device plugin will exit")
-		os.Exit(0)
-	}
-
-	// get config
+	// config
 	cfg, err := deviceplugin.GetConfig(configFile, networking.NewHandler())
 	if err != nil {
 		logging.Errorf("Error getting device plugin config: %v", err)
-		logging.Errorf("Device plugin will exit")
-		os.Exit(1)
+		exit(exitConfigError)
 	}
 
-	meetsRequirementsPostConfig, err := checkHostPostConfig(host, cfg)
+	// logging
+	if err := configureLogging(cfg); err != nil {
+		logging.Errorf("Error configuring logging: %v", err)
+		exit(exitLogError)
+	}
+
+	logging.Infof("Starting AF_XDP Device Plugin")
+	logging.Infof("Device Plugin mode: %s", cfg.Mode)
+
+	// requirements
+	logging.Infof("Checking if host meets requriements")
+	hostMeetsRequirements, err := checkHost(host.NewHandler(), cfg)
 	if err != nil {
 		logging.Errorf("Error checking host post config: %v", err)
-		logging.Errorf("Device plugin will exit")
-		os.Exit(1)
+		exit(exitHostError)
 	}
-	if !meetsRequirementsPostConfig {
+	if !hostMeetsRequirements {
 		logging.Infof("Host does not meet requriements")
-		logging.Infof("Device plugin will exit")
-		os.Exit(0)
+		exit(exitNormal)
+	}
+	logging.Infof("Host meets requriements")
+
+	// pools
+	logging.Infof("Building device pools")
+	if err := cfg.BuildPools(); err != nil {
+		logging.Warningf("Error building device pools: %v", err)
+		exit(exitPoolError)
 	}
 
 	dp := devicePlugin{
@@ -98,13 +101,12 @@ func main() {
 			DpAPISocket:   pluginapi.DevicePluginPath + devicePrefix + "-" + poolConfig.Name + ".sock",
 			DpAPIEndpoint: devicePrefix + "-" + poolConfig.Name + ".sock",
 			UpdateSignal:  make(chan bool),
-			Timeout:       cfg.Timeout,
+			Timeout:       cfg.UdsTimeout,
 			DevicePrefix:  devicePrefix,
 		}
 
 		if err := pm.Init(poolConfig); err != nil {
-			logging.Warningf("Error initializing pool: %v", pm.Name)
-			logging.Errorf("%v", err)
+			logging.Errorf("Error initializing pool %v: %v", pm.Name, err)
 		}
 
 		dp.pools[poolConfig.Name] = pm
@@ -120,6 +122,122 @@ func main() {
 			logging.Errorf("Termination error: %v", err)
 		}
 	}
+}
+
+func configureLogging(cfg deviceplugin.Config) error {
+	err := os.MkdirAll(cfg.LogDir, cfg.LogDirPermission)
+	if err != nil {
+		logging.Errorf("Error setting log directory: %v", err)
+	}
+
+	if cfg.LogFile != "" {
+		logging.Infof("Setting log file: %s", cfg.LogFile)
+		fp, err := os.OpenFile(cfg.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, cfg.LogFilePermission)
+		if err != nil {
+			logging.Errorf("Error setting log file: %v", err)
+			return err
+		}
+		logging.SetOutput(io.MultiWriter(fp, os.Stdout))
+	}
+
+	if cfg.LogLevel != "" {
+		logging.Infof("Setting log level: %s", cfg.LogLevel)
+		level, err := logging.ParseLevel(cfg.LogLevel)
+		if err != nil {
+			logging.Errorf("Error setting log level: %v", err)
+			return err
+		}
+		logging.SetLevel(level)
+
+		if cfg.LogLevel == "debug" {
+			logging.Infof("Switching to debug log format")
+			logging.SetFormatter(logformats.Debug)
+		}
+	}
+
+	return nil
+}
+
+func checkHost(host host.Handler, cfg deviceplugin.Config) (bool, error) {
+	// kernel
+	logging.Debugf("Checking kernel version")
+	linuxVersion, err := host.KernelVersion()
+	if err != nil {
+		err := fmt.Errorf("Error checking kernel version: %v", err)
+		return false, err
+
+	}
+
+	linuxInt, err := intVersion(linuxVersion)
+	if err != nil {
+		err := fmt.Errorf("Error converting actual kernel version to int: %v", err)
+		return false, err
+
+	}
+
+	minLinuxInt, err := intVersion(cfg.MinLinuxVersion)
+	if err != nil {
+		err := fmt.Errorf("Error converting minimum kernel version to int: %v", err)
+		return false, err
+
+	}
+
+	if linuxInt < minLinuxInt {
+		logging.Warningf("Kernel version %v is below minimum requirement %v", linuxVersion, cfg.MinLinuxVersion)
+		return false, nil
+	}
+	logging.Debugf("Kernel version: %v meets minimum requirements", linuxVersion)
+
+	// libbpf
+	logging.Debugf("Checking host for Libbpf")
+	bpfInstalled, libs, err := host.HasLibbpf()
+	if err != nil {
+		err := fmt.Errorf("Libbpf not found on host")
+		return false, err
+	}
+	if bpfInstalled {
+		logging.Debugf("Libbpf found on host:")
+		for _, lib := range libs {
+			logging.Debugf("\t" + lib)
+		}
+	} else {
+		logging.Warningf("Libbpf not found on host")
+		return false, nil
+	}
+
+	// unprivileged bpf
+	logging.Debugf("Checking if host allows unprivileged BPF operations")
+	unprivBpfAllowed, err := host.AllowsUnprivilegedBpf()
+	if err != nil {
+		logging.Errorf("Error checking if host allows unprivileged BPF operations: %v", err)
+		return false, err
+	}
+	if unprivBpfAllowed {
+		logging.Debugf("Unprivileged BPF is allowed")
+	} else {
+		logging.Warningf("Unprivileged BPF is disabled")
+		if cfg.RequireUnprivilegedBpf {
+			logging.Warningf("Unprivileged BPF is required")
+			return false, nil
+		}
+	}
+
+	// ethtool
+	logging.Debugf("Checking host for Ethtool")
+	ethInstalled, version, err := host.HasEthtool()
+	if err != nil {
+		logging.Errorf("Error checking if Ethtool is present on host: %v", err)
+		return false, err
+	}
+	if ethInstalled {
+		logging.Debugf("Ethtool found on host:")
+		logging.Debugf("\t" + version)
+	} else {
+		logging.Warningf("Ethool not found on host")
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func intVersion(version string) (int64, error) { // example "5.4.0-89-generic"
@@ -139,78 +257,11 @@ func intVersion(version string) (int64, error) { // example "5.4.0-89-generic"
 	return value, nil
 }
 
-func checkHostPreConfig(host host.Handler) (bool, error) {
-	// kernel
-	linuxVersion, err := host.KernelVersion()
-	if err != nil {
-		err := fmt.Errorf("Error checking kernel version: %v", err)
-		return false, err
-
-	}
-	logging.Infof("Kernel version: %v", linuxVersion)
-
-	linuxInt, err := intVersion(linuxVersion)
-	if err != nil {
-		err := fmt.Errorf("Error converting kernel version: %v", err)
-		return false, err
-
-	}
-
-	minLinuxInt, err := intVersion(minLinuxVersion)
-	if err != nil {
-		err := fmt.Errorf("Error converting kernel version: %v", err)
-		return false, err
-
-	}
-
-	if linuxInt < minLinuxInt {
-		logging.Warningf("Kernel version %v is below minimum requirement", linuxVersion)
-		return false, nil
-	}
-
-	// libbpf
-	bpfInstalled, err := host.HasLibbpf()
-	if err != nil {
-		err := fmt.Errorf("Libbpf not found on host")
-		return false, err
-	}
-	if bpfInstalled {
-		logging.Infof("Libbpf present on host")
+func exit(code int) {
+	if code == 0 {
+		logging.Infof("Device plugin will exit")
 	} else {
-		logging.Warningf("Libbpf not found on host")
-		return false, nil
+		logging.Errorf("Device plugin will exit")
 	}
-
-	// ethtool
-	ethInstalled, err := host.HasEthtool()
-	if err != nil {
-		logging.Errorf("Error checking if Ethool is present on host: %v", err)
-		return false, err
-	}
-	if ethInstalled {
-		logging.Infof("Ethtool present on host")
-	} else {
-		logging.Warningf("Ethool not found on host")
-		return false, nil
-	}
-	return true, nil
-}
-
-func checkHostPostConfig(host host.Handler, cfg deviceplugin.Config) (bool, error) {
-	// unprivileged_bpf_disabled
-	unprivBpfAllowed, err := host.AllowsUnprivilegedBpf()
-	if err != nil {
-		logging.Errorf("Error checking if host allows Unprivileged BPF operations: %v", err)
-		return false, err
-	}
-	if unprivBpfAllowed {
-		logging.Infof("Unprivileged BPF is allowed")
-	} else {
-		logging.Warningf("Unprivileged BPF is disabled")
-		if cfg.RequireUnprivilegedBpf {
-			logging.Warningf("Unprivileged bpf is required")
-			return false, nil
-		}
-	}
-	return true, nil
+	os.Exit(code)
 }

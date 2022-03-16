@@ -15,7 +15,7 @@ excluded_from_utests = "/test/e2e|/test/fuzz|/cmd/cni|/internal/bpf|/internal/lo
 
 .PHONY: all e2e
 
-all: build test static
+all: format build test static
 
 format:
 	@echo "******     Go Format     ******"
@@ -37,7 +37,7 @@ buildc:
 	@echo
 	@echo
 
-build: format buildc
+build: buildc
 	@echo "******     Build DP      ******"
 	@echo
 	go build -o ./bin/afxdp-dp ./cmd/deviceplugin
@@ -49,7 +49,7 @@ build: format buildc
 	@echo
 	@echo
 
-image: build
+image:
 	@echo "******   Docker Image    ******"
 	@echo
 	docker build -t afxdp-device-plugin -f images/amd64.dockerfile .
@@ -91,7 +91,10 @@ e2efull: build
 	@echo
 	@echo
 
-e2edaemon: image
+# Daemonset binaries are built as part of docker image build.
+# However, the e2e tests copy the cni from ./bin and installs it as afxdp-e2e.
+# For daemonset e2e tests we still run a make build to build that cni.
+e2edaemon: build image
 	@echo "******   E2E Daemonset   ******"
 	@echo
 	cd test/e2e/ && ./e2e-test.sh --daemonset

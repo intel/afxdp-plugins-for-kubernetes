@@ -38,23 +38,21 @@ func NewFakeHandler() FakeHandler {
 KernelVersion is a function used to mock and retrieve the KernelVersion
 */
 func (r *fakeHandler) KernelVersion() (string, error) {
-
 	return "5.4.1", nil
 }
 
 /*
 HasEthtool is a function used to mock and search for ethtool
 */
-func (r *fakeHandler) HasEthtool() (bool, error) {
-
-	return true, nil
+func (r *fakeHandler) HasEthtool() (bool, string, error) {
+	return true, "ethtool version 5.4", nil
 }
 
 /*
 HasEthtool is a function used to mock and search for Libbpf
 */
-func (r *fakeHandler) HasLibbpf() (bool, error) {
-	return true, nil
+func (r *fakeHandler) HasLibbpf() (bool, []string, error) {
+	return true, nil, nil
 }
 
 /*

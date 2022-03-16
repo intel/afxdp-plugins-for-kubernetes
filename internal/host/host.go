@@ -31,8 +31,8 @@ against a fake API.
 type Handler interface {
 	AllowsUnprivilegedBpf() (bool, error)
 	KernelVersion() (string, error)
-	HasEthtool() (bool, error)
-	HasLibbpf() (bool, error)
+	HasEthtool() (bool, string, error)
+	HasLibbpf() (bool, []string, error)
 	HasDevLink() (bool, error)
 }
 
@@ -57,36 +57,34 @@ func (r *handler) KernelVersion() (string, error) {
 	return linuxVer, nil
 }
 
-func (r *handler) HasEthtool() (bool, error) {
-	path, err := exec.LookPath("ethtool")
-	if err != nil {
-		logging.Errorf("Error checking ethtool: %v", err)
-		return false, err
-	}
-	if path == "" {
-		return false, nil
-	}
-	return true, nil
-}
-
-func (r *handler) HasLibbpf() (bool, error) {
+func (r *handler) HasLibbpf() (bool, []string, error) {
 	libPaths := []string{"/usr/lib/", "/usr/lib64/"}
+	foundLibbpf := false
+	var foundLibs []string
 
 	for _, path := range libPaths {
 		files, err := ioutil.ReadDir(path)
 		if err != nil {
-			logging.Errorf("Error checking path "+path+": %v", err)
-			return false, err
+			if strings.Contains(err.Error(), "no such file or directory") {
+				logging.Debugf("Directory " + path + " does not exist")
+			} else {
+				logging.Errorf("Error checking path "+path+": %v", err)
+				return false, nil, err
+			}
 		}
 
 		for _, file := range files {
 			if strings.Contains(file.Name(), "libbpf.so") {
-				return true, nil
+				foundLibbpf = true
+				foundLibs = append(foundLibs, path+file.Name())
 			}
 		}
 	}
 
-	return false, nil
+	if foundLibbpf {
+		return true, foundLibs, nil
+	}
+	return false, nil, nil
 }
 
 func (r *handler) AllowsUnprivilegedBpf() (bool, error) {
@@ -101,6 +99,23 @@ func (r *handler) AllowsUnprivilegedBpf() (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (r *handler) HasEthtool() (bool, string, error) {
+	path, err := exec.LookPath("ethtool")
+	if err != nil {
+		logging.Errorf("Error checking ethtool: %v", err)
+		return false, "", err
+	}
+	if path == "" {
+		return false, "", nil
+	}
+
+	cmd := cmd.NewCmd("ethtool", "--version")
+	status := <-cmd.Start()
+	version := string(status.Stdout[0])
+
+	return true, version, nil
 }
 
 func (r *handler) HasDevLink() (bool, error) {

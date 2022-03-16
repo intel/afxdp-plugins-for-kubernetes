@@ -20,10 +20,8 @@ import (
 	"fmt"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
-	"github.com/intel/afxdp_k8s_plugins/internal/logformats"
 	"github.com/intel/afxdp_k8s_plugins/internal/networking"
 	logging "github.com/sirupsen/logrus"
-	"io"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -31,19 +29,24 @@ import (
 )
 
 const (
-	maxTimeout        = 300  // Maximum timeout set to seconds
-	defaultTimeout    = 30   // Default timeout for unset timeout value in config.json.
-	logDirPermission  = 0744 // Permissions for setting log directory.
-	logFilePermission = 0644 // Permissions for setting log file.
+	maxUdsTimeout     = 300                           // Maximum timeout set to seconds
+	defaultUdsTimeout = 30                            // Default timeout for unset timeout value in config.json
+	logDirPermission  = 0744                          // Permissions for setting log directory
+	logFilePermission = 0644                          // Permissions for setting log file
+	logDir            = "/var/log/afxdp-k8s-plugins/" // Acceptable log directory
+	minLinuxVersion   = "4.18.0"                      // Minimum Linux version for AF_XDP support
 )
 
+// "constant" arrays
 var (
 	driversTypes = []string{"i40e", "E810"}                                 // drivers we search for by default if none configured
 	excludedInfs = []string{"eno", "eth", "lo", "docker", "flannel", "cni"} // interfaces we never add to a pool
 	logLevels    = []string{"debug", "info", "warning", "error"}            // acceptable log levels
-	logDir       = "/var/log/afxdp-k8s-plugins/"                            // acceptable log directory
 	modes        = []string{"cndp"}                                         // acceptable modes
-	assignedInfs []string                                                   // keeps track of devices that are assigned to pools
+)
+
+var (
+	assignedInfs []string
 	netHandler   networking.Handler
 )
 
@@ -60,11 +63,15 @@ type PoolConfig struct {
 Config contains the overall configuration for the device plugin
 */
 type Config struct {
+	LogDir                 string
+	LogDirPermission       os.FileMode
+	LogFilePermission      os.FileMode
+	MinLinuxVersion        string
 	Pools                  []*PoolConfig `json:"pools"`
 	Mode                   string        `json:"mode"`
 	LogFile                string        `json:"logFile"`
 	LogLevel               string        `json:"logLevel"`
-	Timeout                int           `json:"timeout"`
+	UdsTimeout             int           `json:"timeout"`
 	RequireUnprivilegedBpf bool          `json:"requireUnprivilegedBpf"`
 }
 
@@ -72,7 +79,12 @@ type Config struct {
 GetConfig returns the overall config for the device plugin. Host devices are discovered if not explicitly set in the config file
 */
 func GetConfig(configFile string, networking networking.Handler) (Config, error) {
-	var cfg Config
+	cfg := Config{
+		LogDir:            logDir,
+		LogDirPermission:  logDirPermission,
+		LogFilePermission: logFilePermission,
+		MinLinuxVersion:   minLinuxVersion,
+	}
 	netHandler = networking
 
 	logging.Infof("Reading config file: %s", configFile)
@@ -94,47 +106,22 @@ func GetConfig(configFile string, networking networking.Handler) (Config, error)
 		return cfg, err
 	}
 
-	err = os.MkdirAll(logDir, logDirPermission)
-	if err != nil {
-		logging.Errorf("Error setting log directory: %v", err)
-	}
-
-	if cfg.LogFile != "" {
-		logging.Infof("Setting log file: %s", cfg.LogFile)
-		fp, err := os.OpenFile(cfg.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, logFilePermission)
-		if err != nil {
-			logging.Errorf("Error setting log file: %v", err)
-			return cfg, err
-		}
-		logging.SetOutput(io.MultiWriter(fp, os.Stdout))
-	}
-
-	if cfg.LogLevel != "" {
-		logging.Infof("Setting log level: %s", cfg.LogLevel)
-		level, err := logging.ParseLevel(cfg.LogLevel)
-		if err != nil {
-			logging.Errorf("Error setting log level: %v", err)
-			return cfg, err
-		}
-		logging.SetLevel(level)
-
-		if cfg.LogLevel == "debug" {
-			logging.SetFormatter(logformats.Debug)
-			logging.Debugf("Using debug log format")
-		}
-	}
-
-	logging.Infof("Mode is set to: %s", cfg.Mode)
-
-	if cfg.Timeout != 0 {
-		logging.Debugf("Timeout is set to: %d seconds", cfg.Timeout)
+	if cfg.UdsTimeout != 0 {
+		logging.Debugf("UDS Timeout is set to: %d seconds", cfg.UdsTimeout)
 	} else {
-		cfg.Timeout = defaultTimeout
-		logging.Debugf("Using default value, timeout set to: %d seconds", cfg.Timeout)
+		cfg.UdsTimeout = defaultUdsTimeout
+		logging.Debugf("Using default value, timeout set to: %d seconds", cfg.UdsTimeout)
 	}
 
+	return cfg, nil
+}
+
+/*
+BuildPools builds up the device list in each of the configured pools
+*/
+func (c *Config) BuildPools() error {
 	logging.Debugf("Checking pools for manually assigned devices")
-	for _, pool := range cfg.Pools {
+	for _, pool := range c.Pools {
 		for _, device := range pool.Devices {
 			logging.Debugf("Device " + device + " has been manually assigned to pool " + pool.Name)
 
@@ -149,7 +136,7 @@ func GetConfig(configFile string, networking networking.Handler) (Config, error)
 	}
 
 	logging.Debugf("Checking pools for assigned drivers")
-	for _, pool := range cfg.Pools {
+	for _, pool := range c.Pools {
 		if len(pool.Drivers) > 0 {
 			logging.Debugf("Pool " + pool.Name + " has drivers assigned")
 
@@ -158,7 +145,7 @@ func GetConfig(configFile string, networking networking.Handler) (Config, error)
 				devices, err := deviceDiscovery(driver)
 				if err != nil {
 					logging.Errorf("Error discovering devices: %v", err.Error())
-					return cfg, err
+					return err
 				}
 
 				if len(devices) > 0 {
@@ -173,7 +160,7 @@ func GetConfig(configFile string, networking networking.Handler) (Config, error)
 		}
 	}
 
-	if len(cfg.Pools) == 0 {
+	if len(c.Pools) == 0 {
 		logging.Infof("No pools configured, defaulting to pool per driver")
 		for _, driver := range driversTypes {
 			pool := new(PoolConfig)
@@ -183,7 +170,7 @@ func GetConfig(configFile string, networking networking.Handler) (Config, error)
 			devices, err := deviceDiscovery(driver)
 			if err != nil {
 				logging.Errorf("Error discovering devices: %v", err.Error())
-				return cfg, err
+				return err
 			}
 
 			if len(devices) > 0 {
@@ -194,11 +181,11 @@ func GetConfig(configFile string, networking networking.Handler) (Config, error)
 					assignedInfs = append(assignedInfs, device)
 				}
 
-				cfg.Pools = append(cfg.Pools, pool)
+				c.Pools = append(c.Pools, pool)
 			}
 		}
 	}
-	return cfg, nil
+	return nil
 }
 
 /*
@@ -260,8 +247,8 @@ func (c Config) Validate() error {
 			validation.In(iLogLevels...).Error("must be "+fmt.Sprintf("%v", iLogLevels)),
 		),
 		validation.Field(
-			&c.Timeout,
-			validation.Min(0), validation.Max(maxTimeout),
+			&c.UdsTimeout,
+			validation.Min(0), validation.Max(maxUdsTimeout),
 		),
 		validation.Field(
 			&c.Mode,
