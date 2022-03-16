@@ -16,13 +16,14 @@
 package uds
 
 import (
+	"fmt"
+	"github.com/google/uuid"
+	logging "github.com/sirupsen/logrus"
 	"net"
 	"os"
 	"strconv"
 	"syscall"
 	"time"
-
-	logging "github.com/sirupsen/logrus"
 )
 
 /*
@@ -172,7 +173,7 @@ func (h *handler) Read() (string, int, error) {
 	}
 
 	request = string(msgBuf[0:n])
-	logging.Debugf("Request: %s", request)
+	logging.Debugf("Read: %s", request)
 
 	if ctrlBufHasValue(ctrlBuf) {
 		ctrlMsgs, err := syscall.ParseSocketControlMessage(ctrlBuf)
@@ -202,7 +203,7 @@ If a file descriptor is included, Write will configure and include it
 func (h *handler) Write(response string, fd int) error {
 
 	if fd > 0 {
-		logging.Debugf("Response: %s, FD: %s", response, strconv.Itoa(fd))
+		logging.Debugf("Write: %s, FD: %s", response, strconv.Itoa(fd))
 		rights := syscall.UnixRights(fd)
 
 		if _, _, err := h.conn.WriteMsgUnix([]byte(response), rights, nil); err != nil {
@@ -210,7 +211,7 @@ func (h *handler) Write(response string, fd int) error {
 			return err
 		}
 	} else {
-		logging.Debugf("Response: %s", response)
+		logging.Debugf("Write: %s", response)
 
 		if _, _, err := h.conn.WriteMsgUnix([]byte(response), nil, nil); err != nil {
 			logging.Errorf("WriteMsgUnix error: %v", err)
@@ -218,6 +219,64 @@ func (h *handler) Write(response string, fd int) error {
 		}
 	}
 	return nil
+}
+
+/*
+GenerateRandomSocketName will take the file directory path, and apply a unique name per each
+UDS socket file created.
+*/
+func GenerateRandomSocketName(directory string, udsDirFileMode os.FileMode) (string, error) {
+	//create directory if not exists, with correct file permissions
+	if err := os.MkdirAll(directory, udsDirFileMode); err != nil {
+		logging.Errorf("Error creating socket file directory %s: %v", directory, err)
+		return "", err
+	}
+
+	//get directory info
+	fileInfo, err := os.Stat(directory)
+	if err != nil {
+		logging.Errorf("Error getting directory info %s: %v", directory, err)
+		return "", err
+	}
+
+	//verify it is a directory, in case of pre existing file
+	if !fileInfo.IsDir() {
+		err = fmt.Errorf("%s is not a directory", directory)
+		logging.Errorf(err.Error())
+		return "", err
+	}
+
+	//verify the permissions are correct, in case of pre existing dir
+	if fileInfo.Mode().Perm() != udsDirFileMode {
+		err = fmt.Errorf("Incorrect permissions on directory %s", directory)
+		logging.Errorf(err.Error())
+		return "", err
+	}
+
+	var sockPath string
+	var count int = 0
+	for {
+		if count >= 5 {
+			err = fmt.Errorf("Error generating a unique UDS filepath")
+			logging.Errorf(err.Error())
+			return "", err
+		}
+
+		sockName, err := uuid.NewRandom()
+		if err != nil {
+			logging.Errorf("Error generating random UDS filename: %v", err)
+		}
+
+		sockPath = directory + sockName.String() + ".sock"
+		if _, err := os.Stat(sockPath); os.IsNotExist(err) {
+			break
+		}
+
+		logging.Debugf("%s already exists. Regenerating.", sockPath)
+		count++
+	}
+
+	return sockPath, nil
 }
 
 func (h *handler) cleanup() {

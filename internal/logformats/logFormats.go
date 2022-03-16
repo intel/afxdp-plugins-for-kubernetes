@@ -48,3 +48,11 @@ var Debug = &logging.TextFormatter{
 		return funcName, fileName
 	},
 }
+
+/*
+Fuzz is the formatter used in our fuzz tests
+*/
+var Fuzz = &logging.TextFormatter{
+	DisableColors: true,
+	FullTimestamp: true,
+}

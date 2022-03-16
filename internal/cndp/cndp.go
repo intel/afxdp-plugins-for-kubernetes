@@ -16,14 +16,12 @@
 package cndp
 
 import (
-	"fmt"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/intel/afxdp_k8s_plugins/internal/bpf"
 	"github.com/intel/afxdp_k8s_plugins/internal/resourcesapi"
 	"github.com/intel/afxdp_k8s_plugins/internal/uds"
@@ -112,7 +110,7 @@ It also returns the filepath of the UDS being served.
 */
 func (f *serverFactory) CreateServer(deviceType string, timeout int) (Server, string, error) {
 	subDir := strings.ReplaceAll(deviceType, "/", "_")
-	udsPath, err := generateSocketPath(usdSockDir + subDir + "/")
+	udsPath, err := uds.GenerateRandomSocketName(usdSockDir+subDir+"/", udsDirFileMode)
 	if err != nil {
 		logging.Errorf("Error generating socket file path: %v", err)
 		return &server{}, "", err
@@ -404,58 +402,4 @@ func (s *server) validatePod(podName string) (bool, error) {
 
 	logging.Warningf("Pod " + podName + " could not be validated for this UDS connection")
 	return false, nil
-}
-
-func generateSocketPath(directory string) (string, error) {
-	//create directory if not exists, with correct file permissions
-	if err := os.MkdirAll(directory, udsDirFileMode); err != nil {
-		logging.Errorf("Error creating socket file directory %s: %v", directory, err)
-		return "", err
-	}
-
-	//get directory info
-	fileInfo, err := os.Stat(directory)
-	if err != nil {
-		logging.Errorf("Error getting directory info %s: %v", directory, err)
-		return "", err
-	}
-
-	//verify it is a directory, in case of pre existing file
-	if !fileInfo.IsDir() {
-		err = fmt.Errorf("%s is not a directory", directory)
-		logging.Errorf(err.Error())
-		return "", err
-	}
-
-	//verify the permissions are correct, in case of pre existing dir
-	if fileInfo.Mode().Perm() != udsDirFileMode {
-		err = fmt.Errorf("Incorrect permissions on directory %s", directory)
-		logging.Errorf(err.Error())
-		return "", err
-	}
-
-	var sockPath string
-	var count int = 0
-	for {
-		if count >= 5 {
-			err = fmt.Errorf("Error generating a unique UDS filepath")
-			logging.Errorf(err.Error())
-			return "", err
-		}
-
-		sockName, err := uuid.NewRandom()
-		if err != nil {
-			logging.Errorf("Error generating random UDS filename: %v", err)
-		}
-
-		sockPath = directory + sockName.String() + ".sock"
-		if _, err := os.Stat(sockPath); os.IsNotExist(err) {
-			break
-		}
-
-		logging.Debugf("%s already exists. Regenerating.", sockPath)
-		count++
-	}
-
-	return sockPath, nil
 }
