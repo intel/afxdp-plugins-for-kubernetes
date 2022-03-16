@@ -20,7 +20,6 @@ import (
 	logging "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os/exec"
-	"strconv"
 	"strings"
 )
 
@@ -96,9 +95,12 @@ func (r *handler) AllowsUnprivilegedBpf() (bool, error) {
 
 	bpfStatus := strings.Split(status.Stdout[0], "=")[1]
 	bpfStatus = strings.TrimSpace(bpfStatus)
-	boolValue, err := strconv.ParseBool(bpfStatus)
 
-	return !boolValue, err
+	if bpfStatus != "0" {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (r *handler) HasDevLink() (bool, error) {
