@@ -279,12 +279,6 @@ func deviceDiscovery(requiredDriver string) ([]string, error) {
 			return poolDevices, err
 		}
 
-		pciAddr, err := netHandler.GetDevicePci(hostDevice.Name)
-		if err != nil {
-			logging.Errorf("Error getting driver name: %v", err.Error())
-		}
-		logging.Infof("Device %s PCI address:%s", hostDevice.Name, pciAddr)
-
 		if deviceDriver == requiredDriver {
 			logging.Debugf("Device %s is type %s", hostDevice.Name, requiredDriver)
 
