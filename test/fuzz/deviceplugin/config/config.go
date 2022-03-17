@@ -1,8 +1,8 @@
 package deviceplugin
 
 import (
-	dp "github.com/intel/afxdp_k8s_plugins/internal/deviceplugin"
-	"github.com/intel/afxdp_k8s_plugins/internal/networking"
+	dp "github.com/intel/afxdp-plugins-for-kubernetes/internal/deviceplugin"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	"io/ioutil"
 	"os"
 )

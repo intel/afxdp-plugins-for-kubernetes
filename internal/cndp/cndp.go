@@ -16,16 +16,15 @@
 package cndp
 
 import (
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/resourcesapi"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/uds"
+	logging "github.com/sirupsen/logrus"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/intel/afxdp_k8s_plugins/internal/bpf"
-	"github.com/intel/afxdp_k8s_plugins/internal/resourcesapi"
-	"github.com/intel/afxdp_k8s_plugins/internal/uds"
-	logging "github.com/sirupsen/logrus"
 )
 
 const (

@@ -16,12 +16,11 @@
 package main
 
 import (
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/uds"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/intel/afxdp_k8s_plugins/internal/uds"
 )
 
 const (

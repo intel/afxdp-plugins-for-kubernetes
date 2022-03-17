@@ -1,6 +1,6 @@
-# AF_XDP Kubernetes Plugins
+# AF_XDP Plugins for Kubernetes
 
-A proof of concept Kubernetes device plugin and CNI plugin to provide AF_XDP networking to Kubernetes pods using Intel's Cloud Native Data Plane framework.
+A Kubernetes device plugin and CNI plugin to provide AF_XDP networking to Kubernetes pods using Intel's Cloud Native Data Plane framework.
 
 ## Prerequisites
 ### Required

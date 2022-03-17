@@ -18,7 +18,7 @@ package main
 import (
 	"github.com/containernetworking/cni/pkg/skel"
 	cniversion "github.com/containernetworking/cni/pkg/version"
-	"github.com/intel/afxdp_k8s_plugins/internal/cni"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/cni"
 )
 
 func main() {

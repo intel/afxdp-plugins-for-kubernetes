@@ -1,8 +1,8 @@
 package uds
 
 import (
-	"github.com/intel/afxdp_k8s_plugins/internal/logformats"
-	"github.com/intel/afxdp_k8s_plugins/internal/uds"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/logformats"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/uds"
 	logging "github.com/sirupsen/logrus"
 	"os"
 	"time"

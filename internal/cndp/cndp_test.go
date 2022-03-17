@@ -16,11 +16,10 @@
 package cndp
 
 import (
-	"testing"
-
-	"github.com/intel/afxdp_k8s_plugins/internal/resourcesapi"
-	"github.com/intel/afxdp_k8s_plugins/internal/uds"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/resourcesapi"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/uds"
 	"gotest.tools/assert"
+	"testing"
 )
 
 func TestCreateNewServer(t *testing.T) {

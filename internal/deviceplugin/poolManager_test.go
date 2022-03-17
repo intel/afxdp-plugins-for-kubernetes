@@ -18,8 +18,8 @@ package deviceplugin
 import (
 	"context"
 	"encoding/json"
-	"github.com/intel/afxdp_k8s_plugins/internal/bpf"
-	"github.com/intel/afxdp_k8s_plugins/internal/cndp"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/cndp"
 	"github.com/stretchr/testify/assert"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"testing"

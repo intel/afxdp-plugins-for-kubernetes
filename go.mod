@@ -1,4 +1,4 @@
-module github.com/intel/afxdp_k8s_plugins
+module github.com/intel/afxdp-plugins-for-kubernetes
 
 go 1.13
 

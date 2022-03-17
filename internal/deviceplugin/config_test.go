@@ -18,7 +18,7 @@ package deviceplugin
 
 import (
 	"errors"
-	"github.com/intel/afxdp_k8s_plugins/internal/networking"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"

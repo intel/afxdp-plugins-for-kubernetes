@@ -28,7 +28,6 @@ import "C"
 
 import (
 	"errors"
-
 	logging "github.com/sirupsen/logrus"
 )
 

@@ -20,7 +20,7 @@ all: format build test static
 format:
 	@echo "******     Go Format     ******"
 	@echo
-	-go fmt github.com/intel/afxdp_k8s_plugins/...
+	-go fmt github.com/intel/afxdp-plugins-for-kubernetes/...
 	@echo
 	@echo
 	@echo "******   Clang Format    ******"
@@ -128,7 +128,7 @@ static:
 	@echo
 	@echo "******      Go Vet       ******"
 	@echo
-	for pkg in $$(go list github.com/intel/afxdp_k8s_plugins/...); do echo $$pkg && go vet $$pkg; done
+	for pkg in $$(go list github.com/intel/afxdp-plugins-for-kubernetes/...); do echo $$pkg && go vet $$pkg; done
 	@echo
 	@echo
 	@echo "******     Hadolint      ******"

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
-	"github.com/intel/afxdp_k8s_plugins/internal/networking"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	logging "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
