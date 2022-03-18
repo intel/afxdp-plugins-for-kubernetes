@@ -78,8 +78,8 @@ func (r *fakeHandler) SetHostDevices(interfaceMap map[string][]string) {
 }
 
 /*
-GetDriverName takes a netdev name and returns a fake driver type
-It executes the command: ethtool -i <interface_name>
+GetDriverName takes a netdave name and returns the driver type.
+In this fakeHandler it returns the driver of the fake netdev.
 */
 func (r *fakeHandler) GetDeviceDriver(interfaceName string) (string, error) {
 	for driver, devices := range interfaceList {
@@ -94,16 +94,16 @@ func (r *fakeHandler) GetDeviceDriver(interfaceName string) (string, error) {
 }
 
 /*
-GetDriverName takes a netdev name and returns a fake pci address
-It executes the command: ethtool -i <interface_name>
+GetDevicePci takes a netdave name and returns the pci address.
+In this fakeHandler it returns a dummy pci address.
 */
 func (r *fakeHandler) GetDevicePci(interfaceName string) (string, error) {
-	dummyPCIaddr := "0000:18:00.3"
-	return dummyPCIaddr, nil
+	return "0000:18:00.3", nil
 }
 
 /*
-GetAddresses gets a netdave ip addresses and returns the fake ip addresses to be used by config.go for unit testing
+GetAddresses takes a net.Interface and returns its IP addresses.
+In this fakeHandler it returns the IP of the fake netdev.
 */
 func (r *fakeHandler) GetAddresses(interfaceName net.Interface) ([]net.Addr, error) {
 	var addrs []net.Addr
@@ -111,23 +111,24 @@ func (r *fakeHandler) GetAddresses(interfaceName net.Interface) ([]net.Addr, err
 }
 
 /*
-CycleDevice is a mocked func that returns nil
+CycleDevice takes a netdave name and sets the device 'UP', then 'DOWN'
+In this fake handler it does nothing.
 */
 func (r *fakeHandler) CycleDevice(interfaceName string) error {
 	return nil
 }
 
 /*
-SetQueueSize sets the fake Queue size for the netdev
-It mocks the command: ethtool -X <interface_name> equal <num_of_queues> start <queue_id>
+SetQueueSize sets the queue size for the netdev.
+In this fake handler it does nothing.
 */
 func (r *fakeHandler) SetQueueSize(interfaceName string, size string) error {
 	return nil
 }
 
 /*
-SetDefaultQueueSize sets the fake Queue back to default settings
-It mocks the command: ethtool -X <interface_name> default
+SetDefaultQueueSize sets the netdev queue size back to default.
+In this fake handler it does nothing.
 */
 func (r *fakeHandler) SetDefaultQueueSize(interfaceName string) error {
 	return nil

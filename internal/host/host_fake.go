@@ -35,37 +35,41 @@ func NewFakeHandler() FakeHandler {
 }
 
 /*
-KernelVersion is a function used to mock and retrieve the KernelVersion
+KernelVersion checks the host kernel version and returns it as a string.
+In this FakeHandler it returns a dummy version for testing purposes.
 */
 func (r *fakeHandler) KernelVersion() (string, error) {
 	return "5.4.1", nil
 }
 
 /*
-HasEthtool is a function used to mock and search for ethtool
+HasEthtool checks if the host has ethtool installed and returns a boolean.
+In this FakeHandler it returns a dummy version for testing purposes.
 */
 func (r *fakeHandler) HasEthtool() (bool, string, error) {
 	return true, "ethtool version 5.4", nil
 }
 
 /*
-HasEthtool is a function used to mock and search for Libbpf
+HasLibbpf checks if the host has libbpf installed and returns a boolean.
+In this FakeHandler it returns a dummy value.
 */
 func (r *fakeHandler) HasLibbpf() (bool, []string, error) {
 	return true, nil, nil
 }
 
 /*
- AllowsUnprivilegedBpf is a function used to mock and check that the AllowsUnprivilegedBpf is set to true
+AllowsUnprivilegedBpf checks if the host allows unpriviliged bpf calls and
+returns a boolean. In this FakeHandler it returns a dummy value.
 */
 func (r *fakeHandler) AllowsUnprivilegedBpf() (bool, error) {
-	boolValue := false
-	return !boolValue, nil
+	return true, nil
 }
 
 /*
- HasDevLink is a function used to mock and search for devlink
+HasDevlink checks if the host has devlink installed and returns a boolean.
+In this FakeHandler it returns a dummy value.
 */
-func (r *fakeHandler) HasDevLink() (bool, error) {
-	return true, nil
+func (r *fakeHandler) HasDevlink() (bool, string, error) {
+	return true, "devlink utility, iproute2-ss200127", nil
 }

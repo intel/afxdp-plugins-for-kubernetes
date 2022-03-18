@@ -16,7 +16,6 @@
 package host
 
 import (
-	"github.com/go-cmd/cmd"
 	logging "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os/exec"
@@ -33,7 +32,7 @@ type Handler interface {
 	KernelVersion() (string, error)
 	HasEthtool() (bool, string, error)
 	HasLibbpf() (bool, []string, error)
-	HasDevLink() (bool, error)
+	HasDevlink() (bool, string, error)
 }
 
 /*
@@ -48,15 +47,29 @@ func NewHandler() Handler {
 	return &handler{}
 }
 
+/*
+KernelVersion checks the host kernel version and returns it as a string.
+It executes the command: uname -r and returns the output.
+*/
 func (r *handler) KernelVersion() (string, error) {
-	cmd := cmd.NewCmd("uname", "-r")
-	status := <-cmd.Start()
+	app := "uname"
+	args := "-r"
 
-	linuxVer := string(status.Stdout[0])
+	output, err := exec.Command(app, args).Output()
+	if err != nil {
+		logging.Errorf("Error getting host kernel version: %v", err.Error())
+		return "", err
+	}
 
-	return linuxVer, nil
+	kernel := strings.Split(string(output), "\n")[0]
+
+	return kernel, nil
 }
 
+/*
+HasLibbpf checks if the host has libbpf installed and returns a boolean.
+It also returns a string array of libbpf libraries found under /usr/lib(64)/
+*/
 func (r *handler) HasLibbpf() (bool, []string, error) {
 	libPaths := []string{"/usr/lib/", "/usr/lib64/"}
 	foundLibbpf := false
@@ -87,45 +100,83 @@ func (r *handler) HasLibbpf() (bool, []string, error) {
 	return false, nil, nil
 }
 
+/*
+AllowsUnprivilegedBpf checks if the host allows unpriviliged bpf calls and
+returns a boolean. It executes the command: sysctl kernel.unprivileged_bpf_disabled
+and returns a boolean value based on the output ("0", "1", "2").
+*/
 func (r *handler) AllowsUnprivilegedBpf() (bool, error) {
-	cmd := cmd.NewCmd("sysctl", "kernel.unprivileged_bpf_disabled")
-	status := <-cmd.Start()
+	app := "sysctl"
+	args := "kernel.unprivileged_bpf_disabled"
 
-	bpfStatus := strings.Split(status.Stdout[0], "=")[1]
-	bpfStatus = strings.TrimSpace(bpfStatus)
+	output, err := exec.Command(app, args).Output()
+	if err != nil {
+		logging.Errorf("Error checking if host allows unprivileged BPF: %v", err.Error())
+		return false, err
+	}
 
-	if bpfStatus != "0" {
+	unprivBpfInfo := strings.Split(string(output), "\n")[0]
+	unprivBpfStatus := strings.Split(unprivBpfInfo, " = ")[1]
+
+	if unprivBpfStatus != "0" {
 		return false, nil
 	}
 
 	return true, nil
 }
 
+/*
+HasEthtool checks if the host has ethtool installed and returns a boolean.
+It also executes the command: ethtool --version and returns the version as
+a string.
+*/
 func (r *handler) HasEthtool() (bool, string, error) {
-	path, err := exec.LookPath("ethtool")
+	app := "ethtool"
+	args := "--version"
+
+	path, err := exec.LookPath(app)
 	if err != nil {
-		logging.Errorf("Error checking ethtool: %v", err)
+		logging.Errorf("Error checking if ethtool is present: %v", err)
 		return false, "", err
 	}
 	if path == "" {
 		return false, "", nil
 	}
 
-	cmd := cmd.NewCmd("ethtool", "--version")
-	status := <-cmd.Start()
-	version := string(status.Stdout[0])
+	output, err := exec.Command(app, args).Output()
+	if err != nil {
+		logging.Errorf("Error getting ethtool version: %v", err.Error())
+		return false, "", err
+	}
 
+	version := strings.Split(string(output), "\n")[0]
 	return true, version, nil
 }
 
-func (r *handler) HasDevLink() (bool, error) {
-	path, err := exec.LookPath("devlink")
+/*
+HasDevlink checks if the host has devlink installed and returns a boolean.
+It also executes the command: devlink -Version and returns the version as
+a string.
+*/
+func (r *handler) HasDevlink() (bool, string, error) {
+	app := "devlink"
+	args := "-Version"
+
+	path, err := exec.LookPath(app)
 	if err != nil {
-		logging.Errorf("Error checking devlink: %v", err)
-		return false, err
+		logging.Errorf("Error checking if devlink is present: %v", err)
+		return false, "", err
 	}
 	if path == "" {
-		return false, nil
+		return false, "", nil
 	}
-	return true, nil
+
+	output, err := exec.Command(app, args).Output()
+	if err != nil {
+		logging.Errorf("Error getting devlink version: %v", err.Error())
+		return false, "", err
+	}
+
+	version := strings.Split(string(output), "\n")[0]
+	return true, version, nil
 }
