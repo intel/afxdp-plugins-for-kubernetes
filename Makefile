@@ -108,13 +108,6 @@ e2efulldaemon: image
 	@echo
 	@echo
 
-fuzzcni:
-	@echo "******     Fuzz CNI      ******"
-	@echo
-	cd test/fuzz/cni && ./fuzz.sh
-	@echo
-	@echo
-
 static:
 	@echo "******      Go Lint      ******"
 	@echo
@@ -139,7 +132,6 @@ static:
 	@echo "******    Shellcheck     ******"
 	@echo
 	for file in $$(find . -iname "*.sh"); do echo $$file && shellcheck $$file; done
-	
 
 cloc: format
 	@echo "******    Update CLOC    ******"

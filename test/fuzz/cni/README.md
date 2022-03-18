@@ -1,7 +1,6 @@
 # CNI Fuzz Test
 
-To start the CNI fuzz test run `./fuzz.sh`. Or run `make fuzzcni` from the root of the repo.
-`Ctrl + C` will stop the test from running.
+To start the CNI fuzz test run `./fuzz.sh`. `Ctrl + C` will stop the test from running.
 
 The `fuzz.sh` script will:
 
