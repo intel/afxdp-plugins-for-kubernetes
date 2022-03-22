@@ -8,8 +8,8 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/google/go-cmp v0.5.6 // indirect
-	github.com/google/uuid v1.3.0
 	github.com/google/gofuzz v1.1.0
+	github.com/google/uuid v1.3.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
 	github.com/vishvananda/netlink v1.1.1-0.20210330154013-f5de75959ad5
