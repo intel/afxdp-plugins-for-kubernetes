@@ -103,6 +103,7 @@ func main() {
 			UpdateSignal:  make(chan bool),
 			Timeout:       cfg.UdsTimeout,
 			DevicePrefix:  devicePrefix,
+			CndpFuzzTest:  cfg.CndpFuzzing,
 		}
 
 		if err := pm.Init(poolConfig); err != nil {

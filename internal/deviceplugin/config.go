@@ -73,6 +73,7 @@ type Config struct {
 	LogLevel               string        `json:"logLevel"`
 	UdsTimeout             int           `json:"timeout"`
 	RequireUnprivilegedBpf bool          `json:"requireUnprivilegedBpf"`
+	CndpFuzzing            bool          `json:"cndpFuzz"`
 }
 
 /*
@@ -107,7 +108,8 @@ func GetConfig(configFile string, networking networking.Handler) (Config, error)
 	}
 
 	if cfg.UdsTimeout != 0 {
-		logging.Debugf("UDS Timeout is set to: %d seconds", cfg.UdsTimeout)
+		logging.Debugf("Timeout is set to: %d seconds", cfg.UdsTimeout)
+
 	} else {
 		cfg.UdsTimeout = defaultUdsTimeout
 		logging.Debugf("Using default value, timeout set to: %d seconds", cfg.UdsTimeout)

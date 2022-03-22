@@ -72,7 +72,7 @@ container is created the factory will create a Server to serve the associated Un
 domain socket.
 */
 type ServerFactory interface {
-	CreateServer(deviceType string, timeout int) (Server, string, error)
+	CreateServer(deviceType string, timeout int, cndpFuzz bool) (Server, string, error)
 }
 
 /*
@@ -107,7 +107,16 @@ func NewServerFactory() ServerFactory {
 CreateServer creates, initialises, and returns an implementation of the Server interface.
 It also returns the filepath of the UDS being served.
 */
-func (f *serverFactory) CreateServer(deviceType string, timeout int) (Server, string, error) {
+func (f *serverFactory) CreateServer(deviceType string, timeout int, cndpFuzzTest bool) (Server, string, error) {
+	var udsHandler uds.Handler
+
+	if cndpFuzzTest {
+		logging.Warningf("CNDP Fuzzing enabled: Please see fuzzing logs")
+		udsHandler = uds.NewFuzzHandler()
+	} else {
+		udsHandler = uds.NewHandler()
+	}
+
 	subDir := strings.ReplaceAll(deviceType, "/", "_")
 	udsPath, err := uds.GenerateRandomSocketName(usdSockDir+subDir+"/", udsDirFileMode)
 	if err != nil {
@@ -121,7 +130,7 @@ func (f *serverFactory) CreateServer(deviceType string, timeout int) (Server, st
 		deviceType:     deviceType,
 		devices:        make(map[string]int),
 		udsPath:        udsPath,
-		uds:            uds.NewHandler(),
+		uds:            udsHandler,
 		bpf:            bpf.NewHandler(),
 		podRes:         resourcesapi.NewHandler(),
 		udsIdleTimeout: timeoutSeconds,

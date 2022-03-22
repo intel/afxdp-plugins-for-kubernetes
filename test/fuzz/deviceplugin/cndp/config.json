@@ -1,0 +1,10 @@
+{
+	"mode": "cndp",
+	"cndpFuzz": true,
+	"pools" : [
+		{
+			"name" : "e2e",
+			"drivers" : ["i40e"]
+		}
+	]
+}

@@ -53,6 +53,7 @@ type PoolManager struct {
 	BpfHandler    bpf.Handler
 	Timeout       int
 	DevicePrefix  string
+	CndpFuzzTest  bool
 }
 
 /*
@@ -164,7 +165,7 @@ func (pm *PoolManager) allocateCndp(ctx context.Context,
 	response := pluginapi.AllocateResponse{}
 
 	logging.Infof("New CNDP allocate request. Creating new UDS server")
-	cndpServer, udsPath, err := pm.ServerFactory.CreateServer(pm.DevicePrefix+"/"+pm.Name, pm.Timeout)
+	cndpServer, udsPath, err := pm.ServerFactory.CreateServer(pm.DevicePrefix+"/"+pm.Name, pm.Timeout, pm.CndpFuzzTest)
 	if err != nil {
 		logging.Errorf("Error Creating new UDS server: %v", err)
 		return &response, err
