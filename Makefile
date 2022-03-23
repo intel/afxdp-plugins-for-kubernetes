@@ -37,19 +37,23 @@ buildc:
 	@echo
 	@echo
 
-build: buildc
+builddp: buildc
 	@echo "******     Build DP      ******"
 	@echo
 	go build -o ./bin/afxdp-dp ./cmd/deviceplugin
 	@echo
 	@echo
+
+buildcni: buildc
 	@echo "******     Build CNI     ******"
 	@echo
 	go build -o ./bin/afxdp ./cmd/cni
 	@echo
 	@echo
 
-image:
+build: builddp buildcni
+
+image: buildcni
 	@echo "******   Docker Image    ******"
 	@echo
 	docker build -t afxdp-device-plugin -f images/amd64.dockerfile .
@@ -91,10 +95,7 @@ e2efull: build
 	@echo
 	@echo
 
-# Daemonset binaries are built as part of docker image build.
-# However, the e2e tests copy the cni from ./bin and installs it as afxdp-e2e.
-# For daemonset e2e tests we still run a make build to build that cni.
-e2edaemon: build image
+e2edaemon: image
 	@echo "******   E2E Daemonset   ******"
 	@echo
 	cd test/e2e/ && ./e2e-test.sh --daemonset
