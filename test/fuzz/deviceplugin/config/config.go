@@ -22,6 +22,13 @@ import (
 	"os"
 )
 
+const (
+	tempDirectory = "config/" //temp directory is created upon fuzz.sh execution
+	udsDirFileMode = os.FileMode(0700)
+)
+
+var firstRun bool = true
+
 /*
 Fuzz sends fuzzed data into the GetConfig function
 The input data is considered:
@@ -30,21 +37,27 @@ The input data is considered:
  - discard if it will not unmarshall, so we don't just end up testing the json.Unmarshall function
 */
 func Fuzz(data []byte) int {
+	if firstRun {
+		firstRun = false
+		if err := os.MkdirAll(tempDirectory, udsDirFileMode); err != nil {
+			panic(1)
+		}
+	}
 
-	tmpfile, err := ioutil.TempFile("./", "config_")
+	tmpfile, err := ioutil.TempFile(tempDirectory, "config_")
 	if err != nil {
 		os.Remove(tmpfile.Name())
-		panic(1) //TODO
+		panic(1)
 	}
 	defer os.Remove(tmpfile.Name())
 
 	if _, err := tmpfile.Write(data); err != nil {
 		os.Remove(tmpfile.Name())
-		panic(1) //TODO
+		panic(1)
 	}
 	if err := tmpfile.Close(); err != nil {
 		os.Remove(tmpfile.Name())
-		panic(1) //TODO
+		panic(1)
 	}
 
 	_, err = dp.GetConfig(tmpfile.Name(), networking.NewHandler())

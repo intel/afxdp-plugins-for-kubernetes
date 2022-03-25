@@ -250,7 +250,9 @@ func (c Config) Validate() error {
 		),
 		validation.Field(
 			&c.UdsTimeout,
-			validation.Min(0), validation.Max(maxUdsTimeout),
+			validation.When(c.UdsTimeout != 0, validation.Min(defaultUdsTimeout)),
+			validation.When(c.UdsTimeout != 0, validation.Max(maxUdsTimeout)),
+
 		),
 		validation.Field(
 			&c.Mode,
