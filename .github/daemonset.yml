@@ -60,8 +60,8 @@ spec:
               drop:
                 - all
               add:
-                - CAP_SYS_ADMIN
-                - CAP_NET_ADMIN
+                - SYS_ADMIN
+                - NET_ADMIN
           resources:
             requests:
               cpu: "250m"
