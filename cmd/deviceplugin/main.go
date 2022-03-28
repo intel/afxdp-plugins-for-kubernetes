@@ -73,7 +73,7 @@ func main() {
 	logging.Infof("Checking if host meets requriements")
 	hostMeetsRequirements, err := checkHost(host.NewHandler(), cfg)
 	if err != nil {
-		logging.Errorf("Error checking host post config: %v", err)
+		logging.Errorf("Error checking host: %v", err)
 		exit(exitHostError)
 	}
 	if !hostMeetsRequirements {
@@ -221,21 +221,6 @@ func checkHost(host host.Handler, cfg deviceplugin.Config) (bool, error) {
 			logging.Warningf("Unprivileged BPF is required")
 			return false, nil
 		}
-	}
-
-	// ethtool
-	logging.Debugf("Checking host for Ethtool")
-	ethInstalled, version, err := host.HasEthtool()
-	if err != nil {
-		logging.Errorf("Error checking if Ethtool is present on host: %v", err)
-		return false, err
-	}
-	if ethInstalled {
-		logging.Debugf("Ethtool found on host:")
-		logging.Debugf("\t" + version)
-	} else {
-		logging.Warningf("Ethool not found on host")
-		return false, nil
 	}
 
 	return true, nil

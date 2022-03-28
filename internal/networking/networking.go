@@ -19,8 +19,15 @@ import (
 	logging "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
 	"net"
+	"os"
 	"os/exec"
-	"strings"
+	"path/filepath"
+)
+
+var (
+	sysClassNet = "/sys/class/net"
+	driverLink  = "device/driver"
+	pciLink     = "device"
 )
 
 /*
@@ -94,46 +101,35 @@ func (r *handler) CycleDevice(interfaceName string) error {
 }
 
 /*
-GetDriverName takes a netdave name and returns the driver type.
-It executes the command: ethtool --driver <interface_name> and
-parses the output.
+GetDeviceDriver takes a netdave name and returns the driver type.
 */
 func (r *handler) GetDeviceDriver(interfaceName string) (string, error) {
-	app := "ethtool"
-	args := "--driver"
-
-	output, err := exec.Command(app, args, interfaceName).Output()
+	link := filepath.Join(sysClassNet, interfaceName, driverLink)
+	driverInfo, err := os.Readlink(link)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
 		logging.Errorf("Error getting driver for device %s: %v", interfaceName, err.Error())
 		return "", err
 	}
-
-	driverInfo := strings.Split(string(output), "\n")[0]
-	driver := strings.Split(driverInfo, ":")[1]
-	driver = strings.TrimSpace(driver)
-
-	return driver, nil
+	return filepath.Base(driverInfo), nil
 }
 
 /*
 GetDevicePci takes a netdave name and returns the pci address.
-It executes the command: ethtool --driver <interface_name> and
-parses the output.
 */
 func (r *handler) GetDevicePci(interfaceName string) (string, error) {
-	app := "ethtool"
-	args := "--driver"
-
-	output, err := exec.Command(app, args, interfaceName).Output()
+	link := filepath.Join(sysClassNet, interfaceName, pciLink)
+	pciInfo, err := os.Readlink(link)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
 		logging.Errorf("Error getting PCI for device %s: %v", interfaceName, err.Error())
 		return "", err
 	}
-
-	busInfo := strings.Split(string(output), "\n")[4]
-	pci := strings.Split(busInfo, ": ")[1]
-
-	return pci, nil
+	return filepath.Base(pciInfo), nil
 }
 
 /*

@@ -12,7 +12,7 @@
 # limitations under the License.
 
 FROM amd64/alpine:3.14 as bpf
-RUN apk --no-cache -U add ethtool=5.12-r0 libbpf=0.4.0-r0
+RUN apk --no-cache -U add libbpf=0.4.0-r0
 
 FROM bpf as builder
 COPY . /usr/src/afxdp_k8s_plugins

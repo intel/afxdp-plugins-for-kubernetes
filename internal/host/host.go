@@ -16,6 +16,7 @@
 package host
 
 import (
+	"errors"
 	logging "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os/exec"
@@ -136,6 +137,9 @@ func (r *handler) HasEthtool() (bool, string, error) {
 
 	path, err := exec.LookPath(app)
 	if err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			return false, "", nil
+		}
 		logging.Errorf("Error checking if ethtool is present: %v", err)
 		return false, "", err
 	}
@@ -164,6 +168,9 @@ func (r *handler) HasDevlink() (bool, string, error) {
 
 	path, err := exec.LookPath(app)
 	if err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			return false, "", nil
+		}
 		logging.Errorf("Error checking if devlink is present: %v", err)
 		return false, "", err
 	}

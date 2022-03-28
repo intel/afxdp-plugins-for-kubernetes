@@ -26,6 +26,7 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/logformats"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	logging "github.com/sirupsen/logrus"
@@ -145,6 +146,7 @@ CmdAdd is called by kublet during pod create
 */
 func CmdAdd(args *skel.CmdArgs) error {
 	netHandler := networking.NewHandler()
+	host := host.NewHandler()
 
 	cfg, err := loadConf(args.StdinData)
 	if err != nil {
@@ -175,12 +177,25 @@ func CmdAdd(args *skel.CmdArgs) error {
 	}
 
 	if cfg.Queues != "" {
-		logging.Infof("cmdAdd(): setting queue size %s for device %s ", cfg.Queues, device.Attrs().Name)
-		if err := netHandler.SetQueueSize(device.Attrs().Name, cfg.Queues); err != nil {
-			err = fmt.Errorf("cmdAdd(): failed to set queue size: %w", err)
-			logging.Errorf(err.Error())
-
+		logging.Debugf("cmdAdd(): checking host for Ethtool")
+		ethInstalled, version, err := host.HasEthtool()
+		if err != nil {
+			logging.Errorf("cmdAdd(): error checking if Ethtool is present on host: %v", err)
 			return err
+		}
+
+		if ethInstalled {
+			logging.Debugf("cmdAdd(): Ethtool found on host:")
+			logging.Debugf("\t" + version)
+
+			logging.Infof("cmdAdd(): setting queue size %s for device %s ", cfg.Queues, device.Attrs().Name)
+			if err := netHandler.SetQueueSize(device.Attrs().Name, cfg.Queues); err != nil {
+				err = fmt.Errorf("cmdAdd(): failed to set queue size: %w", err)
+				logging.Errorf(err.Error())
+				return err
+			}
+		} else {
+			logging.Warningf("cmdAdd(): Ethtool not found on host, queues will not be set")
 		}
 	}
 
@@ -228,6 +243,7 @@ CmdDel is called by kublet during pod delete
 */
 func CmdDel(args *skel.CmdArgs) error {
 	netHandler := networking.NewHandler()
+	host := host.NewHandler()
 
 	cfg, err := loadConf(args.StdinData)
 	if err != nil {
@@ -283,12 +299,26 @@ func CmdDel(args *skel.CmdArgs) error {
 	}
 
 	if cfg.Queues != "" {
-		logging.Infof("cmdDel(): setting queue size to default for device %s", cfg.Device)
-		if err := netHandler.SetDefaultQueueSize(cfg.Device); err != nil {
-			err = fmt.Errorf("cmdDel(): failed to set queue size to default: %w", err)
-			logging.Errorf(err.Error())
-
+		logging.Debugf("cmdDel(): checking host for Ethtool")
+		ethInstalled, version, err := host.HasEthtool()
+		if err != nil {
+			logging.Errorf("cmdDel(): error checking if Ethtool is present on host: %v", err)
 			return err
+		}
+
+		if ethInstalled {
+			logging.Debugf("cmdDel(): Ethtool found on host:")
+			logging.Debugf("\t" + version)
+
+			logging.Infof("cmdDel(): setting queue size to default for device %s", cfg.Device)
+			if err := netHandler.SetDefaultQueueSize(cfg.Device); err != nil {
+				err = fmt.Errorf("cmdDel(): failed to set queue size to default: %w", err)
+				logging.Errorf(err.Error())
+
+				return err
+			}
+		} else {
+			logging.Warningf("cmdDel(): Ethtool not found on host, queues will not be set to default")
 		}
 	}
 

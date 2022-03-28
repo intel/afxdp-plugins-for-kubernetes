@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	tempDirectory = "config/" //temp directory is created upon fuzz.sh execution
+	tempDirectory  = "config/" //temp directory is created upon fuzz.sh execution
 	udsDirFileMode = os.FileMode(0700)
 )
 
