@@ -160,12 +160,6 @@ func TestCmdAdd(t *testing.T) {
 			expError:   "cmdAdd(): failed to open container netns \"B@dN%eTNS\": failed to Statfs \"B@dN%eTNS\": no such file or directory",
 		},
 
-		{
-			name:       "queues required for cndp mode",
-			netConfStr: `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"cndp","mode":"cndp"}`,
-			netNS:      "",
-			expError:   "loadConf(): Config validation error: queues: Queues setting is required for CNDP mode.",
-		},
 	}
 
 	for _, tc := range testCases {

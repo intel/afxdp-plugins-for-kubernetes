@@ -81,10 +81,6 @@ func (n NetConfig) Validate() error {
 			is.Alphanumeric.Error("validate(): device names can only contain letters and numbers"),
 		),
 		validation.Field(
-			&n.Queues,
-			validation.Required.When(n.Mode == "cndp").Error("Queues setting is required for CNDP mode"),
-		),
-		validation.Field(
 			&n.LogFile,
 			validation.Match(regexp.MustCompile("^/$|^(/[a-zA-Z0-9._-]+)+$")).Error("must be a valid filepath"),
 			validation.Match(regexp.MustCompile("^"+logDir)).Error("validate(): must in directory "+logDir),
