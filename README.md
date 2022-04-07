@@ -1,13 +1,14 @@
 # AF_XDP Plugins for Kubernetes
 
-A Kubernetes device plugin and CNI plugin to provide AF_XDP networking to Kubernetes pods using Intel's Cloud Native Data Plane framework.
-
+A Kubernetes device plugin and CNI plugin to provide AF_XDP networking to Kubernetes pods. The plugins will have multiple modes of operation. Currently the only implemented mode is to provide AF_XDP networking to pods using Intel's Cloud Native Data Plane (CNDP) framework.
 ## Prerequisites
 ### Required
 The following prerequisites are required to build and deploy the plugins:
 
+- **OS**
+	- Tested on Ubuntu 20.04.  	
 - **Docker**
-	- All recent versions should work. Tested on `20.10.5`, `20.10.7`.
+	- All recent versions should work. Tested on `20.10.5`, `20.10.7`, `20.10.12`, `20.10.14`.
 	- **Note:** You may need to disable memlock on Docker.
 		Add the following section to `/etc/docker/daemon.json`:
 		```
@@ -21,7 +22,7 @@ The following prerequisites are required to build and deploy the plugins:
 		```
 		Restart the Docker service: `systemctl restart docker.service`
 - **Kubernetes**
- 	- All recent versions should work. Tested on `1.20.2`, `1.21.1`.
+ 	- All recent versions should work. Tested on `1.20.2`, `1.21.1`, `v1.22.4`, `v1.23.0`, `v1.23.5`.
 - **A CNI network**
 	- To serve as the [default network](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md#key-concepts) to the Kubernetes pods.
 	- Any CNI should work. Tested with [Flannel](https://github.com/flannel-io/flannel).
@@ -30,7 +31,7 @@ The following prerequisites are required to build and deploy the plugins:
 	- [Multus quickstart guide](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md).
 - **GoLang**
 	- To build the plugin binaries.
-	- All recent versions should work. Tested on `1.13.8`, `1.15.15` and `1.17.1`.
+	- All recent versions should work. Tested on `1.13.8`, `1.15.15`, `1.17`, `1.17.1`, `1.17.8`, `1.18`.
 	- [Download and install](https://golang.org/doc/install).
 - **Libbpf**
 	- To load and unload the XDP program onto the network device.
@@ -213,8 +214,7 @@ spec:
 The device plugin includes a timeout action for the unix domain sockets(UDS). 
 Once the timeout is invoked, the UDS is closed and disconnected.
 
-The timeout is configured to a default of 90 seconds. 
-Setting the timeout to zero will disable the timeout action, which will allow the UDS to remain idle.
+The timeout can be set to a minimum of 30 seconds and a maximum of 300 seconds. If no timeout is configured, the plugin will default to the minimum 30.
 
 The timeout value is set in the `config.json` file. Please see example below.
 
