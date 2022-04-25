@@ -17,7 +17,7 @@ RUN apk --no-cache -U add libbpf=0.4.0-r0
 FROM bpf as builder
 COPY . /usr/src/afxdp_k8s_plugins
 WORKDIR /usr/src/afxdp_k8s_plugins
-RUN apk add --no-cache go=1.16.10-r0 make=4.3-r0 libbsd-dev=0.11.3-r0 libbpf-dev=0.4.0-r0 \
+RUN apk add --no-cache go=1.16.15-r0 make=4.3-r0 libbsd-dev=0.11.3-r0 libbpf-dev=0.4.0-r0 \
       && make builddp
 
 FROM bpf
