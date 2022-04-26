@@ -105,12 +105,8 @@ Under normal circumstances the device plugin config is set as part of a config m
 
 The device plugin binary can also be run manually on the host for development and testing purposes. In these scenarios the device plugin will search for a `config.json` file in its current directory, or the device plugin can be pointed to a config file using the `-config` flag followed by a filepath. 
 
-### Default Behaviour
-If no config is given, the default behaviour of the device plugin is to discover AF_XDP capable devices on the node and create device pools based on driver type.
-For example, a host with a single 4-port X710 NIC will result in 4 devices being added to the `cndp/i40e` pool.
-
 ### Driver Pools
-It is possible to have multiple driver types in a single device pool. The example below will result in a pool named `cndp/intel` that contains all the x710 and all E810 devices on the node.
+It is possible to have multiple driver types in a single device pool. The example below will result in a pool named `afxdp/intel` that contains all the x710 and all E810 devices on the node.
 
 ```
 {
@@ -124,7 +120,7 @@ It is possible to have multiple driver types in a single device pool. The exampl
 ```
 
 ### Device Pools
-It is possible to assign individual devices to a pool. The example below will generate a pool named `cndp/test` with the two listed devices.
+It is possible to assign individual devices to a pool. The example below will generate a pool named `afxdp/test` with the two listed devices.
 This is not scalable over many nodes and is intended only for development and testing purposes.
 
 ```
@@ -151,7 +147,7 @@ A log file and log level can be configured for the device plugin. As above, thes
 ```
 {
     "logLevel": "debug",
-    "logFile": "/var/log/afxdp-k8s-plugins/cndp-dp.log",
+    "logFile": "/var/log/afxdp-k8s-plugins/afxdp-dp.log",
     "timeout": 30,
     "pools" : [
         {
@@ -181,34 +177,8 @@ Mode setting for device plugin is set via the `config.json` file. Please see exa
 }
 ```
 
-Mode setting for CNI is set via the network-attachment-definition(NAD) file `NAD.yml`. Please see example below:
+Mode setting for CNI is set via the network-attachment-definition(NAD) file `NAD.yml`.  Please see mode example: [examples/network-attachment-definition.yaml](./examples/network-attachment-definition.yaml)
 
-```
-apiVersion: "k8s.cni.cncf.io/v1"
-kind: NetworkAttachmentDefinition
-metadata:
-  name: cndp-e2e-test
-  annotations:
-    k8s.v1.cni.cncf.io/resourceName: cndp/e2e
-spec:
-  config: '{
-      "cniVersion": "0.3.0",
-      "type": "cndp-e2e",
-      "mode": "cndp",
-      "logFile": "/var/log/afxdp-k8s-plugins/cndp-cni-e2e.log",
-      "logLevel": "debug",
-      "ipam": {
-        "type": "host-local",
-        "subnet": "192.168.1.0/24",
-        "rangeStart": "192.168.1.200",
-        "rangeEnd": "192.168.1.216",
-        "routes": [
-          { "dst": "0.0.0.0/0" }
-        ],
-        "gateway": "192.168.1.1"
-      }
-    }
-```
 
 ### Timeout 
 The device plugin includes a timeout action for the unix domain sockets(UDS). 

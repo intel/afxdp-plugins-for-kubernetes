@@ -8,10 +8,10 @@ data:
     {
         "mode": "cndp",
         "logLevel": "debug",
-        "logFile": "/var/log/afxdp-k8s-plugins/cndp-dp-e2e.log",
+        "logFile": "/var/log/afxdp-k8s-plugins/cndp-dp.log",
         "pools" : [
             {
-                "name" : "e2e",
+                "name" : "intel",
                 "drivers" : ["i40e"]
             }
         ]
@@ -27,7 +27,7 @@ metadata:
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: kube-afxdp-device-plugin-e2e
+  name: kube-afxdp-device-plugin
   namespace: kube-system
   labels:
     tier: node

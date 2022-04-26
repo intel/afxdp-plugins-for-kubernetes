@@ -156,10 +156,33 @@ Response: /fin_ack
 
 ```
 
+### Timeout
+The device plugin includes a timeout action for the unix domain sockets(UDS).
+Once the timeout is invoked, the UDS is closed and disconnected.
+
+The timeout can be set to a minimum of 30 seconds and a maximum of 300 seconds. If no timeout is configured, the plugin will default to the minimum 30.
+
+The timeout value is set in the `config.json` file. Please see example below.
+
+```
+{
+    "timeout": 30,
+    "pools" : [
+        {
+            "name" : "i40e",
+            "drivers" : ["i40e"]
+        }
+    ]
+}
+```
+
+
 ## Extended Test
 The e2e test script can also do an extended run. In addition to the single container single device test, the script will go on to create:
 - A pod with a single container requesting 2 devices
 - A pod with 2 containers, each requesting a single device
+- Timeout before the UDS connection
+- Timeout after the UDS connection
 
 To do the full extended run, add the flag -f or --full when calling the script:
 `./e2e-test.sh --full`
