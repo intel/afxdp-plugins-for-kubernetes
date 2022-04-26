@@ -1,9 +1,10 @@
 {
+	"logLevel": "debug",
 	"mode": "cndp",
 	"cndpFuzz": true,
 	"pools" : [
 		{
-			"name" : "e2e",
+			"name" : "fuzz",
 			"drivers" : ["i40e"]
 		}
 	]

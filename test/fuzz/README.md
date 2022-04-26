@@ -1,18 +1,32 @@
-# CNI Fuzz Test
+# Fuzz Tests
 
-To start the CNI fuzz test run `./fuzz.sh`. `Ctrl + C` will stop the test from running.
+There are two fuzzing packages used to conduct the four fuzz tests which are as follows:
+
+| Component | Function/Package Under-Test | Fuzzing Package |
+| :---: | :---: | :---: |
+| CNI | Network Config | go-fuzz |
+| Device Plugin | GetConfig | go-fuzz |
+| Device Plugin | UDS | go-fuzz |
+| Device Plugin | CNDP | google/gofuzz |
+
+Note: the following information is regarding the go-fuzz testes. As CNDP fuzz test uses google/gofuzz package a different procedure applies, please see [CNDP Fuzz Test](#cndp-fuzz-test)
+
+To start fuzz testing, proceed to the function/package you wish to test and  run `./fuzz.sh`. `Ctrl + C` will stop the test from running.
+
+
 
 The `fuzz.sh` script will:
 
  - Install [go-fuzz](https://github.com/dvyukov/go-fuzz) if necessary.
- - Build a test program that is capable of testing our CNI functions CmdAdd and CmdDel.
- - Create a test network namespace to test the CNI against.
- - Execute 2 test programs simultaneously, testing both CNI functions in parallel.
- - Cleans up the test network namespace after the tests.
+ - Build a test program that is capable of testing.
+ - Execute the test programs against the function under-test.
+ - Remove any remaining network namespace, logfiles and UDS sockets after the tests.
 
 **CAUTION:** Fuzzing will result in the CNI placing a lot of randomly named log files under `/var/log/afxdp-k8s-plugins/`. These will need to be manually cleaned. The CNI has input validation that should ensure log files cannot be generated anywhere outside of this directory. Nonetheless caution is advised, and fuzzing should not be performed on a production system.
 
 ## Files and directories
+
+This CNI fuzz test explanation will also apply to the additional tests using the go-fuzz package.
 
 - `fuzz.sh` a script to conveniently perform all the fuzzing steps.
 - `cni.go` contains a small amount of Go code capable of calling our CNI functions under test. Returns values based on outcome.
@@ -78,3 +92,34 @@ Output columns as described in the go-fuzz [documentation](https://github.com/dv
 2021/10/11 15:29:26 workers: 88, corpus: 769 (1s ago), crashers: 0, restarts: 1/9247, execs: 16932634 (34206/sec), cover: 1808, uptime: 8m15s
 2021/10/11 15:29:26 workers: 88, corpus: 791 (2m5s ago), crashers: 0, restarts: 1/9926, execs: 153329901 (309745/sec), cover: 1484, uptime: 8m15s
 ```
+
+## CNDP Fuzz Test
+
+For CNDP fuzz testing, [google/goFuzz](https://github.com/google/gofuzz) package is utilised.
+
+To start the CNDP fuzz test:
+- CNI and Device Plugin binaries must be created, from the root of the directory run `make build`.
+- Navigate to the [/deviceplugin/cndp](./deviceplugin/cndp) directory, open `config.json` file and set `cndpFuzz` field as `true`, see example below:
+```
+{
+	"logLevel": "debug",
+	"mode": "cndp",
+	"cndpFuzz": true,
+	"pools" : [
+		{
+			"name" : "fuzz",
+			"drivers" : ["i40e"]
+		}
+	]
+}
+```
+- Run `./fuzz.sh`. `Ctrl + C` will stop the test from running.
+
+
+The `fuzz.sh` script will:
+
+- Run both the CNI and Device Plugin.
+- Deploy test pod `afxdp-fuzz-pod`.
+- Execute the fuzzHandler in `internal/uds/uds_fuzz.go`.
+- The fuzzHandler will call the imported google/gofuzz package.
+- Execute generated fuzzed data to the function under-test in the CNDP application.

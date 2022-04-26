@@ -89,9 +89,9 @@ func (f *fuzzHandler) Read() (string, int, error) {
 	var fd int = 0
 
 	if firstCall {
-		fuzzResponse = "/connect, cndp-e2e-test"
-
+		fuzzResponse = "/connect, afxdp-fuzz-test"
 	} else {
+
 		f := fuzz.New()
 		f.Fuzz(&fuzzResponse)
 	}
