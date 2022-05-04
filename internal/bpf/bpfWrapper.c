@@ -22,6 +22,7 @@
 
 #define SO_PREFER_BUSY_POLL 69
 #define SO_BUSY_POLL_BUDGET 70
+#define EBUSY_CODE_WARNING -16
 
 int Load_bpf_send_xsk_map(char *ifname) {
 
@@ -149,8 +150,14 @@ int Clean_bpf(char *ifname) {
 
 	ret = bpf_set_link_xdp_fd(if_index, fd, XDP_FLAGS_UPDATE_IF_NOEXIST);
 	if (ret) {
-		Log_Error("%s: Removal of xdp program failed, returned: ", __FUNCTION__, ret);
-		return 1;
+		if (ret == EBUSY_CODE_WARNING){
+			// unloading of XDP program found to return EBUSY error of -16 on certain host libbpf versions.
+			// doesn't break functionality and this problem is being investigated.
+			Log_Warning("%s: Removal of xdp program is reporting error code: (%d)", __FUNCTION__, ret);
+		} else {
+			Log_Error("%s: Removal of xdp program failed, returned: (%d)", __FUNCTION__, ret);
+			return 1;
+		}
 	}
 
 	Log_Info("%s: removed xdp program from interface %s (%d)", __FUNCTION__, ifname, if_index);
