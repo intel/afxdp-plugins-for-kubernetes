@@ -13,6 +13,7 @@
 
 FROM amd64/alpine:3.14 as bpf
 RUN apk --no-cache -U add libbpf=0.4.0-r0
+RUN apk add iproute2-rdma=5.17.0-r0 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
 
 FROM bpf as builder
 COPY . /usr/src/afxdp_k8s_plugins
