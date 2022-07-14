@@ -288,6 +288,80 @@ func TestGetConfig(t *testing.T) {
 		},
 
 		{
+			name: "get config : one pool with hyphenated driver",
+			configFile: `{
+							"mode": "cndp",
+							"timeout": 30,
+							"logLevel": "debug",
+							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
+							"pools": [{
+								"name": "pool1",
+								"drivers": ["vfio-pci"]
+							}]
+						}`,
+			hostNetDev: map[string][]string{
+				"vfio-pci": []string{"dev1", "dev2", "dev3", "dev4"},
+			},
+			expcfg: Config{
+				Pools: []*PoolConfig{
+					{
+						Name:    "pool1",
+						Devices: []string{"dev1", "dev2", "dev3", "dev4"},
+						Drivers: []string{"vfio-pci"},
+					},
+				},
+				Mode:                   "cndp",
+				UdsTimeout:             30,
+				RequireUnprivilegedBpf: false,
+				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+				LogDirPermission:       0x1e4,
+				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFilePermission:      0x1a4,
+				LogLevel:               "debug",
+				MinLinuxVersion:        "4.18.0",
+			},
+			expGetCfgErr: nil,
+			expBldPlsErr: nil,
+		},
+
+		{
+			name: "get config : one pool with underscore driver",
+			configFile: `{
+							"mode": "cndp",
+							"timeout": 30,
+							"logLevel": "debug",
+							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
+							"pools": [{
+								"name": "pool1",
+								"drivers": ["cool_driver"]
+							}]
+						}`,
+			hostNetDev: map[string][]string{
+				"cool_driver": []string{"dev1", "dev2", "dev3"},
+			},
+			expcfg: Config{
+				Pools: []*PoolConfig{
+					{
+						Name:    "pool1",
+						Devices: []string{"dev1", "dev2", "dev3"},
+						Drivers: []string{"cool_driver"},
+					},
+				},
+				Mode:                   "cndp",
+				UdsTimeout:             30,
+				RequireUnprivilegedBpf: false,
+				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+				LogDirPermission:       0x1e4,
+				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFilePermission:      0x1a4,
+				LogLevel:               "debug",
+				MinLinuxVersion:        "4.18.0",
+			},
+			expGetCfgErr: nil,
+			expBldPlsErr: nil,
+		},
+
+		{
 			name:         "load bad config : device field missing",
 			configFile:   `{"mode": "cndp","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log","pools":[{"name":"pool1",:["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
 			expGetCfgErr: errors.New("invalid character ':' looking for beginning of object key string"),
@@ -326,7 +400,82 @@ func TestGetConfig(t *testing.T) {
 			expBldPlsErr: nil,
 			expcfg:       Config{LogDir: "/var/log/afxdp-k8s-plugins/", LogDirPermission: 0x1e4, LogFilePermission: 0x1a4, MinLinuxVersion: "4.18.0"},
 		},
+
+		{
+			name: "load bad config : bad driver name",
+			configFile: `{
+								"mode": "cndp",
+								"timeout": 30,
+								"logLevel": "debug",
+								"logFile": "/var/log/afxdp-k8s-plugins/file.log",
+								"pools": [
+									{
+									"name": "pool1",
+									"drivers": [
+										"ice+"
+									]
+									}
+								]
+							}`,
+			expGetCfgErr: errors.New("driver names must only contain letters, numbers and selected symbols"),
+			expBldPlsErr: nil,
+			expcfg: Config{
+				Pools: []*PoolConfig{
+					{
+						Name:    "pool1",
+						Drivers: []string{"ice+"},
+					},
+				},
+				Mode:                   "cndp",
+				UdsTimeout:             30,
+				RequireUnprivilegedBpf: false,
+				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+				LogDirPermission:       0x1e4,
+				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFilePermission:      0x1a4,
+				LogLevel:               "debug",
+				MinLinuxVersion:        "4.18.0",
+			},
+		},
+
+		{
+			name: "load bad config : bad device name",
+			configFile: `{
+								"mode": "cndp",
+								"timeout": 30,
+								"logLevel": "debug",
+								"logFile": "/var/log/afxdp-k8s-plugins/file.log",
+								"pools": [
+									{
+									"name": "pool1",
+									"devices": [
+										"dev1^"
+									]
+									}
+								]
+							}`,
+			expGetCfgErr: errors.New("device names must only contain letters, numbers and selected symbols"),
+			expBldPlsErr: nil,
+			expcfg: Config{
+				Pools: []*PoolConfig{
+					{
+						Name:    "pool1",
+						Devices: []string{"dev1^"},
+					},
+				},
+				Mode:                   "cndp",
+				UdsTimeout:             30,
+				RequireUnprivilegedBpf: false,
+				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+				LogDirPermission:       0x1e4,
+				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFilePermission:      0x1a4,
+				LogLevel:               "debug",
+				MinLinuxVersion:        "4.18.0",
+			},
+		},
 	}
+
 	for _, tc := range testCases {
 
 		t.Run(tc.name, func(t *testing.T) {

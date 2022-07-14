@@ -25,89 +25,89 @@ import (
 
 func TestCheckHost(t *testing.T) {
 	testCases := []struct {
-		testName     string
-		hostKernal   string
+		testName          string
+		hostKernal        string
 		hostPrivilegedBpf bool
-		cfg          deviceplugin.Config
-		expResult	 bool
-		expErr       error
+		cfg               deviceplugin.Config
+		expResult         bool
+		expErr            error
 	}{
 		{
-			testName: "Test checkhost for correct linuxVersion version",
-			hostKernal: "5.11.0",
+			testName:          "Test checkhost for correct linuxVersion version",
+			hostKernal:        "5.11.0",
 			hostPrivilegedBpf: true,
 			cfg: deviceplugin.Config{
 				RequireUnprivilegedBpf: false,
 				MinLinuxVersion:        "4.18.0",
 			},
 			expResult: true,
-			expErr: nil,
+			expErr:    nil,
 		},
 		{
-			testName: " Test Checkhost linuxVersion does not meet minimum version requirement",
-			hostKernal: "4.18.0",
+			testName:          " Test Checkhost linuxVersion does not meet minimum version requirement",
+			hostKernal:        "4.18.0",
 			hostPrivilegedBpf: true,
 			cfg: deviceplugin.Config{
 				RequireUnprivilegedBpf: false,
 				MinLinuxVersion:        "7.18.0",
 			},
 			expResult: false,
-			expErr: nil,
+			expErr:    nil,
 		},
 		{
-			testName: "Test checkhost is passing an empty string as LinuxVersion",
-			hostKernal: "",
+			testName:          "Test checkhost is passing an empty string as LinuxVersion",
+			hostKernal:        "",
 			hostPrivilegedBpf: true,
 			cfg: deviceplugin.Config{
 				RequireUnprivilegedBpf: false,
 				MinLinuxVersion:        "4.18.0",
 			},
 			expResult: false,
-			expErr: nil,
+			expErr:    nil,
 		},
 		{
-			testName: "Test checkhost is passing of whole number for LinuxVersion",
-			hostKernal: "6",
+			testName:          "Test checkhost is passing of whole number for LinuxVersion",
+			hostKernal:        "6",
 			hostPrivilegedBpf: true,
 			cfg: deviceplugin.Config{
 				RequireUnprivilegedBpf: false,
 				MinLinuxVersion:        "4.18.0",
 			},
 			expResult: false,
-			expErr: nil,
+			expErr:    nil,
 		},
 		{
-			testName: "Test checkhost is passing false hostPrivilegedBpf with RequiredUnprivilegedBpf set as false",
-			hostKernal: "5.11.0",
+			testName:          "Test checkhost is passing false hostPrivilegedBpf with RequiredUnprivilegedBpf set as false",
+			hostKernal:        "5.11.0",
 			hostPrivilegedBpf: false,
 			cfg: deviceplugin.Config{
 				RequireUnprivilegedBpf: false,
 				MinLinuxVersion:        "4.18.0",
 			},
 			expResult: true,
-			expErr: nil,
+			expErr:    nil,
 		},
 		{
-			testName: "Test checkhost is passing false hostPrivilegedBpf with RequiredUnprivilegedBpf set as true",
-			hostKernal: "5.11.0",
+			testName:          "Test checkhost is passing false hostPrivilegedBpf with RequiredUnprivilegedBpf set as true",
+			hostKernal:        "5.11.0",
 			hostPrivilegedBpf: false,
 			cfg: deviceplugin.Config{
 				RequireUnprivilegedBpf: true,
 				MinLinuxVersion:        "4.18.0",
 			},
 			expResult: false,
-			expErr: nil,
+			expErr:    nil,
 		},
 		{
-			testName: "\"Test checkhost is passing true hostPrivilegedBpf with RequiredUnprivilegedBpf set as true",
-			hostKernal: "5.11.0",
+			testName:          "\"Test checkhost is passing true hostPrivilegedBpf with RequiredUnprivilegedBpf set as true",
+			hostKernal:        "5.11.0",
 			hostPrivilegedBpf: true,
 			cfg: deviceplugin.Config{
 				RequireUnprivilegedBpf: true,
 				MinLinuxVersion:        "4.18.0",
 			},
 			expResult: true,
-			expErr: nil,
+			expErr:    nil,
 		},
 	}
 	for _, tc := range testCases {

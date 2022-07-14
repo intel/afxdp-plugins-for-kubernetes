@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-excluded_from_utests = "/test/e2e|/test/fuzz|/cmd/cni|/internal/bpf|/internal/logformats|internal/host|/internal/networking"
+excluded_from_utests = "/test/e2e|/test/fuzz|/cmd/cni|/internal/bpf|/internal/logformats|internal/host|/internal/networking|/internal/constants"
 
 .PHONY: all e2e
 

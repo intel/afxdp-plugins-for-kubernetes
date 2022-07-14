@@ -24,7 +24,7 @@ import (
 	"github.com/containernetworking/plugins/pkg/ipam"
 	"github.com/containernetworking/plugins/pkg/ns"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/logformats"
@@ -36,12 +36,7 @@ import (
 	"runtime"
 )
 
-var (
-	logLevels  = []string{"debug", "info", "warning", "error"} // acceptable log levels
-	modes      = []string{"cndp"}                              // acceptable modes
-	logDir     = "/var/log/afxdp-k8s-plugins/"                 // acceptable log directory
-	bpfHanfler = bpf.NewHandler()
-)
+var bpfHandler = bpf.NewHandler()
 
 /*
 NetConfig holds the config passed via stdin
@@ -63,36 +58,39 @@ func init() {
 Validate validates the contents of the Config struct
 */
 func (n NetConfig) Validate() error {
-	var iLogLevels []interface{} = make([]interface{}, len(logLevels))
-	var iModes []interface{} = make([]interface{}, len(modes))
+	var (
+		allowedLogLevels               = constants.Logging.Levels
+		allowedModes                   = constants.Plugins.Modes
+		logLevels        []interface{} = make([]interface{}, len(allowedLogLevels))
+		modes            []interface{} = make([]interface{}, len(allowedModes))
+	)
 
-	for i, logLevel := range logLevels {
-		iLogLevels[i] = logLevel
+	for i, logLevel := range allowedLogLevels {
+		logLevels[i] = logLevel
 	}
-
-	for i, mode := range modes {
-		iModes[i] = mode
+	for i, mode := range allowedModes {
+		modes[i] = mode
 	}
 
 	return validation.ValidateStruct(&n,
 		validation.Field(
 			&n.Device,
 			validation.Required.Error("validate(): no device specified"),
-			is.Alphanumeric.Error("validate(): device names can only contain letters and numbers"),
+			validation.Match(regexp.MustCompile(constants.Devices.RegexValidName)).Error("device names must only contain letters, numbers and selected symbols"),
 		),
 		validation.Field(
 			&n.LogFile,
-			validation.Match(regexp.MustCompile("^/$|^(/[a-zA-Z0-9._-]+)+$")).Error("must be a valid filepath"),
-			validation.Match(regexp.MustCompile("^"+logDir)).Error("validate(): must in directory "+logDir),
+			validation.Match(regexp.MustCompile(constants.Logging.RegexValidFile)).Error("must be a valid filepath"),
+			validation.Match(regexp.MustCompile(constants.Logging.RegexCorrectDir)).Error("must be in directory "+constants.Logging.Directory),
 		),
 		validation.Field(
 			&n.LogLevel,
-			validation.In(iLogLevels...).Error("validate(): must be "+fmt.Sprintf("%v", iLogLevels)),
+			validation.In(logLevels...).Error("validate(): must be "+fmt.Sprintf("%v", logLevels)),
 		),
 		validation.Field(
 			&n.Mode,
 			//validation.Required.Error("validate(): Mode is required"), // TODO make required once more modes available
-			validation.In(iModes...).Error("validate(): must be "+fmt.Sprintf("%v", iModes)),
+			validation.In(modes...).Error("validate(): must be "+fmt.Sprintf("%v", modes)),
 		),
 	)
 }
@@ -326,7 +324,7 @@ func CmdDel(args *skel.CmdArgs) error {
 	}
 
 	logging.Infof("cmdDel(): removing BPF program from device")
-	if err := bpfHanfler.Cleanbpf(cfg.Device); err != nil {
+	if err := bpfHandler.Cleanbpf(cfg.Device); err != nil {
 		err = fmt.Errorf("cmdDel(): error removing BPF program from device: %w", err)
 		logging.Errorf(err.Error())
 

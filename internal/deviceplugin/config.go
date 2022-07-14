@@ -20,6 +20,7 @@ import (
 	"fmt"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	logging "github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -35,14 +36,6 @@ const (
 	logFilePermission = 0644                          // Permissions for setting log file
 	logDir            = "/var/log/afxdp-k8s-plugins/" // Acceptable log directory
 	minLinuxVersion   = "4.18.0"                      // Minimum Linux version for AF_XDP support
-)
-
-// "constant" arrays
-var (
-	driversTypes = []string{"i40e", "E810"}                                 // drivers we search for by default if none configured
-	excludedInfs = []string{"eno", "eth", "lo", "docker", "flannel", "cni"} // interfaces we never add to a pool
-	logLevels    = []string{"debug", "info", "warning", "error"}            // acceptable log levels
-	modes        = []string{"cndp"}                                         // acceptable modes
 )
 
 var (
@@ -77,7 +70,7 @@ type Config struct {
 }
 
 /*
-GetConfig returns the overall config for the device plugin. Host devices are discovered if not explicitly set in the config file
+GetConfig returns the overall config for the device plugin
 */
 func GetConfig(configFile string, networking networking.Handler) (Config, error) {
 	cfg := Config{
@@ -162,57 +155,32 @@ func (c *Config) BuildPools() error {
 		}
 	}
 
-	if len(c.Pools) == 0 {
-		logging.Infof("No pools configured, defaulting to pool per driver")
-		for _, driver := range driversTypes {
-			pool := new(PoolConfig)
-			pool.Name = driver
-
-			logging.Infof("Pool " + pool.Name + " discovering devices")
-			devices, err := deviceDiscovery(driver)
-			if err != nil {
-				logging.Errorf("Error discovering devices: %v", err.Error())
-				return err
-			}
-
-			if len(devices) > 0 {
-				logging.Infof("Pool "+pool.Name+" discovered devices: %s", devices)
-
-				for _, device := range devices {
-					pool.Devices = append(pool.Devices, device)
-					assignedInfs = append(assignedInfs, device)
-				}
-
-				c.Pools = append(c.Pools, pool)
-			}
-		}
-	}
 	return nil
 }
 
 /*
 Validate validates the contents of the PoolConfig struct
 */
-func (c PoolConfig) Validate() error {
-	return validation.ValidateStruct(&c,
+func (p PoolConfig) Validate() error {
+	return validation.ValidateStruct(&p,
 		validation.Field(
-			&c.Name,
+			&p.Name,
 			validation.Required.Error("pools must have a name"),
-			is.Alphanumeric.Error("pool names can only contain letters and numbers"),
+			is.Alphanumeric.Error("pool names must only contain letters and numbers"),
 		),
 		validation.Field(
-			&c.Devices,
+			&p.Devices,
 			validation.Each(
 				validation.Required.Error("devices must have a name"),
-				is.Alphanumeric.Error("device names can only contain letters and numbers"),
+				validation.Match(regexp.MustCompile(constants.Devices.RegexValidName)).Error("device names must only contain letters, numbers and selected symbols"),
 			),
-			validation.Required.When(len(c.Drivers) == 0).Error("pools must contain devices or drivers"),
+			validation.Required.When(len(p.Drivers) == 0).Error("pools must contain devices or drivers"),
 		),
 		validation.Field(
-			&c.Drivers,
+			&p.Drivers,
 			validation.Each(
 				validation.Required.Error("drivers must have a name"),
-				is.Alphanumeric.Error("driver names must only contain letters and numbers"),
+				validation.Match(regexp.MustCompile(constants.Drivers.RegexValidName)).Error("driver names must only contain letters, numbers and selected symbols"),
 			),
 		),
 	)
@@ -222,14 +190,18 @@ func (c PoolConfig) Validate() error {
 Validate validates the contents of the Config struct
 */
 func (c Config) Validate() error {
-	var iLogLevels []interface{} = make([]interface{}, len(logLevels))
-	var iModes []interface{} = make([]interface{}, len(modes))
+	var (
+		allowedLogLevels               = constants.Logging.Levels
+		allowedModes                   = constants.Plugins.Modes
+		logLevels        []interface{} = make([]interface{}, len(allowedLogLevels))
+		modes            []interface{} = make([]interface{}, len(allowedModes))
+	)
 
-	for i, logLevel := range logLevels {
-		iLogLevels[i] = logLevel
+	for i, logLevel := range allowedLogLevels {
+		logLevels[i] = logLevel
 	}
-	for i, mode := range modes {
-		iModes[i] = mode
+	for i, mode := range allowedModes {
+		modes[i] = mode
 	}
 
 	return validation.ValidateStruct(&c,
@@ -241,12 +213,12 @@ func (c Config) Validate() error {
 		),
 		validation.Field(
 			&c.LogFile,
-			validation.Match(regexp.MustCompile("^/$|^(/[a-zA-Z0-9._-]+)+$")).Error("must be a valid filepath"),
-			validation.Match(regexp.MustCompile("^"+logDir)).Error("must in directory "+logDir),
+			validation.Match(regexp.MustCompile(constants.Logging.RegexValidFile)).Error("must be a valid filepath"),
+			validation.Match(regexp.MustCompile(constants.Logging.RegexCorrectDir)).Error("must be in directory "+constants.Logging.Directory),
 		),
 		validation.Field(
 			&c.LogLevel,
-			validation.In(iLogLevels...).Error("must be "+fmt.Sprintf("%v", iLogLevels)),
+			validation.In(logLevels...).Error("must be "+fmt.Sprintf("%v", logLevels)),
 		),
 		validation.Field(
 			&c.UdsTimeout,
@@ -256,7 +228,7 @@ func (c Config) Validate() error {
 		validation.Field(
 			&c.Mode,
 			//validation.Required.Error("validate(): Mode is required"), // TODO make required once more modes available
-			validation.In(iModes...).Error("validate(): must be "+fmt.Sprintf("%v", iModes)),
+			validation.In(modes...).Error("validate(): must be "+fmt.Sprintf("%v", modes)),
 		),
 	)
 }
@@ -271,7 +243,7 @@ func deviceDiscovery(requiredDriver string) ([]string, error) {
 	}
 
 	for _, hostDevice := range hostDevices {
-		if containsPrefix(excludedInfs, hostDevice.Name) {
+		if containsPrefix(constants.Devices.Prohibited, hostDevice.Name) {
 			logging.Debugf("%s is an excluded device, skipping", hostDevice.Name)
 			continue
 		}
@@ -286,7 +258,7 @@ func deviceDiscovery(requiredDriver string) ([]string, error) {
 			logging.Debugf("Device %s is type %s", hostDevice.Name, requiredDriver)
 
 			if contains(assignedInfs, hostDevice.Name) {
-				logging.Infof("Device %s is an already assigned to a pool, skipping", hostDevice.Name)
+				logging.Infof("Device %s is already assigned to a pool, skipping", hostDevice.Name)
 				continue
 			}
 
