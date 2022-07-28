@@ -110,11 +110,6 @@ e2efulldaemon: image
 	@echo
 
 static:
-	@echo "******      Go Lint      ******"
-	@echo
-	golint -set_exit_status ./...
-	@echo
-	@echo
 	@echo "******   GolangCI-Lint   ******"
 	@echo
 	golangci-lint run

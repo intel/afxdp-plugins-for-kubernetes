@@ -100,12 +100,14 @@ func GetConfig(configFile string, networking networking.Handler) (Config, error)
 		return cfg, err
 	}
 
-	if cfg.UdsTimeout != 0 {
+	if cfg.UdsTimeout == -1 {
+		cfg.UdsTimeout = 0
 		logging.Debugf("Timeout is set to: %d seconds", cfg.UdsTimeout)
-
-	} else {
+	} else if cfg.UdsTimeout == 0 {
 		cfg.UdsTimeout = defaultUdsTimeout
 		logging.Debugf("Using default value, timeout set to: %d seconds", cfg.UdsTimeout)
+	} else {
+		logging.Debugf("Timeout is set to: %d seconds", cfg.UdsTimeout)
 	}
 
 	return cfg, nil
@@ -222,8 +224,8 @@ func (c Config) Validate() error {
 		),
 		validation.Field(
 			&c.UdsTimeout,
-			validation.When(c.UdsTimeout != 0, validation.Min(defaultUdsTimeout)),
-			validation.When(c.UdsTimeout != 0, validation.Max(maxUdsTimeout)),
+			validation.When(!(c.UdsTimeout == -1 || c.UdsTimeout == 0), validation.Min(defaultUdsTimeout)),
+			validation.When(!(c.UdsTimeout == -1 || c.UdsTimeout == 0), validation.Max(maxUdsTimeout)),
 		),
 		validation.Field(
 			&c.Mode,
