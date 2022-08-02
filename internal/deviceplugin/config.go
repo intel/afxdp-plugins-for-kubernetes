@@ -22,11 +22,11 @@ import (
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
+	"github.com/intel/afxdp-plugins-for-kubernetes/tools"
 	logging "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"regexp"
-	"strings"
 )
 
 const (
@@ -122,9 +122,9 @@ func (c *Config) BuildPools() error {
 		for _, device := range pool.Devices {
 			logging.Debugf("Device " + device + " has been manually assigned to pool " + pool.Name)
 
-			if contains(assignedInfs, device) {
+			if tools.ArrayContains(assignedInfs, device) {
 				logging.Warningf("Device " + device + " is already assigned to another pool, removing from " + pool.Name)
-				pool.Devices = remove(pool.Devices, device)
+				pool.Devices = tools.Remove(pool.Devices, device)
 				continue
 			}
 
@@ -245,7 +245,7 @@ func deviceDiscovery(requiredDriver string) ([]string, error) {
 	}
 
 	for _, hostDevice := range hostDevices {
-		if containsPrefix(constants.Devices.Prohibited, hostDevice.Name) {
+		if tools.ContainsPrefix(constants.Devices.Prohibited, hostDevice.Name) {
 			logging.Debugf("%s is an excluded device, skipping", hostDevice.Name)
 			continue
 		}
@@ -259,7 +259,7 @@ func deviceDiscovery(requiredDriver string) ([]string, error) {
 		if deviceDriver == requiredDriver {
 			logging.Debugf("Device %s is type %s", hostDevice.Name, requiredDriver)
 
-			if contains(assignedInfs, hostDevice.Name) {
+			if tools.ArrayContains(assignedInfs, hostDevice.Name) {
 				logging.Infof("Device %s is already assigned to a pool, skipping", hostDevice.Name)
 				continue
 			}
@@ -283,31 +283,4 @@ func deviceDiscovery(requiredDriver string) ([]string, error) {
 
 	}
 	return poolDevices, nil
-}
-
-func contains(array []string, str string) bool {
-	for _, s := range array {
-		if s == str {
-			return true
-		}
-	}
-	return false
-}
-
-func containsPrefix(array []string, str string) bool {
-	for _, s := range array {
-		if strings.HasPrefix(str, s) {
-			return true
-		}
-	}
-	return false
-}
-
-func remove(array []string, rem string) []string {
-	for i, elm := range array {
-		if elm == rem {
-			return append(array[:i], array[i+1:]...)
-		}
-	}
-	return array
 }

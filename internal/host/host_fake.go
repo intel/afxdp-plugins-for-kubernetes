@@ -22,7 +22,6 @@ type FakeHandler interface {
 	Handler
 	SetKernalVersion(version string)
 	SetAllowsUnprivilegedBpf(allowed bool)
-
 }
 
 /*
@@ -30,9 +29,8 @@ fakeHandler implements the FakeHandler interface.
 */
 type fakeHandler struct{}
 
-
 var (
-	kernalVersion string
+	kernalVersion        string
 	privilegedBpfAllowed bool
 )
 
@@ -51,7 +49,7 @@ func (r *fakeHandler) KernelVersion() (string, error) {
 	return kernalVersion, nil
 }
 
-func(r *fakeHandler) SetKernalVersion(version string) {
+func (r *fakeHandler) SetKernalVersion(version string) {
 	kernalVersion = version
 }
 
