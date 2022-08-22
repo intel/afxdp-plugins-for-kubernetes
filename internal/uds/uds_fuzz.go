@@ -17,7 +17,7 @@ package uds
 
 import (
 	"fmt"
-	"github.com/google/gofuzz"
+	fuzz "github.com/google/gofuzz"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/logformats"
 	logging "github.com/sirupsen/logrus"
 	"io"
