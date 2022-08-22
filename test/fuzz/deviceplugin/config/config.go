@@ -32,9 +32,9 @@ var firstRun bool = true
 /*
 Fuzz sends fuzzed data into the GetConfig function
 The input data is considered:
- - uninteresting if is caught by an existing error
- - interesting if it does not result in an error, input priority increases for subsequent fuzzing
- - discard if it will not unmarshall, so we don't just end up testing the json.Unmarshall function
+  - uninteresting if is caught by an existing error
+  - interesting if it does not result in an error, input priority increases for subsequent fuzzing
+  - discard if it will not unmarshall, so we don't just end up testing the json.Unmarshall function
 */
 func Fuzz(data []byte) int {
 	if firstRun {

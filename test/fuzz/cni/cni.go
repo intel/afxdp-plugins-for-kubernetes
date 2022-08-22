@@ -33,9 +33,9 @@ const (
 /*
 FuzzAdd sends fuzzed data into the cni CmdAdd function
 The input data is considered:
- - uninteresting if is caught by an existing error
- - interesting if it does not result in an error, input priority increases for subsequent fuzzing
- - discard if it will not unmarshall, so we don't just end up testing the json.Unmarshall function
+  - uninteresting if is caught by an existing error
+  - interesting if it does not result in an error, input priority increases for subsequent fuzzing
+  - discard if it will not unmarshall, so we don't just end up testing the json.Unmarshall function
 */
 func FuzzAdd(data []byte) int {
 	tmp := &cni.NetConfig{}
@@ -60,9 +60,9 @@ func FuzzAdd(data []byte) int {
 /*
 FuzzDel sends fuzzed data into the cni CmdDel function
 The input data is considered:
- - uninteresting if is caught by an exesting error
- - interesting if it does not result in an error, input priority increases for subsequent fuzzing
- - discard if it will not unmarshall, so we don't just end up testing the json.Unmarshall function
+  - uninteresting if is caught by an exesting error
+  - interesting if it does not result in an error, input priority increases for subsequent fuzzing
+  - discard if it will not unmarshall, so we don't just end up testing the json.Unmarshall function
 */
 func FuzzDel(data []byte) int {
 	tmp := &cni.NetConfig{}
