@@ -46,7 +46,7 @@ func NewFakeHandler() FakeHandler {
 Init should initialises the Unix domain socket.
 In this fakeHandler it resets some counters and inits a map for recording calls to the Write() function.
 */
-func (f *fakeHandler) Init(socketPath string, protocol string, msgbufSize int, ctlBufSize int, timeout time.Duration) error {
+func (f *fakeHandler) Init(socketPath string, protocol string, msgbufSize int, ctlBufSize int, timeout time.Duration, uid string) error {
 	f.actualResponses = make(map[int]string)
 	f.counter = 0
 	return nil

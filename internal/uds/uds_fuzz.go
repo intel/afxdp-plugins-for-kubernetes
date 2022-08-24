@@ -56,7 +56,7 @@ func NewFuzzHandler() Handler {
 Init should initialises the Unix domain socket. The fuzzlogging() function is called which creates a separate
 file for fuzzing logs.
 */
-func (f *fuzzHandler) Init(socketPath string, protocol string, msgbufSize int, ctlBufSize int, timeout time.Duration) error {
+func (f *fuzzHandler) Init(socketPath string, protocol string, msgbufSize int, ctlBufSize int, timeout time.Duration, uid string) error {
 	if err := fuzzLogging(); err != nil {
 		return err
 	}

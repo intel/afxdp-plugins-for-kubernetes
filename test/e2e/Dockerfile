@@ -12,5 +12,5 @@
 # limitations under the License.
 
 FROM alpine:3.14
-RUN apk --no-cache add -U iproute2=5.12.0-r0
+RUN apk --no-cache add -U iproute2=5.12.0-r0 && apk --no-cache add -U acl~=2.2
 COPY ./udsTest /bin/udsTest

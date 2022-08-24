@@ -43,6 +43,10 @@ var (
 	cdqDrivers       = []string{"ice"}                 // drivers that support CDQ subfunctions
 	regexValidDriver = `^[a-zA-Z0-9_-]+$`              // regex to check if a string is a valid driver name
 
+	/* UID */
+	uidMaximum = 256000 // maximum UID supported by BusyBox adduser
+	uidMinimum = 1000   // minimum non-reserved UID in Alpine
+
 	/* AF_XDP */
 	afxdpMinimumLinux = "4.18.0" // minimum Linux version for AF_XDP support
 
@@ -85,6 +89,8 @@ var (
 	Drivers drivers
 	/* Devices contains constants related to netdevs */
 	Devices devices
+	/* UID contains contains constants related to user ids */
+	UID uid
 	/* Cndp contains constants related to intel's Cloud Native Dataplane */
 	Cndp cndp
 )
@@ -121,6 +127,11 @@ type drivers struct {
 type devices struct {
 	Prohibited     []string
 	RegexValidName string
+}
+
+type uid struct {
+	Maximum int
+	Minimum int
 }
 
 type logging struct {
@@ -192,6 +203,11 @@ func init() {
 	Devices = devices{
 		Prohibited:     prohibitedDevices,
 		RegexValidName: regexValidDevice,
+	}
+
+	UID = uid{
+		Maximum: uidMaximum,
+		Minimum: uidMinimum,
 	}
 
 	Logging = logging{

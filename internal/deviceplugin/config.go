@@ -44,12 +44,13 @@ var (
 )
 
 /*
-PoolConfig is  contains the pool name and device list
+PoolConfig contains the pool name and device list
 */
 type PoolConfig struct {
 	Name    string   `json:"name"`
 	Devices []string `json:"devices"`
 	Drivers []string `json:"drivers"`
+	UID     int      `json:"uid"`
 }
 
 /*
@@ -184,6 +185,11 @@ func (p PoolConfig) Validate() error {
 				validation.Required.Error("drivers must have a name"),
 				validation.Match(regexp.MustCompile(constants.Drivers.RegexValidName)).Error("driver names must only contain letters, numbers and selected symbols"),
 			),
+		),
+		validation.Field(
+			&p.UID,
+			validation.When(!(p.UID == 0), validation.Max(constants.UID.Maximum)),
+			validation.When(!(p.UID == 0), validation.Min(constants.UID.Minimum)),
 		),
 	)
 }

@@ -54,6 +54,7 @@ type PoolManager struct {
 	Timeout       int
 	DevicePrefix  string
 	CndpFuzzTest  bool
+	UID           string
 }
 
 /*
@@ -63,6 +64,11 @@ func (pm *PoolManager) Init(config *PoolConfig) error {
 	pm.ServerFactory = cndp.NewServerFactory()
 	pm.BpfHandler = bpf.NewHandler()
 	netHandler := networking.NewHandler()
+
+	pm.UID = strconv.Itoa(config.UID)
+	if pm.UID == "0" {
+		pm.UID = ""
+	}
 
 	if err := pm.registerWithKubelet(); err != nil {
 		return err
@@ -165,7 +171,7 @@ func (pm *PoolManager) allocateCndp(ctx context.Context,
 	response := pluginapi.AllocateResponse{}
 
 	logging.Infof("New CNDP allocate request. Creating new UDS server")
-	cndpServer, udsPath, err := pm.ServerFactory.CreateServer(pm.DevicePrefix+"/"+pm.Name, pm.Timeout, pm.CndpFuzzTest)
+	cndpServer, udsPath, err := pm.ServerFactory.CreateServer(pm.DevicePrefix+"/"+pm.Name, pm.UID, pm.Timeout, pm.CndpFuzzTest)
 	if err != nil {
 		logging.Errorf("Error Creating new UDS server: %v", err)
 		return &response, err

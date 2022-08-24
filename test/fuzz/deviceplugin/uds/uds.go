@@ -60,7 +60,7 @@ func Fuzz(data []byte) int {
 	time.Sleep(10 * time.Millisecond)
 
 	uds := uds.NewHandler()
-	err := uds.Init(udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, udsIdleTimeout)
+	err := uds.Init(udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, udsIdleTimeout, "")
 	if err != nil {
 		logging.Errorf("Error Initialising UDS: %v", err)
 	}
@@ -85,7 +85,7 @@ func Fuzz(data []byte) int {
 
 func reader(udsPath string, data []byte) {
 	uds := uds.NewHandler()
-	err := uds.Init(udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, udsIdleTimeout)
+	err := uds.Init(udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, udsIdleTimeout, "")
 	if err != nil {
 		logging.Errorf("Error Initialising UDS: %v", err)
 	}

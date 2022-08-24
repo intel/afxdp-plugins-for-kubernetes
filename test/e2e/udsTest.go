@@ -66,7 +66,7 @@ func main() {
 	udsHandler = uds.NewHandler()
 
 	// init
-	if err := udsHandler.Init(udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, udsIdleTimeout); err != nil {
+	if err := udsHandler.Init(udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, udsIdleTimeout, ""); err != nil {
 		println("Test App Error: Error Initialising UDS server: ", err)
 		os.Exit(1)
 	}

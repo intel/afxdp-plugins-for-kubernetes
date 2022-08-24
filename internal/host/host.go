@@ -19,6 +19,7 @@ import (
 	"errors"
 	logging "github.com/sirupsen/logrus"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -186,4 +187,50 @@ func (r *handler) HasDevlink() (bool, string, error) {
 
 	version := strings.Split(string(output), "\n")[0]
 	return true, version, nil
+}
+
+/*
+GivePermissions will give read/write permissions on a file to a specified user id.
+*/
+func GivePermissions(path, uid, permissions string) error {
+	if uid == "" {
+		return errors.New("UID not specified.")
+	}
+	if _, err := os.Stat("/bin/setfacl"); err != nil {
+		return errors.New("Access Control Lists not supported.")
+	}
+	if _, err := os.Stat(path); err != nil {
+		return errors.New(path + " does not exist.")
+	}
+	argument := "user:" + uid + ":" + permissions
+	//give access to path to specified uid
+	_, err := exec.Command("setfacl", "-m", argument, path).Output()
+	if err != nil {
+		logging.Warnf("Error setting ACL permissions of %s to %s: %v", path, argument, err)
+		return err
+	}
+	//two cases when verifying user permissions
+	//1. user does not exist - check for uid in path
+	//2. user exists - check for username in /etc/passwd from uid
+	output, err := exec.Command("getfacl", path).Output()
+	if err != nil {
+		logging.Warnf("Error verifying ACL permissions of %s regarding %s: %v", path, uid, err)
+		return err
+	}
+	//case 1 skips the if statement block, case 2 enters the if statement block
+	if !(strings.Contains(string(output), argument)) {
+		logging.Infof("UID %s not found. Searching for username", uid)
+		out, err := exec.Command("grep", uid, "/etc/passwd").Output()
+		if err != nil || len(string(out)) < 1 {
+			logging.Warnf("Error verifying ACL permissions of %s: %v", path, err)
+			return err
+		}
+		username := strings.Split(string(out), ":")[0]
+		if !strings.Contains(string(output), username) {
+			logging.Warnf("Error verifying ACL permissions of %s: %v", path, err)
+			return err
+		}
+	}
+	logging.Infof("Socket access granted to UID %s", uid)
+	return nil
 }
