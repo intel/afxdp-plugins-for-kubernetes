@@ -5,6 +5,8 @@ metadata:
   annotations:
     k8s.v1.cni.cncf.io/networks: cndp-e2e-test, cndp-e2e-test
 spec:
+  securityContext:
+    runAsUser: 1500
   containers:
   - name: cndp
     image: cndp-e2e-test:latest

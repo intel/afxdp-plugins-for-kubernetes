@@ -12,12 +12,12 @@
 # limitations under the License.
 
 FROM amd64/alpine:3.14 as bpf
-RUN apk --no-cache -U add libbpf=0.4.0-r0
+RUN apk --no-cache -U add libbpf=0.4.0-r0 acl~=2.2
 
 FROM bpf as builder
 COPY . /usr/src/afxdp_k8s_plugins
 WORKDIR /usr/src/afxdp_k8s_plugins
-RUN apk add --no-cache go~=1.16 make=4.3-r0 libbsd-dev=0.11.3-r0 libbpf-dev=0.4.0-r0 acl~=2.2 \
+RUN apk add --no-cache go~=1.16 make=4.3-r0 libbsd-dev=0.11.3-r0 libbpf-dev=0.4.0-r0 \
       && make builddp
 
 FROM bpf

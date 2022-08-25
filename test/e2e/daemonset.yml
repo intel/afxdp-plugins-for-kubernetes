@@ -12,7 +12,8 @@ data:
         "pools" : [
             {
                 "name" : "e2e",
-                "drivers" : ["i40e"]
+                "drivers" : ["i40e"],
+                "uid" : 1500
             }
         ]
     }
