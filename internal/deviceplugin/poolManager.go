@@ -150,7 +150,7 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 	var response *pluginapi.AllocateResponse
 
 	logging.Debugf("New allocate request")
-	if pm.Mode == "cndp" {
+	if pm.Mode == "cdq" {
 		response, err = pm.allocateCndp(ctx, rqt)
 		if err != nil {
 			logging.Errorf("Error during CNDP pod allocation: %v", err)

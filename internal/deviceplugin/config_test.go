@@ -38,10 +38,10 @@ func TestGetConfig(t *testing.T) {
 		{
 			name: "get config : one pool two manually set devices",
 			configFile: `{
-							"mode": "cndp",
+							"mode": "cdq",
 							"timeout": 30,
 							"logLevel": "debug",
-							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
+							"logFile": "file.log",
 							"pools": [{
 								"name": "pool1",
 								"devices": ["dev1", "dev2"]
@@ -57,12 +57,12 @@ func TestGetConfig(t *testing.T) {
 						Devices: []string{"dev1", "dev2"},
 					},
 				},
-				Mode:                   "cndp",
+				Mode:                   "cdq",
 				UdsTimeout:             30,
 				RequireUnprivilegedBpf: false,
 				LogDir:                 "/var/log/afxdp-k8s-plugins/",
 				LogDirPermission:       0x1e4,
-				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFile:                "file.log",
 				LogFilePermission:      0x1a4,
 				LogLevel:               "debug",
 				MinLinuxVersion:        "4.18.0",
@@ -73,10 +73,10 @@ func TestGetConfig(t *testing.T) {
 		{
 			name: "get config : one pool two manually set devices, the rest in pool 2",
 			configFile: `{
-							"mode": "cndp",
+							"mode": "cdq",
 							"timeout": 30,
 							"logLevel": "debug",
-							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
+							"logFile": "file.log",
 							"pools": [{
 								"name": "pool1",
 								"devices": ["dev1", "dev2"]
@@ -101,12 +101,12 @@ func TestGetConfig(t *testing.T) {
 						Drivers: []string{"i40e"},
 					},
 				},
-				Mode:                   "cndp",
+				Mode:                   "cdq",
 				UdsTimeout:             30,
 				RequireUnprivilegedBpf: false,
 				LogDir:                 "/var/log/afxdp-k8s-plugins/",
 				LogDirPermission:       0x1e4,
-				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFile:                "file.log",
 				LogFilePermission:      0x1a4,
 				LogLevel:               "debug",
 				MinLinuxVersion:        "4.18.0",
@@ -117,10 +117,10 @@ func TestGetConfig(t *testing.T) {
 		{
 			name: "get config : mix of devices and drivers",
 			configFile: `{
-							"mode": "cndp",
+							"mode": "cdq",
 							"timeout": 30,
 							"logLevel": "debug",
-							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
+							"logFile": "file.log",
 							"pools": [{
 								"name": "pool1",
 								"devices": ["dev5", "dev6"],
@@ -148,12 +148,12 @@ func TestGetConfig(t *testing.T) {
 						Drivers: []string{"E810"},
 					},
 				},
-				Mode:                   "cndp",
+				Mode:                   "cdq",
 				UdsTimeout:             30,
 				RequireUnprivilegedBpf: false,
 				LogDir:                 "/var/log/afxdp-k8s-plugins/",
 				LogDirPermission:       0x1e4,
-				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFile:                "file.log",
 				LogFilePermission:      0x1a4,
 				LogLevel:               "debug",
 				MinLinuxVersion:        "4.18.0",
@@ -164,10 +164,10 @@ func TestGetConfig(t *testing.T) {
 		{
 			name: "get config : one_pool three_devices",
 			configFile: `{
-							"mode": "cndp",
+							"mode": "cdq",
 							"timeout": 30,
 							"logLevel": "debug",
-							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
+							"logFile": "file.log",
 							"pools": [{
 								"name": "pool1",
 								"devices": ["dev1", "dev2","dev3"]
@@ -183,12 +183,12 @@ func TestGetConfig(t *testing.T) {
 						Devices: []string{"dev1", "dev2", "dev3"},
 					},
 				},
-				Mode:                   "cndp",
+				Mode:                   "cdq",
 				UdsTimeout:             30,
 				RequireUnprivilegedBpf: false,
 				LogDir:                 "/var/log/afxdp-k8s-plugins/",
 				LogDirPermission:       0x1e4,
-				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFile:                "file.log",
 				LogFilePermission:      0x1a4,
 				LogLevel:               "debug",
 				MinLinuxVersion:        "4.18.0",
@@ -199,10 +199,10 @@ func TestGetConfig(t *testing.T) {
 		{
 			name: "get config : two_pools four_devices",
 			configFile: `{
-								"mode": "cndp",
+								"mode": "cdq",
 								"timeout": 30,
 								"logLevel": "debug",
-								"logFile": "/var/log/afxdp-k8s-plugins/file.log",
+								"logFile": "file.log",
 								"pools": [{
 									"name": "pool1",
 									"drivers": ["i40e"]
@@ -228,12 +228,12 @@ func TestGetConfig(t *testing.T) {
 						Drivers: []string{"E810"},
 					},
 				},
-				Mode:                   "cndp",
+				Mode:                   "cdq",
 				UdsTimeout:             30,
 				RequireUnprivilegedBpf: false,
 				LogDir:                 "/var/log/afxdp-k8s-plugins/",
 				LogDirPermission:       0x1e4,
-				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFile:                "file.log",
 				LogFilePermission:      0x1a4,
 				LogLevel:               "debug",
 				MinLinuxVersion:        "4.18.0",
@@ -244,10 +244,10 @@ func TestGetConfig(t *testing.T) {
 		{
 			name: "get config : two_pools six_devices",
 			configFile: `{
-							"mode": "cndp",
+							"mode": "cdq",
 							"timeout": 30,	
 							"logLevel": "debug",
-							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
+							"logFile": "file.log",
 							"pools": [{
 								"name": "pool1",
 								"drivers": ["i40e"]
@@ -273,12 +273,12 @@ func TestGetConfig(t *testing.T) {
 						Drivers: []string{"E810"},
 					},
 				},
-				Mode:                   "cndp",
+				Mode:                   "cdq",
 				UdsTimeout:             30,
 				RequireUnprivilegedBpf: false,
 				LogDir:                 "/var/log/afxdp-k8s-plugins/",
 				LogDirPermission:       0x1e4,
-				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFile:                "file.log",
 				LogFilePermission:      0x1a4,
 				LogLevel:               "debug",
 				MinLinuxVersion:        "4.18.0",
@@ -290,10 +290,10 @@ func TestGetConfig(t *testing.T) {
 		{
 			name: "get config : one pool with hyphenated driver",
 			configFile: `{
-							"mode": "cndp",
+							"mode": "cdq",
 							"timeout": 30,
 							"logLevel": "debug",
-							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
+							"logFile": "file.log",
 							"pools": [{
 								"name": "pool1",
 								"drivers": ["vfio-pci"]
@@ -310,12 +310,12 @@ func TestGetConfig(t *testing.T) {
 						Drivers: []string{"vfio-pci"},
 					},
 				},
-				Mode:                   "cndp",
+				Mode:                   "cdq",
 				UdsTimeout:             30,
 				RequireUnprivilegedBpf: false,
 				LogDir:                 "/var/log/afxdp-k8s-plugins/",
 				LogDirPermission:       0x1e4,
-				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFile:                "file.log",
 				LogFilePermission:      0x1a4,
 				LogLevel:               "debug",
 				MinLinuxVersion:        "4.18.0",
@@ -327,10 +327,10 @@ func TestGetConfig(t *testing.T) {
 		{
 			name: "get config : one pool with underscore driver",
 			configFile: `{
-							"mode": "cndp",
+							"mode": "cdq",
 							"timeout": 30,
 							"logLevel": "debug",
-							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
+							"logFile": "file.log",
 							"pools": [{
 								"name": "pool1",
 								"drivers": ["cool_driver"]
@@ -347,12 +347,12 @@ func TestGetConfig(t *testing.T) {
 						Drivers: []string{"cool_driver"},
 					},
 				},
-				Mode:                   "cndp",
+				Mode:                   "cdq",
 				UdsTimeout:             30,
 				RequireUnprivilegedBpf: false,
 				LogDir:                 "/var/log/afxdp-k8s-plugins/",
 				LogDirPermission:       0x1e4,
-				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFile:                "file.log",
 				LogFilePermission:      0x1a4,
 				LogLevel:               "debug",
 				MinLinuxVersion:        "4.18.0",
@@ -363,7 +363,7 @@ func TestGetConfig(t *testing.T) {
 
 		{
 			name:         "load bad config : device field missing",
-			configFile:   `{"mode": "cndp","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log","pools":[{"name":"pool1",:["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
+			configFile:   `{"mode": "cdq","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log","pools":[{"name":"pool1",:["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
 			expGetCfgErr: errors.New("invalid character ':' looking for beginning of object key string"),
 			expBldPlsErr: nil,
 			expcfg:       Config{LogDir: "/var/log/afxdp-k8s-plugins/", LogDirPermission: 0x1e4, LogFilePermission: 0x1a4, MinLinuxVersion: "4.18.0"},
@@ -371,7 +371,7 @@ func TestGetConfig(t *testing.T) {
 
 		{
 			name:         "load bad config : invalid JSON",
-			configFile:   `{"mode": "cndp","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log","pools":[{"name":" "["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
+			configFile:   `{"mode": "cdq","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log","pools":[{"name":" "["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
 			expGetCfgErr: errors.New("invalid character '[' after object key:value pair"),
 			expBldPlsErr: nil,
 			expcfg:       Config{LogDir: "/var/log/afxdp-k8s-plugins/", LogDirPermission: 0x1e4, LogFilePermission: 0x1a4, MinLinuxVersion: "4.18.0"},
@@ -379,7 +379,7 @@ func TestGetConfig(t *testing.T) {
 
 		{
 			name:         "load bad config : no pools",
-			configFile:   `{"mode": "cndp","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log", :[{"name: ["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
+			configFile:   `{"mode": "cdq","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log", :[{"name: ["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
 			expGetCfgErr: errors.New("invalid character ':' looking for beginning of object key string"),
 			expBldPlsErr: nil,
 			expcfg:       Config{LogDir: "/var/log/afxdp-k8s-plugins/", LogDirPermission: 0x1e4, LogFilePermission: 0x1a4, MinLinuxVersion: "4.18.0"},
@@ -404,10 +404,10 @@ func TestGetConfig(t *testing.T) {
 		{
 			name: "load bad config : bad driver name",
 			configFile: `{
-								"mode": "cndp",
+								"mode": "cdq",
 								"timeout": 30,
 								"logLevel": "debug",
-								"logFile": "/var/log/afxdp-k8s-plugins/file.log",
+								"logFile": "file.log",
 								"pools": [
 									{
 									"name": "pool1",
@@ -426,12 +426,12 @@ func TestGetConfig(t *testing.T) {
 						Drivers: []string{"ice+"},
 					},
 				},
-				Mode:                   "cndp",
+				Mode:                   "cdq",
 				UdsTimeout:             30,
 				RequireUnprivilegedBpf: false,
 				LogDir:                 "/var/log/afxdp-k8s-plugins/",
 				LogDirPermission:       0x1e4,
-				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFile:                "file.log",
 				LogFilePermission:      0x1a4,
 				LogLevel:               "debug",
 				MinLinuxVersion:        "4.18.0",
@@ -441,10 +441,10 @@ func TestGetConfig(t *testing.T) {
 		{
 			name: "load bad config : bad device name",
 			configFile: `{
-								"mode": "cndp",
+								"mode": "cdq",
 								"timeout": 30,
 								"logLevel": "debug",
-								"logFile": "/var/log/afxdp-k8s-plugins/file.log",
+								"logFile": "file.log",
 								"pools": [
 									{
 									"name": "pool1",
@@ -463,12 +463,12 @@ func TestGetConfig(t *testing.T) {
 						Devices: []string{"dev1^"},
 					},
 				},
-				Mode:                   "cndp",
+				Mode:                   "cdq",
 				UdsTimeout:             30,
 				RequireUnprivilegedBpf: false,
 				LogDir:                 "/var/log/afxdp-k8s-plugins/",
 				LogDirPermission:       0x1e4,
-				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
+				LogFile:                "file.log",
 				LogFilePermission:      0x1a4,
 				LogLevel:               "debug",
 				MinLinuxVersion:        "4.18.0",

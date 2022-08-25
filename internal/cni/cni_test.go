@@ -47,8 +47,8 @@ func TestGetConfig(t *testing.T) {
 	}{
 		{
 			name:      "load good config 1",
-			config:    `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"afxdp","mode":"cndp","Queues":"4"}`,
-			expConfig: &NetConfig{NetConf: netConf, Device: "dev1", Mode: "cndp", Queues: "4"},
+			config:    `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"afxdp","mode":"cdq","Queues":"4"}`,
+			expConfig: &NetConfig{NetConf: netConf, Device: "dev1", Mode: "cdq", Queues: "4"},
 		},
 		{
 			name:      "load no config",

@@ -175,7 +175,7 @@ func (p PoolConfig) Validate() error {
 			&p.Devices,
 			validation.Each(
 				validation.Required.Error("devices must have a name"),
-				validation.Match(regexp.MustCompile(constants.Devices.RegexValidName)).Error("device names must only contain letters, numbers and selected symbols"),
+				validation.Match(regexp.MustCompile(constants.Devices.ValidNameRegex)).Error("device names must only contain letters, numbers and selected symbols"),
 			),
 			validation.Required.When(len(p.Drivers) == 0).Error("pools must contain devices or drivers"),
 		),
@@ -183,13 +183,8 @@ func (p PoolConfig) Validate() error {
 			&p.Drivers,
 			validation.Each(
 				validation.Required.Error("drivers must have a name"),
-				validation.Match(regexp.MustCompile(constants.Drivers.RegexValidName)).Error("driver names must only contain letters, numbers and selected symbols"),
+				validation.Match(regexp.MustCompile(constants.Drivers.ValidNameRegex)).Error("driver names must only contain letters, numbers and selected symbols"),
 			),
-		),
-		validation.Field(
-			&p.UID,
-			validation.When(!(p.UID == 0), validation.Max(constants.UID.Maximum)),
-			validation.When(!(p.UID == 0), validation.Min(constants.UID.Minimum)),
 		),
 	)
 }
@@ -218,11 +213,6 @@ func (c Config) Validate() error {
 			validation.Each(
 				validation.NotNil.Error("cannot be null"),
 			),
-		),
-		validation.Field(
-			&c.LogFile,
-			validation.Match(regexp.MustCompile(constants.Logging.RegexValidFile)).Error("must be a valid filepath"),
-			validation.Match(regexp.MustCompile(constants.Logging.RegexCorrectDir)).Error("must be in directory "+constants.Logging.Directory),
 		),
 		validation.Field(
 			&c.LogLevel,

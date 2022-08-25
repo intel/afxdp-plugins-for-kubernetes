@@ -76,12 +76,11 @@ func (n NetConfig) Validate() error {
 		validation.Field(
 			&n.Device,
 			validation.Required.Error("validate(): no device specified"),
-			validation.Match(regexp.MustCompile(constants.Devices.RegexValidName)).Error("device names must only contain letters, numbers and selected symbols"),
+			validation.Match(regexp.MustCompile(constants.Devices.ValidNameRegex)).Error("device names must only contain letters, numbers and selected symbols"),
 		),
 		validation.Field(
 			&n.LogFile,
-			validation.Match(regexp.MustCompile(constants.Logging.RegexValidFile)).Error("must be a valid filepath"),
-			validation.Match(regexp.MustCompile(constants.Logging.RegexCorrectDir)).Error("must be in directory "+constants.Logging.Directory),
+			validation.Match(regexp.MustCompile(constants.Logging.ValidFileRegex)).Error("must be a valid filepath"),
 		),
 		validation.Field(
 			&n.LogLevel,

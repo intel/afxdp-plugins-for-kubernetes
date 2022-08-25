@@ -1,5 +1,5 @@
 {
-	"mode": "cndp",
+	"mode": "cdq",
 	"logLevel": "debug",
 	"logFile": "/var/log/afxdp-k8s-plugins/cndp-dp-e2e.log",
 	"timeout": 30,

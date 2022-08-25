@@ -6,7 +6,7 @@ metadata:
 data:
   config.json: |
     {
-        "mode": "cndp",
+        "mode": "cdq",
         "logLevel": "debug",
         "logFile": "/var/log/afxdp-k8s-plugins/cndp-dp-e2e.log",
         "pools" : [
