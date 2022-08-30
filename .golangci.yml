@@ -9,3 +9,7 @@ issues:
   exclude-rules:
     - path: internal/cni/cni.go
       text: "NetConfig has no field or method"
+
+# TODO - temp workaround to allow merging of configFile.go. Remove when config and CDQ are merged
+    - path: internal/deviceplugin/configFile.go
+      text: "is unused"
