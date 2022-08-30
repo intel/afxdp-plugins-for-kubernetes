@@ -58,7 +58,7 @@ func TestArrayContains(t *testing.T) {
 	}
 }
 
-func TestRemove(t *testing.T) {
+func TestRemoveFromArray(t *testing.T) {
 	testCases := []struct {
 		rem      string
 		array    []string
@@ -91,11 +91,11 @@ func TestRemove(t *testing.T) {
 		},
 	}
 	for i, tc := range testCases {
-		assert.Equal(t, tc.expected, Remove(tc.array, tc.rem), "Should be equal: test case %d", i)
+		assert.Equal(t, tc.expected, RemoveFromArray(tc.array, tc.rem), "Should be equal: test case %d", i)
 	}
 }
 
-func TestPathExists(t *testing.T) {
+func TestFilePathExists(t *testing.T) {
 	testCases := []struct {
 		path     string
 		expected bool
@@ -117,7 +117,7 @@ func TestPathExists(t *testing.T) {
 			expected: true,
 		},
 		{
-			path:     "./../internal",
+			path:     "./../../internal",
 			expected: true,
 		},
 		{
@@ -126,12 +126,12 @@ func TestPathExists(t *testing.T) {
 		},
 	}
 	for i, tc := range testCases {
-		output, _ := PathExists(tc.path)
+		output, _ := FilePathExists(tc.path)
 		assert.Equal(t, tc.expected, output, "Should be equal: test case %d", i)
 	}
 }
 
-func TestContainsPrefix(t *testing.T) {
+func TestArrayContainsPrefix(t *testing.T) {
 	testCases := []struct {
 		str      string
 		array    []string
@@ -159,7 +159,7 @@ func TestContainsPrefix(t *testing.T) {
 		},
 	}
 	for i, tc := range testCases {
-		assert.Equal(t, tc.expected, ContainsPrefix(tc.array, tc.str), "Should be equal: test case %d", i)
+		assert.Equal(t, tc.expected, ArrayContainsPrefix(tc.array, tc.str), "Should be equal: test case %d", i)
 	}
 }
 

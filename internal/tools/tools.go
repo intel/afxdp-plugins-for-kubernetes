@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -35,9 +36,9 @@ func ArrayContains(array []string, str string) bool {
 }
 
 /*
-ContainsPrefix returns true if str is prefixed with any element of array.
+ArrayContainsPrefix returns true if str is prefixed with any element of array.
 */
-func ContainsPrefix(array []string, str string) bool {
+func ArrayContainsPrefix(array []string, str string) bool {
 	for _, s := range array {
 		if strings.HasPrefix(str, s) {
 			return true
@@ -47,9 +48,9 @@ func ContainsPrefix(array []string, str string) bool {
 }
 
 /*
-PathExists returns true if path is exists, false if non-existent.
+FilePathExists returns true if path exists, false if non-existent.
 */
-func PathExists(path string) (bool, error) {
+func FilePathExists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if err == nil {
 		return true, nil
@@ -61,9 +62,9 @@ func PathExists(path string) (bool, error) {
 }
 
 /*
-Remove returns array without the element rem if it is present.
+RemoveFromArray returns array without the element rem if it is present.
 */
-func Remove(array []string, rem string) []string {
+func RemoveFromArray(array []string, rem string) []string {
 	for i, elm := range array {
 		if elm == rem {
 			return append(array[:i], array[i+1:]...)
@@ -81,4 +82,24 @@ func PrettyString(v interface{}) (string, error) {
 		return "", err
 	}
 	return fmt.Sprint(string(b)), nil
+}
+
+/*
+KernelVersionInt takes a kernel version as a string and returns the integer value
+*/
+func KernelVersionInt(version string) (int64, error) { // example "5.4.0-89-generic"
+	stripped := strings.Split(version, "-")[0] // "5.4.0"
+	split := strings.Split(stripped, ".")      // [5 4 0]
+
+	padded := ""
+	for _, val := range split { // 000500040000
+		padded += fmt.Sprintf("%04s", val)
+	}
+
+	value, err := strconv.ParseInt(padded, 10, 64) // 500040000
+	if err != nil {
+		return -1, err
+	}
+
+	return value, nil
 }

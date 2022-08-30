@@ -22,7 +22,7 @@ import (
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
-	"github.com/intel/afxdp-plugins-for-kubernetes/tools"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	logging "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
@@ -125,7 +125,7 @@ func (c *Config) BuildPools() error {
 
 			if tools.ArrayContains(assignedInfs, device) {
 				logging.Warningf("Device " + device + " is already assigned to another pool, removing from " + pool.Name)
-				pool.Devices = tools.Remove(pool.Devices, device)
+				pool.Devices = tools.RemoveFromArray(pool.Devices, device)
 				continue
 			}
 
@@ -241,7 +241,7 @@ func deviceDiscovery(requiredDriver string) ([]string, error) {
 	}
 
 	for _, hostDevice := range hostDevices {
-		if tools.ContainsPrefix(constants.Devices.Prohibited, hostDevice.Name) {
+		if tools.ArrayContainsPrefix(constants.Devices.Prohibited, hostDevice.Name) {
 			logging.Debugf("%s is an excluded device, skipping", hostDevice.Name)
 			continue
 		}
