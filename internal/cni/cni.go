@@ -80,7 +80,7 @@ func (n NetConfig) Validate() error {
 		),
 		validation.Field(
 			&n.LogFile,
-			validation.Match(regexp.MustCompile(constants.Logging.ValidFileRegex)).Error("must be a valid filepath"),
+			validation.Match(regexp.MustCompile(constants.Logging.ValidFileRegex)).Error("must be a valid filename"),
 		),
 		validation.Field(
 			&n.LogLevel,
@@ -108,7 +108,7 @@ func loadConf(bytes []byte) (*NetConfig, error) {
 	}
 
 	if n.LogFile != "" {
-		fp, err := os.OpenFile(n.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		fp, err := os.OpenFile(constants.Logging.Directory+n.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 		if err != nil {
 			return nil, fmt.Errorf("loadConf(): cannot open logfile %s: %w", n.LogFile, err)
 		}
