@@ -186,6 +186,11 @@ func (p PoolConfig) Validate() error {
 				validation.Match(regexp.MustCompile(constants.Drivers.ValidNameRegex)).Error("driver names must only contain letters, numbers and selected symbols"),
 			),
 		),
+		validation.Field(
+			&p.UID,
+			validation.When(!(p.UID == 0), validation.Max(constants.UID.Maximum)),
+			validation.When(!(p.UID == 0), validation.Min(constants.UID.Minimum)),
+		),
 	)
 }
 
