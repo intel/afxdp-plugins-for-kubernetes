@@ -102,11 +102,11 @@ func (r *fakeHandler) GetDevicePci(interfaceName string) (string, error) {
 }
 
 /*
-GetAddresses takes a net.Interface and returns its IP addresses.
+IPAddresses takes a netdev name and returns its IP addresses
 In this fakeHandler it returns the IP of the fake netdev.
 */
-func (r *fakeHandler) GetIPAddresses(interfaceName net.Interface) ([]net.Addr, error) {
-	var addrs []net.Addr
+func (r *fakeHandler) GetIPAddresses(interfaceName string) ([]string, error) {
+	var addrs []string
 	return addrs, nil
 }
 

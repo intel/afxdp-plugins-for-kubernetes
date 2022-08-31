@@ -265,7 +265,7 @@ func deviceDiscovery(requiredDriver string) ([]string, error) {
 				continue
 			}
 
-			addrs, err := netHandler.GetIPAddresses(hostDevice)
+			addrs, err := netHandler.GetIPAddresses(hostDevice.Name)
 			if err != nil {
 				logging.Errorf("Error getting device IP: %v", err.Error())
 				return poolDevices, err

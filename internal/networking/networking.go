@@ -41,7 +41,7 @@ type Handler interface {
 	GetHostDevices() ([]net.Interface, error)
 	GetDeviceDriver(interfaceName string) (string, error)
 	GetDevicePci(interfaceName string) (string, error)
-	GetIPAddresses(interfaceName net.Interface) ([]net.Addr, error)
+	GetIPAddresses(interfaceName string) ([]string, error)
 	GetMacAddress(device string) (string, error)
 	CycleDevice(interfaceName string) error
 	SetQueueSize(interfaceName string, size string) error
@@ -80,10 +80,23 @@ func (r *handler) GetHostDevices() ([]net.Interface, error) {
 }
 
 /*
-GetAddresses takes a net.Interface and returns its IP addresses.
+IPAddresses takes a netdev name and returns its IP addresses
 */
-func (r *handler) GetIPAddresses(interfaceName net.Interface) ([]net.Addr, error) {
-	return interfaceName.Addrs()
+func (r *handler) GetIPAddresses(interfaceName string) ([]string, error) {
+	IPAddrs := []string{}
+	Addrs, err := net.InterfaceByName(interfaceName)
+	if err != nil {
+		return IPAddrs, err
+	}
+	add, err := Addrs.Addrs()
+	if err != nil {
+		logging.Errorf("Error with GetAddress")
+	}
+	for _, addr := range add {
+		IPAddrs = append(IPAddrs, addr.String())
+	}
+
+	return IPAddrs, nil
 }
 
 /*
