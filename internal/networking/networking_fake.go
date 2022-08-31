@@ -105,7 +105,7 @@ func (r *fakeHandler) GetDevicePci(interfaceName string) (string, error) {
 GetAddresses takes a net.Interface and returns its IP addresses.
 In this fakeHandler it returns the IP of the fake netdev.
 */
-func (r *fakeHandler) GetAddresses(interfaceName net.Interface) ([]net.Addr, error) {
+func (r *fakeHandler) GetIPAddresses(interfaceName net.Interface) ([]net.Addr, error) {
 	var addrs []net.Addr
 	return addrs, nil
 }
@@ -132,4 +132,65 @@ In this fake handler it does nothing.
 */
 func (r *fakeHandler) SetDefaultQueueSize(interfaceName string) error {
 	return nil
+}
+
+/*
+MacAddress takes a device name and returns the MAC-address.
+This function uses fake handler, its purpose is for unit-testing only.
+*/
+func (r *fakeHandler) GetMacAddress(device string) (string, error) {
+	return "", nil
+}
+
+/*
+NetDevExists takes a device name and verifies if device exists on host.
+This function uses fake handler, its purpose is for unit-testing only.
+*/
+func (r *fakeHandler) NetDevExists(device string) (bool, error) {
+	return true, nil
+}
+
+/*
+CreateCdqSubfunction takes the PCI address of a port and a subfunction number
+It creates that subfunction on top of that port and activates it
+In this fake handler it does nothing
+*/
+func (r *fakeHandler) CreateCdqSubfunction(parentPci string, sfnum string) error {
+	return nil
+}
+
+/*
+DeleteCdqSubfunction takes the port index of a subfunction, deactivates and deletes it
+In this fake handler it does nothing
+*/
+func (r *fakeHandler) DeleteCdqSubfunction(portIndex string) error {
+	return nil
+}
+
+/*
+IsCdqSubfunction takes a netdev name and returns true if is a CDQ subfunction
+In this fake handler it currently always returns true
+*/
+func (r *fakeHandler) IsCdqSubfunction(name string) (bool, error) {
+	return true, nil
+}
+
+/*
+GetCdqPortIndex takes a netdev name and returns the port index (pci/sfnum)
+Note this function only works on physical devices and CDQ subfunctions
+Other netdevs will return a "device not found by devlink" error
+In this fake handler it currently returns an empty string
+*/
+func (r *fakeHandler) GetCdqPortIndex(netdev string) (string, error) {
+	return "", nil
+}
+
+/*
+NumAvailableCdqSubfunctions takes the PCI of a physical port and returns how
+many unused CDQ subfunctions are available
+In this fake handler it currently returns 0
+*/
+func (r *fakeHandler) NumAvailableCdqSubfunctions(interfaceName string) (int, error) {
+
+	return 0, nil
 }

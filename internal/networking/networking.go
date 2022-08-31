@@ -16,6 +16,8 @@
 package networking
 
 import (
+	"errors"
+	"fmt"
 	logging "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
 	"net"
@@ -39,10 +41,17 @@ type Handler interface {
 	GetHostDevices() ([]net.Interface, error)
 	GetDeviceDriver(interfaceName string) (string, error)
 	GetDevicePci(interfaceName string) (string, error)
-	GetAddresses(interfaceName net.Interface) ([]net.Addr, error)
+	GetIPAddresses(interfaceName net.Interface) ([]net.Addr, error)
+	GetMacAddress(device string) (string, error)
 	CycleDevice(interfaceName string) error
 	SetQueueSize(interfaceName string, size string) error
 	SetDefaultQueueSize(interfaceName string) error
+	NetDevExists(device string) (bool, error)
+	CreateCdqSubfunction(parentPci string, sfnum string) error     // see cdq.go
+	DeleteCdqSubfunction(portIndex string) error                   // see cdq.go
+	IsCdqSubfunction(name string) (bool, error)                    // see cdq.go
+	NumAvailableCdqSubfunctions(interfaceName string) (int, error) // see cdq.go
+	GetCdqPortIndex(netdev string) (string, error)                 // see cdq.go
 }
 
 /*
@@ -73,7 +82,7 @@ func (r *handler) GetHostDevices() ([]net.Interface, error) {
 /*
 GetAddresses takes a net.Interface and returns its IP addresses.
 */
-func (r *handler) GetAddresses(interfaceName net.Interface) ([]net.Addr, error) {
+func (r *handler) GetIPAddresses(interfaceName net.Interface) ([]net.Addr, error) {
 	return interfaceName.Addrs()
 }
 
@@ -163,4 +172,35 @@ func (r *handler) SetDefaultQueueSize(interfaceName string) error {
 		return err
 	}
 	return nil
+}
+
+/*
+MacAddress takes a device name and returns the MAC-address.
+*/
+func (r *handler) GetMacAddress(device string) (string, error) {
+	hwAddr, err := net.InterfaceByName(device)
+	if err != nil {
+		return "", err
+	}
+	macAddr := hwAddr.HardwareAddr.String()
+	if true {
+		return macAddr, nil
+	}
+	err = errors.New("device name cannot be empty")
+	return macAddr, err
+
+}
+
+/*
+NetDevExists takes a device name and verifies if device exists on host.
+*/
+func (r *handler) NetDevExists(device string) (bool, error) {
+	_, err := netlink.LinkByName(device)
+	if err != nil {
+		if fmt.Sprint(err) == "Link not found" {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
