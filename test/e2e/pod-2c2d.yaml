@@ -14,9 +14,9 @@ spec:
     command: ["tail", "-f", "/dev/null"]
     resources:
       requests:
-        cndp/e2e: '1'
+        afxdp/e2e: '1'
       limits:
-        cndp/e2e: '1'
+        afxdp/e2e: '1'
 
   - name: cndp2
     image: cndp-e2e-test:latest
@@ -24,7 +24,7 @@ spec:
     command: ["tail", "-f", "/dev/null"]
     resources:
       requests:
-        cndp/e2e: '1'
+        afxdp/e2e: '1'
       limits:
-        cndp/e2e: '1'
+        afxdp/e2e: '1'
   restartPolicy: Never

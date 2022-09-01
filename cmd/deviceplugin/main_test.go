@@ -18,6 +18,7 @@ package main
 import (
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/deviceplugin"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -177,7 +178,7 @@ func TestIntVersion(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 
-			actualReturn, err := intVersion(tc.version)
+			actualReturn, err := tools.KernelVersionInt(tc.version)
 
 			assert.Equal(t, tc.expResult, actualReturn, "Returned value does not match expected value")
 

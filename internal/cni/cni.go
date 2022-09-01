@@ -108,7 +108,7 @@ func loadConf(bytes []byte) (*NetConfig, error) {
 	}
 
 	if n.LogFile != "" {
-		fp, err := os.OpenFile(constants.Logging.Directory+n.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		fp, err := os.OpenFile(constants.Logging.Directory+n.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, os.FileMode(constants.Logging.FilePermissions))
 		if err != nil {
 			return nil, fmt.Errorf("loadConf(): cannot open logfile %s: %w", n.LogFile, err)
 		}

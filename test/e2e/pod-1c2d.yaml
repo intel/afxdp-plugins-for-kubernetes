@@ -14,7 +14,7 @@ spec:
     command: ["tail", "-f", "/dev/null"]
     resources:
       requests:
-        cndp/e2e: '2'
+        afxdp/e2e: '2'
       limits:
-        cndp/e2e: '2'
+        afxdp/e2e: '2'
   restartPolicy: Never

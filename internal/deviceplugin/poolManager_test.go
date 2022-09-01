@@ -18,6 +18,7 @@ package deviceplugin
 import (
 	"context"
 	"encoding/json"
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/cndp"
 	"github.com/stretchr/testify/assert"
@@ -42,10 +43,10 @@ func TestAllocate(t *testing.T) {
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
 				{
-					Envs: map[string]string{"CNDP_DEVICES": "dev_1"},
+					Envs: map[string]string{constants.Devices.EnvVarList: "dev_1"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: "/tmp/cndp.sock",
+							ContainerPath: constants.Uds.PodPath,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -63,10 +64,10 @@ func TestAllocate(t *testing.T) {
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
 				{
-					Envs: map[string]string{"CNDP_DEVICES": "dev_1 dev_2 dev_3"},
+					Envs: map[string]string{constants.Devices.EnvVarList: "dev_1 dev_2 dev_3"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: "/tmp/cndp.sock",
+							ContainerPath: constants.Uds.PodPath,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -85,10 +86,10 @@ func TestAllocate(t *testing.T) {
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
 				{
-					Envs: map[string]string{"CNDP_DEVICES": "dev_1"},
+					Envs: map[string]string{constants.Devices.EnvVarList: "dev_1"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: "/tmp/cndp.sock",
+							ContainerPath: constants.Uds.PodPath,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -97,10 +98,10 @@ func TestAllocate(t *testing.T) {
 					Annotations: map[string]string{},
 				},
 				{
-					Envs: map[string]string{"CNDP_DEVICES": "dev_2"},
+					Envs: map[string]string{constants.Devices.EnvVarList: "dev_2"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: "/tmp/cndp.sock",
+							ContainerPath: constants.Uds.PodPath,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -119,10 +120,10 @@ func TestAllocate(t *testing.T) {
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
 				{
-					Envs: map[string]string{"CNDP_DEVICES": "dev_1 dev_2 dev_3"},
+					Envs: map[string]string{constants.Devices.EnvVarList: "dev_1 dev_2 dev_3"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: "/tmp/cndp.sock",
+							ContainerPath: constants.Uds.PodPath,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -131,10 +132,10 @@ func TestAllocate(t *testing.T) {
 					Annotations: map[string]string{},
 				},
 				{
-					Envs: map[string]string{"CNDP_DEVICES": "dev_4 dev_5 dev_6"},
+					Envs: map[string]string{constants.Devices.EnvVarList: "dev_4 dev_5 dev_6"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: "/tmp/cndp.sock",
+							ContainerPath: constants.Uds.PodPath,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -152,10 +153,10 @@ func TestAllocate(t *testing.T) {
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
 				{
-					Envs: map[string]string{"CNDP_DEVICES": ""},
+					Envs: map[string]string{constants.Devices.EnvVarList: ""},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: "/tmp/cndp.sock",
+							ContainerPath: constants.Uds.PodPath,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},

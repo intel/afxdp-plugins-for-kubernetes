@@ -8,7 +8,7 @@ data:
     {
         "mode": "cndp",
         "logLevel": "debug",
-        "logFile": "/var/log/afxdp-k8s-plugins/cndp-dp-e2e.log",
+        "logFile": "cndp-dp-e2e.log",
         "pools" : [
             {
                 "name" : "e2e",

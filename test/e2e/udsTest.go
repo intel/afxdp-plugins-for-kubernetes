@@ -16,6 +16,7 @@
 package main
 
 import (
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/uds"
 	"os"
 	"strconv"
@@ -24,10 +25,6 @@ import (
 )
 
 const (
-	udsProtocol     = "unixpacket"
-	udsPath         = "/tmp/cndp.sock"
-	udsMsgBufSize   = 64
-	udsCtlBufSize   = 4
 	udsIdleTimeout  = 0 * time.Second
 	requestDelay    = 100 * time.Millisecond // not required but keeps things in nice order when DP and this test app are both printing to screen
 	timeoutDuration = 40                     // For UDS timeout test - timeoutDuration must exceed timeout value set in config.json.
@@ -50,7 +47,7 @@ func main() {
 	}
 
 	//Get environment variable device values
-	devicesVar, exists := os.LookupEnv("CNDP_DEVICES")
+	devicesVar, exists := os.LookupEnv(constants.Devices.EnvVarList)
 	if !exists {
 		println("Test App Error: Devices env var does not exist")
 		os.Exit(1)
@@ -66,7 +63,7 @@ func main() {
 	udsHandler = uds.NewHandler()
 
 	// init
-	if err := udsHandler.Init(udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, udsIdleTimeout, ""); err != nil {
+	if err := udsHandler.Init(constants.Uds.PodPath, constants.Uds.Protocol, constants.Uds.MsgBufSize, constants.Uds.CtlBufSize, udsIdleTimeout, ""); err != nil {
 		println("Test App Error: Error Initialising UDS server: ", err)
 		os.Exit(1)
 	}

@@ -1,7 +1,7 @@
 {
 	"mode": "cdq",
 	"logLevel": "debug",
-	"logFile": "/var/log/afxdp-k8s-plugins/cndp-dp-e2e.log",
+	"logFile": "cndp-dp-e2e.log",
 	"timeout": 30,
 	"cndpFuzz": false,
 	"pools" : [

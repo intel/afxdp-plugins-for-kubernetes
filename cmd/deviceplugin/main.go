@@ -18,28 +18,18 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/deviceplugin"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/logformats"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	logging "github.com/sirupsen/logrus"
 	"io"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"os"
 	"os/signal"
-	"strconv"
-	"strings"
 	"syscall"
-)
-
-const (
-	exitNormal        = 0
-	exitConfigError   = 1
-	exitLogError      = 2
-	exitHostError     = 3
-	exitPoolError     = 4
-	defaultConfigFile = "./config.json"
-	devicePrefix      = "cndp"
 )
 
 type devicePlugin struct {
@@ -48,37 +38,37 @@ type devicePlugin struct {
 
 func main() {
 	var configFile string
-	flag.StringVar(&configFile, "config", defaultConfigFile, "Location of the device plugin configuration file")
+	flag.StringVar(&configFile, "config", constants.Plugins.DevicePlugin.DefaultConfigFile, "Location of the device plugin configuration file")
 	flag.Parse()
 	logging.SetReportCaller(true)
 	logging.SetFormatter(logformats.Default)
 
-	// config
+	// overall config
 	cfg, err := deviceplugin.GetConfig(configFile, networking.NewHandler())
 	if err != nil {
 		logging.Errorf("Error getting device plugin config: %v", err)
-		exit(exitConfigError)
+		exit(constants.Plugins.DevicePlugin.ExitConfigError)
 	}
 
 	// logging
 	if err := configureLogging(cfg); err != nil {
 		logging.Errorf("Error configuring logging: %v", err)
-		exit(exitLogError)
+		exit(constants.Plugins.DevicePlugin.ExitLogError)
 	}
 
 	logging.Infof("Starting AF_XDP Device Plugin")
 	logging.Infof("Device Plugin mode: %s", cfg.Mode)
 
-	// requirements
+	// host requirements
 	logging.Infof("Checking if host meets requriements")
 	hostMeetsRequirements, err := checkHost(host.NewHandler(), cfg)
 	if err != nil {
 		logging.Errorf("Error checking host: %v", err)
-		exit(exitHostError)
+		exit(constants.Plugins.DevicePlugin.ExitHostError)
 	}
 	if !hostMeetsRequirements {
 		logging.Infof("Host does not meet requriements")
-		exit(exitNormal)
+		exit(constants.Plugins.DevicePlugin.ExitNormal)
 	}
 	logging.Infof("Host meets requriements")
 
@@ -86,7 +76,7 @@ func main() {
 	logging.Infof("Building device pools")
 	if err := cfg.BuildPools(); err != nil {
 		logging.Warningf("Error building device pools: %v", err)
-		exit(exitPoolError)
+		exit(constants.Plugins.DevicePlugin.ExitPoolError)
 	}
 
 	dp := devicePlugin{
@@ -98,11 +88,11 @@ func main() {
 			Name:          poolConfig.Name,
 			Mode:          cfg.Mode,
 			Devices:       make(map[string]*pluginapi.Device),
-			DpAPISocket:   pluginapi.DevicePluginPath + devicePrefix + "-" + poolConfig.Name + ".sock",
-			DpAPIEndpoint: devicePrefix + "-" + poolConfig.Name + ".sock",
+			DpAPISocket:   pluginapi.DevicePluginPath + constants.Plugins.DevicePlugin.DevicePrefix + "-" + poolConfig.Name + ".sock",
+			DpAPIEndpoint: constants.Plugins.DevicePlugin.DevicePrefix + "-" + poolConfig.Name + ".sock",
 			UpdateSignal:  make(chan bool),
 			Timeout:       cfg.UdsTimeout,
-			DevicePrefix:  devicePrefix,
+			DevicePrefix:  constants.Plugins.DevicePlugin.DevicePrefix,
 			CndpFuzzTest:  cfg.CndpFuzzing,
 		}
 
@@ -133,7 +123,7 @@ func configureLogging(cfg deviceplugin.Config) error {
 
 	if cfg.LogFile != "" {
 		logging.Infof("Setting log file: %s", cfg.LogFile)
-		fp, err := os.OpenFile(cfg.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, cfg.LogFilePermission)
+		fp, err := os.OpenFile(constants.Logging.Directory+cfg.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, cfg.LogFilePermission)
 		if err != nil {
 			logging.Errorf("Error setting log file: %v", err)
 			return err
@@ -169,14 +159,14 @@ func checkHost(host host.Handler, cfg deviceplugin.Config) (bool, error) {
 
 	}
 
-	linuxInt, err := intVersion(linuxVersion)
+	linuxInt, err := tools.KernelVersionInt(linuxVersion)
 	if err != nil {
 		err := fmt.Errorf("Error converting actual kernel version to int: %v", err)
 		return false, err
 
 	}
 
-	minLinuxInt, err := intVersion(cfg.MinLinuxVersion)
+	minLinuxInt, err := tools.KernelVersionInt(cfg.MinLinuxVersion)
 	if err != nil {
 		err := fmt.Errorf("Error converting minimum kernel version to int: %v", err)
 		return false, err
@@ -184,7 +174,7 @@ func checkHost(host host.Handler, cfg deviceplugin.Config) (bool, error) {
 	}
 
 	if linuxInt < minLinuxInt {
-		logging.Warningf("Kernel version %v is below minimum requirement %v", linuxVersion, cfg.MinLinuxVersion)
+		logging.Warningf("Kernel version %v is below minimum requirement %v", linuxVersion, constants.Afxdp.MinumumKernel)
 		return false, nil
 	}
 	logging.Debugf("Kernel version: %v meets minimum requirements", linuxVersion)
@@ -224,23 +214,6 @@ func checkHost(host host.Handler, cfg deviceplugin.Config) (bool, error) {
 	}
 
 	return true, nil
-}
-
-func intVersion(version string) (int64, error) { // example "5.4.0-89-generic"
-	stripped := strings.Split(version, "-")[0] // "5.4.0"
-	split := strings.Split(stripped, ".")      // [5 4 0]
-
-	padded := ""
-	for _, val := range split { // 000500040000
-		padded += fmt.Sprintf("%04s", val)
-	}
-
-	value, err := strconv.ParseInt(padded, 10, 64) // 500040000
-	if err != nil {
-		return -1, err
-	}
-
-	return value, nil
 }
 
 func exit(code int) {

@@ -18,6 +18,7 @@ package deviceplugin
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/cndp"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
@@ -31,10 +32,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-)
-
-const (
-	envVarDevs = "CNDP_DEVICES"
 )
 
 /*
@@ -186,7 +183,7 @@ func (pm *PoolManager) allocateCndp(ctx context.Context,
 
 		cresp.Mounts = append(cresp.Mounts, &pluginapi.Mount{
 			HostPath:      udsPath,
-			ContainerPath: "/tmp/cndp.sock",
+			ContainerPath: constants.Uds.PodPath,
 			ReadOnly:      false,
 		})
 
@@ -202,7 +199,7 @@ func (pm *PoolManager) allocateCndp(ctx context.Context,
 
 			cndpServer.AddDevice(dev, fd)
 		}
-		envs[envVarDevs] = strings.Join(crqt.DevicesIDs, " ")
+		envs[constants.Devices.EnvVarList] = strings.Join(crqt.DevicesIDs, " ")
 		envsJSON, err := json.MarshalIndent(envs, "", " ")
 		if err != nil {
 			logging.Errorf("error while marshalling envs: %v", err)
