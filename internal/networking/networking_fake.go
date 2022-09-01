@@ -59,7 +59,7 @@ func (r *fakeHandler) SetHostDevices(interfaceMap map[string][]string) {
 
 	for driver, interfaceNames := range interfaceMap {
 		for _, name := range interfaceNames {
-			netDev, _ := newPrimaryDevice(name, driver, "1234", "1234",r)
+			netDev, _ := newPrimaryDevice(name, driver, "1234", "1234", r)
 			interfaceList[name] = netDev
 		}
 	}

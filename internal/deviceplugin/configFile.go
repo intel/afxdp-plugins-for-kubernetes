@@ -89,6 +89,7 @@ type configFile_Pool struct {
 	UdsTimeout              int                  `json:"UdsTimeout"`
 	UdsFuzz                 bool                 `json:"UdsFuzz"`
 	RequiresUnprivilegedBpf bool                 `json:"RequiresUnprivilegedBpf"`
+	UID                     int                  `json:"uid"`
 }
 
 type configFile struct {
@@ -192,13 +193,11 @@ func (c configFile_Pool) Validate() error {
 			is.Alphanumeric.Error(poolValidlNameError),
 			validation.Length(constants.Pools.ValidNameMin, constants.Pools.ValidNameMax).Error(poolNameLengthError),
 		),
-
 		validation.Field(
 			&c.Mode,
 			validation.Required.Error(poolModeRequiredError),
 			validation.In(iModes...).Error(poolModeMustBeError+fmt.Sprintf("%v", iModes)),
 		),
-
 		validation.Field(
 			&c.Drivers,
 			validation.Required.When(len(c.Devices) == 0 && len(c.Nodes) == 0).Error(poolMustHaveDevsError),
@@ -207,7 +206,6 @@ func (c configFile_Pool) Validate() error {
 			&c.Devices,
 			validation.Required.When(len(c.Drivers) == 0 && len(c.Nodes) == 0).Error(poolMustHaveDevsError),
 		),
-
 		validation.Field(
 			&c.UdsTimeout,
 			validation.When(
@@ -215,6 +213,11 @@ func (c configFile_Pool) Validate() error {
 				validation.Min(constants.Uds.MinTimeout).Error(poolUdsTimeoutError),
 				validation.Max(constants.Uds.MaxTimeout).Error(poolUdsTimeoutError),
 			),
+		),
+		validation.Field(
+			&c.UID,
+			validation.When(!(c.UID == 0), validation.Max(constants.UID.Maximum)),
+			validation.When(!(c.UID == 0), validation.Min(constants.UID.Minimum)),
 		),
 	)
 }

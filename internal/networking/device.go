@@ -78,10 +78,16 @@ func (d *Device) AssignCdqSecondaries(limit int) ([]*Device, error) {
 	}
 
 	if d.secondaries == nil {
-		numSF, err := d.netHandler.NumAvailableCdqSubfunctions(d.name)
+		pci, err := d.Pci()
 		if err != nil {
-			return nil, fmt.Errorf("Error finding the number if available subfunctions on device %s: %v", d.name, err)
+			return nil, fmt.Errorf("Error getting PCI address of device %s: %v", d.name, err)
 		}
+
+		numSF, err := d.netHandler.NumAvailableCdqSubfunctions(pci)
+		if err != nil {
+			return nil, fmt.Errorf("Error finding the number of available subfunctions on device %s: %v", d.name, err)
+		}
+
 		for i := 1; i <= numSF; i++ {
 			newSF, err := newSecondaryDevice(d.name+"sf"+strconv.Itoa(i), d)
 			if err != nil {
@@ -196,6 +202,14 @@ func (d *Device) Ips() ([]string, error) {
 	}
 
 	return ips, nil
+}
+
+/*
+Primary returns a pointer to this device's primary device
+Primary devices will return a pointer to themselves
+*/
+func (d *Device) Primary() *Device {
+	return d.primary
 }
 
 /*
