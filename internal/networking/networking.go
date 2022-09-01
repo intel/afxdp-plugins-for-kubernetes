@@ -38,7 +38,7 @@ The interface exists for testing purposes, allowing unit tests to test
 against a fake API.
 */
 type Handler interface {
-	GetHostDevices() ([]net.Interface, error)
+	GetHostDevices() (map[string]*Device, error)
 	GetDeviceDriver(interfaceName string) (string, error)
 	GetDevicePci(interfaceName string) (string, error)
 	GetIPAddresses(interfaceName string) ([]string, error)
@@ -67,16 +67,37 @@ func NewHandler() Handler {
 }
 
 /*
-GetHostDevices returns a list of net.Interface, representing the devices
-on the host.
+GetHostDevices returns information relating to host network devices.
+Device information is initialised and returned as a map of devices.
 */
-func (r *handler) GetHostDevices() ([]net.Interface, error) {
+func (r *handler) GetHostDevices() (map[string]*Device, error) {
+	devices := make(map[string]*Device)
+
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		logging.Errorf("Error getting host devices: %v", err)
-		return interfaces, err
+		return devices, err
 	}
-	return interfaces, nil
+	for _, intf := range interfaces {
+		pciAdd, err := r.GetDevicePci(intf.Name)
+		if err != nil {
+			return devices, err
+		}
+		driver, err := r.GetDeviceDriver(intf.Name)
+		if err != nil {
+			return devices, err
+		}
+		macAddr, err := r.GetMacAddress(intf.Name)
+		if err != nil {
+			return devices, err
+		}
+		newDev, err := newPrimaryDevice(intf.Name, driver, pciAdd, macAddr, r)
+		if err != nil {
+			return devices, err
+		}
+		devices[intf.Name] = newDev
+	}
+	return devices, nil
 }
 
 /*

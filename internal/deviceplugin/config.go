@@ -246,40 +246,40 @@ func deviceDiscovery(requiredDriver string) ([]string, error) {
 	}
 
 	for _, hostDevice := range hostDevices {
-		if tools.ArrayContainsPrefix(constants.Devices.Prohibited, hostDevice.Name) {
-			logging.Debugf("%s is an excluded device, skipping", hostDevice.Name)
+		if tools.ArrayContainsPrefix(constants.Devices.Prohibited, hostDevice.Name()) {
+			logging.Debugf("%s is an excluded device, skipping", hostDevice.Name())
 			continue
 		}
 
-		deviceDriver, err := netHandler.GetDeviceDriver(hostDevice.Name)
+		deviceDriver, err := netHandler.GetDeviceDriver(hostDevice.Name())
 		if err != nil {
 			logging.Errorf("Error getting driver name: %v", err.Error())
 			return poolDevices, err
 		}
 
 		if deviceDriver == requiredDriver {
-			logging.Debugf("Device %s is type %s", hostDevice.Name, requiredDriver)
+			logging.Debugf("Device %s is type %s", hostDevice.Name(), requiredDriver)
 
-			if tools.ArrayContains(assignedInfs, hostDevice.Name) {
-				logging.Infof("Device %s is already assigned to a pool, skipping", hostDevice.Name)
+			if tools.ArrayContains(assignedInfs, hostDevice.Name()) {
+				logging.Infof("Device %s is already assigned to a pool, skipping", hostDevice.Name())
 				continue
 			}
 
-			addrs, err := netHandler.GetIPAddresses(hostDevice.Name)
+			addrs, err := netHandler.GetIPAddresses(hostDevice.Name())
 			if err != nil {
 				logging.Errorf("Error getting device IP: %v", err.Error())
 				return poolDevices, err
 			}
 
 			if len(addrs) > 0 {
-				logging.Infof("Device %s has an assigned IP address, skipping", hostDevice.Name)
+				logging.Infof("Device %s has an assigned IP address, skipping", hostDevice.Name())
 				continue
 			}
 
-			poolDevices = append(poolDevices, hostDevice.Name)
-			logging.Debugf("Device %s appended to the device list", hostDevice.Name)
+			poolDevices = append(poolDevices, hostDevice.Name())
+			logging.Debugf("Device %s appended to the device list", hostDevice.Name())
 		} else {
-			logging.Debugf("%s has the wrong driver type: %s", hostDevice.Name, deviceDriver)
+			logging.Debugf("%s has the wrong driver type: %s", hostDevice.Name(), deviceDriver)
 		}
 
 	}
