@@ -20,6 +20,8 @@ import (
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	"strconv"
+	"strings"
+	logging "github.com/sirupsen/logrus"
 )
 
 /*
@@ -111,6 +113,48 @@ func (d *Device) AssignCdqSecondaries(limit int) ([]*Device, error) {
 	}
 
 	return subFunctions, nil
+}
+
+/*
+ActivateCdqSubfunction converts our device object in code into an actual CDQ subfunction on the host
+*/
+func (d *Device) ActivateCdqSubfunction() error {
+	if d.IsPrimary() {
+		return fmt.Errorf("Cannot activate CDQ subfunction %s. This is a primary device $s", d.name)
+	}
+
+	if !tools.ArrayContains(constants.Drivers.Cdq, d.driver) {
+		return fmt.Errorf("Cannot activate CDQ subfunction %s. Driver %s is not CDQ compatible", d.name, d.driver)
+	}
+
+	if d.mode != "cdq" {
+		return fmt.Errorf("Cannot activate CDQ subfunction %s. Device is not in CDQ mode $s", d.name)
+	}
+
+	exists, err := d.netHandler.NetDevExists(d.name)
+	if err != nil {
+		logging.Errorf("Error determining if subfunction %s already exists: %v", d.name, err)
+		exists = false
+	}
+
+	if exists {
+		logging.Warningf("Subfunction %s already exists", d.name)
+		return nil
+	}
+
+	pci, err := d.primary.Pci()
+	if err != nil {
+		return fmt.Errorf("Error getting primary device PCI while activating subfunction %s", d.name)
+	}
+
+	sfNum := strings.Split(d.name, "sf")[1]
+
+	err = d.netHandler.CreateCdqSubfunction(pci, sfNum)
+	if err != nil {
+		return fmt.Errorf("Error creating CDQ subfunction %s: %v", d.name, err)
+	}
+
+	return nil
 }
 
 /*
