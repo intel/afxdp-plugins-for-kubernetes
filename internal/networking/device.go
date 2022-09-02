@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
+	logging "github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
-	logging "github.com/sirupsen/logrus"
 )
 
 /*
@@ -37,6 +37,21 @@ type Device struct {
 	primary       *Device
 	secondaries   []*Device
 	netHandler    Handler
+}
+
+/*
+PublicDevice is a representation of Device above, but with public fields
+This object has no functionality, methods or uses other than debug logging
+and writing the device to a JSON file.
+*/
+type PublicDevice struct {
+	Name          string
+	Mode          string
+	Driver        string
+	Pci           string
+	MacAddress    string
+	FullyAssigned bool
+	Primary       *PublicDevice
 }
 
 /*
@@ -354,6 +369,24 @@ func (d *Device) Exists() (bool, error) {
 	}
 
 	return deviceExists, nil
+}
+
+/*
+Public returns a representation of Device, but with public fields
+To be used in debug logging and writing the device to a JSON file.
+*/
+func (d *Device) Public() PublicDevice {
+	return PublicDevice{
+		Name:          d.name,
+		Mode:          d.mode,
+		Driver:        d.driver,
+		Pci:           d.pci,
+		MacAddress:    d.macAddress,
+		FullyAssigned: d.fullyAssigned,
+		Primary: &PublicDevice{
+			Name: d.primary.Name(),
+		},
+	}
 }
 
 /*
