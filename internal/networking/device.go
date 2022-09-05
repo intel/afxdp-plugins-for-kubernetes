@@ -330,34 +330,6 @@ func (d *Device) UnassignedSecondaries() int {
 }
 
 /*
-Print returns a string representation of the device, since all device fields are private
-It is used mainly for debugging purposes
-*/
-func (d Device) Print() string {
-	secondaries := ""
-	for _, secondary := range d.secondaries {
-		secondaries = secondaries + ", " + secondary.Name()
-	}
-
-	ips, err := d.Ips()
-	if err != nil {
-		ips = []string{"error"}
-	}
-
-	return fmt.Sprintf(`{
-  name: %v,          
-  mode: %v,          
-  driver: %v,        
-  pci: %v,           
-  macAddress: %v,    
-  ipAddresses: %v,
-  fullyAssigned: %v,
-  primary: %v,
-  secondaries: %v
-}`, d.name, d.mode, d.driver, d.pci, d.macAddress, ips, d.fullyAssigned, d.primary.Name(), secondaries)
-}
-
-/*
 Exists returns true if the device exists on the host (if the device has been created)
 It uses the netHandler NetDevExists function. This "exists" status is not stored, as
 secondary devices tend to be created and deleted frequently. We always check.
@@ -376,6 +348,21 @@ Public returns a representation of Device, but with public fields
 To be used in debug logging and writing the device to a JSON file.
 */
 func (d *Device) Public() PublicDevice {
+	primaryDriver, err := d.primary.Driver()
+	if err != nil {
+		logging.Errorf("Error getting driver of primary device %s", d.primary.Name())
+	}
+
+	primaryPci, _ := d.primary.Pci()
+	if err != nil {
+		logging.Errorf("Error getting PCI of primary device %s", d.primary.Name())
+	}
+
+	primaryMac, _ := d.primary.Mac()
+	if err != nil {
+		logging.Errorf("Error getting mac address of primary device %s", d.primary.Name())
+	}
+
 	return PublicDevice{
 		Name:          d.name,
 		Mode:          d.mode,
@@ -384,7 +371,12 @@ func (d *Device) Public() PublicDevice {
 		MacAddress:    d.macAddress,
 		FullyAssigned: d.fullyAssigned,
 		Primary: &PublicDevice{
-			Name: d.primary.Name(),
+			Name:          d.primary.Name(),
+			Mode:          d.primary.Mode(),
+			Driver:        primaryDriver,
+			Pci:           primaryPci,
+			MacAddress:    primaryMac,
+			FullyAssigned: d.primary.IsFullyAssigned(),
 		},
 	}
 }
@@ -443,4 +435,24 @@ func newSecondaryDevice(name string, primary *Device) (*Device, error) {
 	}
 
 	return dev, nil
+}
+
+/*
+CreateTestDevice returns a device object and is intended for unit testing purposes only
+This function should not be used outside of testing
+Devices should always be created via a net handler
+*/
+func CreateTestDevice(name string, driver string, pci string, macAddress string,
+	netHandler Handler) *Device {
+
+	dev := &Device{
+		name:       name,
+		driver:     driver,
+		pci:        pci,
+		macAddress: macAddress,
+		netHandler: netHandler,
+	}
+	dev.primary = dev
+
+	return dev
 }
