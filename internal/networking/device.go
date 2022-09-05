@@ -348,21 +348,6 @@ Public returns a representation of Device, but with public fields
 To be used in debug logging and writing the device to a JSON file.
 */
 func (d *Device) Public() PublicDevice {
-	primaryDriver, err := d.primary.Driver()
-	if err != nil {
-		logging.Errorf("Error getting driver of primary device %s", d.primary.Name())
-	}
-
-	primaryPci, _ := d.primary.Pci()
-	if err != nil {
-		logging.Errorf("Error getting PCI of primary device %s", d.primary.Name())
-	}
-
-	primaryMac, _ := d.primary.Mac()
-	if err != nil {
-		logging.Errorf("Error getting mac address of primary device %s", d.primary.Name())
-	}
-
 	return PublicDevice{
 		Name:          d.name,
 		Mode:          d.mode,
@@ -371,12 +356,12 @@ func (d *Device) Public() PublicDevice {
 		MacAddress:    d.macAddress,
 		FullyAssigned: d.fullyAssigned,
 		Primary: &PublicDevice{
-			Name:          d.primary.Name(),
-			Mode:          d.primary.Mode(),
-			Driver:        primaryDriver,
-			Pci:           primaryPci,
-			MacAddress:    primaryMac,
-			FullyAssigned: d.primary.IsFullyAssigned(),
+			Name:          d.primary.name,
+			Mode:          d.primary.mode,
+			Driver:        d.primary.driver,
+			Pci:           d.primary.pci,
+			MacAddress:    d.primary.macAddress,
+			FullyAssigned: d.primary.fullyAssigned,
 		},
 	}
 }
