@@ -174,6 +174,14 @@ func (r *fakeHandler) NumAvailableCdqSubfunctions(interfaceName string) (int, er
 	return 0, nil
 }
 
+func (r *fakeHandler) GetDeviceByMAC(mac string) (string, error) {
+	return "", nil
+}
+
+func (r *fakeHandler) GetDeviceByPCI(pci string) (string, error) {
+	return "", nil
+}
+
 func (r *fakeHandler) IsPhysicalPort(name string) (bool, error) {
 	return false, nil
 }

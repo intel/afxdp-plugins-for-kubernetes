@@ -32,6 +32,7 @@ var (
 	sysClassNet = "/sys/class/net"
 	driverLink  = "device/driver"
 	pciLink     = "device"
+	pciDir      = "/sys/bus/pci/devices"
 )
 
 /*
@@ -45,6 +46,8 @@ type Handler interface {
 	GetDevicePci(interfaceName string) (string, error)
 	GetIPAddresses(interfaceName string) ([]string, error)
 	GetMacAddress(device string) (string, error)
+	GetDeviceByMAC(mac string) (string, error)
+	GetDeviceByPCI(pci string) (string, error)
 	CycleDevice(interfaceName string) error
 	SetQueueSize(interfaceName string, size string) error
 	SetDefaultQueueSize(interfaceName string) error
@@ -240,6 +243,49 @@ func (r *handler) NetDevExists(device string) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+/*
+GetDeviceByMAC returns the device name assiciated with a MAC address. Returns "" if it does not exist.
+*/
+func (r *handler) GetDeviceByMAC(mac string) (string, error) {
+	devList, err := netlink.LinkList()
+	if err != nil {
+		logging.Errorf("Unable to list devices")
+		return "", err
+	}
+
+	for _, dev := range devList {
+		if dev.Attrs().HardwareAddr.String() == mac {
+			return dev.Attrs().Name, nil
+		}
+	}
+	logging.Warnf("Device with MAC address %s not found", mac)
+	return "", nil
+}
+
+/*
+GetDeviceByPCI returns the device name associated with a PCI address. Returns "" if it does not exist.
+*/
+func (r *handler) GetDeviceByPCI(pci string) (string, error) {
+	path := filepath.Join(pciDir, pci, "/net/")
+	exists, err := tools.FilePathExists(path)
+	if !exists || err != nil {
+		logging.Errorf("Directory %s does not exist", path)
+		return "", err
+	}
+
+	list, err := os.ReadDir(path)
+	if err != nil {
+		logging.Errorf("Unable to read directory names")
+		return "", err
+	}
+	if len(list) <= 0 {
+		logging.Warnf("Unable to get device name; no subdirectories found")
+		return "", nil
+	}
+
+	return list[0].Name(), nil
 }
 
 /*
