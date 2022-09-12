@@ -29,11 +29,13 @@ import (
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/logformats"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	logging "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
 	"os"
 	"regexp"
 	"runtime"
+	"strings"
 )
 
 var bpfHandler = bpf.NewHandler()
@@ -135,11 +137,13 @@ func loadConf(bytes []byte) (*NetConfig, error) {
 }
 
 /*
-CmdAdd is called by kublet during pod create
+CmdAdd is called by kubelet during pod create
 */
 func CmdAdd(args *skel.CmdArgs) error {
-	netHandler := networking.NewHandler()
 	host := host.NewHandler()
+	var result *current.Result
+	var deviceDetails *networking.Device
+	netHandler := networking.NewHandler()
 
 	cfg, err := loadConf(args.StdinData)
 	if err != nil {
@@ -169,26 +173,67 @@ func CmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 
-	if cfg.Queues != "" {
-		logging.Debugf("cmdAdd(): checking host for Ethtool")
-		ethInstalled, version, err := host.HasEthtool()
+	logging.Infof("cmdAdd(): getting default network namespace")
+	defaultNs, err := ns.GetCurrentNS()
+	if err != nil {
+		err = fmt.Errorf("cmdDel(): failed to open default netns %q: %w", args.Netns, err)
+		logging.Errorf(err.Error())
+
+		return err
+	}
+	defer defaultNs.Close()
+
+	logging.Infof("cmdAdd(): checking if IPAM is required")
+	if cfg.IPAM.Type != "" {
+		result, err = getIPAM(args, cfg, device, defaultNs)
 		if err != nil {
-			logging.Errorf("cmdAdd(): error checking if Ethtool is present on host: %v", err)
+			err = fmt.Errorf("cmdAdd(): error configuring IPAM on device %q: %w", device.Attrs().Name, err)
+			logging.Errorf(err.Error())
+
+			return err
+		}
+	}
+
+	deviceFile, err := tools.FilePathExists(constants.DeviceFile.DeviceWriteFileDir + constants.DeviceFile.DeviceWriteFile)
+	if err != nil {
+		logging.Errorf("cmdAdd(): Failed to locate deviceWriteFile: %v", err)
+	}
+
+	if deviceFile {
+		deviceDetails, err = netHandler.GetDeviceFromFile(cfg.Device, constants.DeviceFile.DeviceWriteFileDir+constants.DeviceFile.DeviceWriteFile)
+		if err != nil {
+			logging.Errorf("cmdAdd():- Failed to extract device map values: %v", err)
 			return err
 		}
 
-		if ethInstalled {
-			logging.Debugf("cmdAdd(): Ethtool found on host:")
-			logging.Debugf("\t" + version)
+		ethInstalled, version, err := host.HasEthtool()
+		if err != nil {
+			logging.Warningf("cmdAdd(): failed to discover ethtool on host: %v", err)
+		}
 
-			logging.Infof("cmdAdd(): setting queue size %s for device %s ", cfg.Queues, device.Attrs().Name)
-			if err := netHandler.SetQueueSize(device.Attrs().Name, cfg.Queues); err != nil {
-				err = fmt.Errorf("cmdAdd(): failed to set queue size: %w", err)
-				logging.Errorf(err.Error())
-				return err
+		if ethInstalled {
+			logging.Debugf("cmdAdd(): ethtool found on host")
+			logging.Debugf("\t" + version)
+			if deviceDetails != nil {
+				if deviceDetails.GetEthtoolFilters() != nil {
+					if deviceDetails.IsPrimary() && !deviceDetails.IsSecondary() {
+
+						logging.Infof("cmdAdd(): applying ethtool filters on device: %s", cfg.Device)
+						ethtoolCommand := deviceDetails.GetEthtoolFilters()
+						iPAddr, err := extractIP(result)
+						if err != nil {
+							logging.Errorf("cmdAdd(): Error extracting IP from result interface %v", err)
+							return err
+						}
+						err = netHandler.SetEthtool(ethtoolCommand, cfg.Device, iPAddr)
+						if err != nil {
+							logging.Errorf("cmdAdd(): unable to executed ethtool filter: %v", err)
+							return err
+						}
+					}
+					logging.Debugf("cmdAdd(): ethtool filters have not been specified")
+				}
 			}
-		} else {
-			logging.Warningf("cmdAdd(): Ethtool not found on host, queues will not be set")
 		}
 	}
 
@@ -216,27 +261,29 @@ func CmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 
-	logging.Infof("cmdAdd(): checking if IPAM is required")
 	if cfg.IPAM.Type != "" {
-		result, err := configureIPAM(args, cfg, device, containerNs)
+		result, err = setIPAM(cfg, result, device, containerNs)
 		if err != nil {
-			err = fmt.Errorf("cmdAdd(): error configuring IPAM on device %q: %w", device.Attrs().Name, err)
+			err = fmt.Errorf("cmdAdd(): error configuring IPAM on device netns %q: %w", device.Attrs().Name, err)
 			logging.Errorf(err.Error())
 
 			return err
 		}
-		return types.PrintResult(result, cfg.CNIVersion)
 	}
 
-	return printLink(device, cfg.CNIVersion, containerNs)
+	if result == nil {
+		return printLink(device, cfg.CNIVersion, containerNs)
+	}
+
+	return types.PrintResult(result, cfg.CNIVersion)
 }
 
 /*
 CmdDel is called by kublet during pod delete
 */
 func CmdDel(args *skel.CmdArgs) error {
-	netHandler := networking.NewHandler()
 	host := host.NewHandler()
+	netHandler := networking.NewHandler()
 
 	cfg, err := loadConf(args.StdinData)
 	if err != nil {
@@ -291,27 +338,17 @@ func CmdDel(args *skel.CmdArgs) error {
 		return err
 	}
 
-	if cfg.Queues != "" {
-		logging.Debugf("cmdDel(): checking host for Ethtool")
-		ethInstalled, version, err := host.HasEthtool()
+	logging.Debugf("cmdDel: checking host for Ethtool")
+	ethInstalled, _, err := host.HasEthtool()
+	if err != nil {
+		logging.Errorf("cmdDel(): error checking if Ethtool is present on host: %v", err)
+		return err
+	}
+	if ethInstalled {
+		logging.Infof("cmdDel(): Removing ethtool filters on device: %s", cfg.Device)
+		err := netHandler.DeleteEthtool(cfg.Device)
 		if err != nil {
-			logging.Errorf("cmdDel(): error checking if Ethtool is present on host: %v", err)
-			return err
-		}
-
-		if ethInstalled {
-			logging.Debugf("cmdDel(): Ethtool found on host:")
-			logging.Debugf("\t" + version)
-
-			logging.Infof("cmdDel(): setting queue size to default for device %s", cfg.Device)
-			if err := netHandler.SetDefaultQueueSize(cfg.Device); err != nil {
-				err = fmt.Errorf("cmdDel(): failed to set queue size to default: %w", err)
-				logging.Errorf(err.Error())
-
-				return err
-			}
-		} else {
-			logging.Warningf("cmdDel(): Ethtool not found on host, queues will not be set to default")
+			logging.Warningf("cmdDel(): failed to remove ethtool filter: %v", err)
 		}
 	}
 
@@ -347,7 +384,7 @@ func printLink(dev netlink.Link, cniVersion string, containerNs ns.NetNS) error 
 	return types.PrintResult(&result, cniVersion)
 }
 
-func configureIPAM(args *skel.CmdArgs, cfg *NetConfig, device netlink.Link, netns ns.NetNS) (*current.Result, error) {
+func getIPAM(args *skel.CmdArgs, cfg *NetConfig, device netlink.Link, netns ns.NetNS) (*current.Result, error) {
 	var result *current.Result
 
 	logging.Infof("configureIPAM(): running IPAM plugin: " + cfg.IPAM.Type)
@@ -395,7 +432,11 @@ func configureIPAM(args *skel.CmdArgs, cfg *NetConfig, device netlink.Link, netn
 		ipc.Interface = current.Int(0)
 	}
 
-	logging.Infof("configureIPAM(): executing within container netns")
+	return result, nil
+}
+
+func setIPAM(cfg *NetConfig, result *current.Result, device netlink.Link, netns ns.NetNS) (*current.Result, error) {
+	logging.Infof("configureIPAM(): executing within host netns")
 	if err := netns.Do(func(_ ns.NetNS) error {
 
 		logging.Infof("configureIPAM(): setting device IP")
@@ -421,4 +462,20 @@ CmdCheck is currently unused
 */
 func CmdCheck(args *skel.CmdArgs) error {
 	return nil
+}
+
+/*
+extractIP extracts the IP address from the Result interface
+and returns the IP as type string
+*/
+func extractIP(result *current.Result) (string, error) {
+	resultIP := fmt.Sprintf("%s", result.IPs)
+	if len(resultIP) != 0 {
+		ip := strings.Split(resultIP, " ")[1]
+		ip = strings.Split(ip, "IP:")[1]
+		return ip, nil
+	}
+	err := fmt.Errorf("extractIP(): ip is an empty string")
+
+	return resultIP, err
 }

@@ -85,15 +85,16 @@ func main() {
 
 	for _, poolConfig := range cfg.Pools {
 		pm := deviceplugin.PoolManager{
-			Name:          poolConfig.Name,
-			Mode:          cfg.Mode,
-			Devices:       make(map[string]*pluginapi.Device),
-			DpAPISocket:   pluginapi.DevicePluginPath + constants.Plugins.DevicePlugin.DevicePrefix + "-" + poolConfig.Name + ".sock",
-			DpAPIEndpoint: constants.Plugins.DevicePlugin.DevicePrefix + "-" + poolConfig.Name + ".sock",
-			UpdateSignal:  make(chan bool),
-			Timeout:       cfg.UdsTimeout,
-			DevicePrefix:  constants.Plugins.DevicePlugin.DevicePrefix,
-			CndpFuzzTest:  cfg.CndpFuzzing,
+			Name:           poolConfig.Name,
+			Mode:           cfg.Mode,
+			Devices:        make(map[string]*pluginapi.Device),
+			DpAPISocket:    pluginapi.DevicePluginPath + constants.Plugins.DevicePlugin.DevicePrefix + "-" + poolConfig.Name + ".sock",
+			DpAPIEndpoint:  constants.Plugins.DevicePlugin.DevicePrefix + "-" + poolConfig.Name + ".sock",
+			UpdateSignal:   make(chan bool),
+			Timeout:        cfg.UdsTimeout,
+			DevicePrefix:   constants.Plugins.DevicePlugin.DevicePrefix,
+			CndpFuzzTest:   cfg.CndpFuzzing,
+			EthtoolFilters: poolConfig.EthtoolCmds,
 		}
 
 		if err := pm.Init(poolConfig); err != nil {

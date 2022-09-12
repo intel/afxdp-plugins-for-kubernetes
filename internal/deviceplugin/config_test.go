@@ -35,331 +35,331 @@ func TestGetConfig(t *testing.T) {
 		expcfg       Config
 		hostNetDev   map[string][]string
 	}{
-//		{
-//			name: "get config : one pool two manually set devices",
-//			configFile: `{
-//							"mode": "cdq",
-//							"timeout": 30,
-//							"logLevel": "debug",
-//							"logFile": "file.log",
-//							"pools": [{
-//								"name": "pool1",
-//								"devices": ["dev1", "dev2"]
-//							}]
-//						}`,
-//			hostNetDev: map[string][]string{
-//				"i40e": []string{"dev1", "dev2", "dev3", "dev4"},
-//			},
-//			expcfg: Config{
-//				Pools: []*PoolConfig{
-//					{
-//						Name:    "pool1",
-//						Devices: []string{"dev1", "dev2"},
-//					},
-//				},
-//				Mode:                   "cdq",
-//				UdsTimeout:             30,
-//				RequireUnprivilegedBpf: false,
-//				LogDir:                 "/var/log/afxdp-k8s-plugins/",
-//				LogDirPermission:       0x1e4,
-//				LogFile:                "file.log",
-//				LogFilePermission:      0x1a4,
-//				LogLevel:               "debug",
-//				MinLinuxVersion:        "4.18.0",
-//			},
-//			expGetCfgErr: nil,
-//			expBldPlsErr: nil,
-//		},
-//		{
-//			name: "get config : one pool two manually set devices, the rest in pool 2",
-//			configFile: `{
-//							"mode": "cdq",
-//							"timeout": 30,
-//							"logLevel": "debug",
-//							"logFile": "file.log",
-//							"pools": [{
-//								"name": "pool1",
-//								"devices": ["dev1", "dev2"]
-//							},
-//							{
-//								"name": "pool2",
-//								"drivers": ["i40e"]
-//							}]
-//						}`,
-//			hostNetDev: map[string][]string{
-//				"i40e": []string{"dev1", "dev2", "dev3", "dev4"},
-//			},
-//			expcfg: Config{
-//				Pools: []*PoolConfig{
-//					{
-//						Name:    "pool1",
-//						Devices: []string{"dev1", "dev2"},
-//					},
-//					{
-//						Name:    "pool2",
-//						Devices: []string{"dev3", "dev4"},
-//						Drivers: []string{"i40e"},
-//					},
-//				},
-//				Mode:                   "cdq",
-//				UdsTimeout:             30,
-//				RequireUnprivilegedBpf: false,
-//				LogDir:                 "/var/log/afxdp-k8s-plugins/",
-//				LogDirPermission:       0x1e4,
-//				LogFile:                "file.log",
-//				LogFilePermission:      0x1a4,
-//				LogLevel:               "debug",
-//				MinLinuxVersion:        "4.18.0",
-//			},
-//			expGetCfgErr: nil,
-//			expBldPlsErr: nil,
-//		},
-//		{
-//			name: "get config : mix of devices and drivers",
-//			configFile: `{
-//							"mode": "cdq",
-//							"timeout": 30,
-//							"logLevel": "debug",
-//							"logFile": "file.log",
-//							"pools": [{
-//								"name": "pool1",
-//								"devices": ["dev5", "dev6"],
-//								"drivers": ["i40e"]
-//							},
-//							{
-//								"name": "pool2",
-//								"drivers": ["E810"]
-//							}]
-//						}`,
-//			hostNetDev: map[string][]string{
-//				"i40e": []string{"dev1", "dev2", "dev3", "dev4"},
-//				"E810": []string{"dev5", "dev6", "dev7", "dev8"},
-//			},
-//			expcfg: Config{
-//				Pools: []*PoolConfig{
-//					{
-//						Name:    "pool1",
-//						Devices: []string{"dev5", "dev6", "dev1", "dev2", "dev3", "dev4"},
-//						Drivers: []string{"i40e"},
-//					},
-//					{
-//						Name:    "pool2",
-//						Devices: []string{"dev7", "dev8"},
-//						Drivers: []string{"E810"},
-//					},
-//				},
-//				Mode:                   "cdq",
-//				UdsTimeout:             30,
-//				RequireUnprivilegedBpf: false,
-//				LogDir:                 "/var/log/afxdp-k8s-plugins/",
-//				LogDirPermission:       0x1e4,
-//				LogFile:                "file.log",
-//				LogFilePermission:      0x1a4,
-//				LogLevel:               "debug",
-//				MinLinuxVersion:        "4.18.0",
-//			},
-//			expGetCfgErr: nil,
-//			expBldPlsErr: nil,
-//		},
-//		{
-//			name: "get config : one_pool three_devices",
-//			configFile: `{
-//							"mode": "cdq",
-//							"timeout": 30,
-//							"logLevel": "debug",
-//							"logFile": "file.log",
-//							"pools": [{
-//								"name": "pool1",
-//								"devices": ["dev1", "dev2","dev3"]
-//							}]
-//						}`,
-//			hostNetDev: map[string][]string{
-//				"i40e": []string{"dev1", "dev2", "dev3", "dev4"},
-//			},
-//			expcfg: Config{
-//				Pools: []*PoolConfig{
-//					{
-//						Name:    "pool1",
-//						Devices: []string{"dev1", "dev2", "dev3"},
-//					},
-//				},
-//				Mode:                   "cdq",
-//				UdsTimeout:             30,
-//				RequireUnprivilegedBpf: false,
-//				LogDir:                 "/var/log/afxdp-k8s-plugins/",
-//				LogDirPermission:       0x1e4,
-//				LogFile:                "file.log",
-//				LogFilePermission:      0x1a4,
-//				LogLevel:               "debug",
-//				MinLinuxVersion:        "4.18.0",
-//			},
-//			expGetCfgErr: nil,
-//			expBldPlsErr: nil,
-//		},
-//		{
-//			name: "get config : two_pools four_devices",
-//			configFile: `{
-//								"mode": "cdq",
-//								"timeout": 30,
-//								"logLevel": "debug",
-//								"logFile": "file.log",
-//								"pools": [{
-//									"name": "pool1",
-//									"drivers": ["i40e"]
-//								}, {
-//									"name": "pool2",
-//									"drivers": ["E810"]
-//								}]
-//							}`,
-//			hostNetDev: map[string][]string{
-//				"i40e": []string{"dev1", "dev2"},
-//				"E810": []string{"dev3", "dev4"},
-//			},
-//			expcfg: Config{
-//				Pools: []*PoolConfig{
-//					{
-//						Name:    "pool1",
-//						Devices: []string{"dev1", "dev2"},
-//						Drivers: []string{"i40e"},
-//					},
-//					{
-//						Name:    "pool2",
-//						Devices: []string{"dev3", "dev4"},
-//						Drivers: []string{"E810"},
-//					},
-//				},
-//				Mode:                   "cdq",
-//				UdsTimeout:             30,
-//				RequireUnprivilegedBpf: false,
-//				LogDir:                 "/var/log/afxdp-k8s-plugins/",
-//				LogDirPermission:       0x1e4,
-//				LogFile:                "file.log",
-//				LogFilePermission:      0x1a4,
-//				LogLevel:               "debug",
-//				MinLinuxVersion:        "4.18.0",
-//			},
-//			expGetCfgErr: nil,
-//			expBldPlsErr: nil,
-//		},
-//		{
-//			name: "get config : two_pools six_devices",
-//			configFile: `{
-//							"mode": "cdq",
-//							"timeout": 30,	
-//							"logLevel": "debug",
-//							"logFile": "file.log",
-//							"pools": [{
-//								"name": "pool1",
-//								"drivers": ["i40e"]
-//							}, {
-//								"name": "pool2",
-//								"drivers": ["E810"]
-//							}]
-//						}`,
-//			hostNetDev: map[string][]string{
-//				"i40e": []string{"dev1", "dev2", "dev3"},
-//				"E810": []string{"dev4", "dev5", "dev6"},
-//			},
-//			expcfg: Config{
-//				Pools: []*PoolConfig{
-//					{
-//						Name:    "pool1",
-//						Devices: []string{"dev1", "dev2", "dev3"},
-//						Drivers: []string{"i40e"},
-//					},
-//					{
-//						Name:    "pool2",
-//						Devices: []string{"dev4", "dev5", "dev6"},
-//						Drivers: []string{"E810"},
-//					},
-//				},
-//				Mode:                   "cdq",
-//				UdsTimeout:             30,
-//				RequireUnprivilegedBpf: false,
-//				LogDir:                 "/var/log/afxdp-k8s-plugins/",
-//				LogDirPermission:       0x1e4,
-//				LogFile:                "file.log",
-//				LogFilePermission:      0x1a4,
-//				LogLevel:               "debug",
-//				MinLinuxVersion:        "4.18.0",
-//			},
-//			expGetCfgErr: nil,
-//			expBldPlsErr: nil,
-//		},
-//
-//		{
-//			name: "get config : one pool with hyphenated driver",
-//			configFile: `{
-//							"mode": "cdq",
-//							"timeout": 30,
-//							"logLevel": "debug",
-//							"logFile": "file.log",
-//							"pools": [{
-//								"name": "pool1",
-//								"drivers": ["vfio-pci"]
-//							}]
-//						}`,
-//			hostNetDev: map[string][]string{
-//				"vfio-pci": []string{"dev1", "dev2", "dev3", "dev4"},
-//			},
-//			expcfg: Config{
-//				Pools: []*PoolConfig{
-//					{
-//						Name:    "pool1",
-//						Devices: []string{"dev1", "dev2", "dev3", "dev4"},
-//						Drivers: []string{"vfio-pci"},
-//					},
-//				},
-//				Mode:                   "cdq",
-//				UdsTimeout:             30,
-//				RequireUnprivilegedBpf: false,
-//				LogDir:                 "/var/log/afxdp-k8s-plugins/",
-//				LogDirPermission:       0x1e4,
-//				LogFile:                "file.log",
-//				LogFilePermission:      0x1a4,
-//				LogLevel:               "debug",
-//				MinLinuxVersion:        "4.18.0",
-//			},
-//			expGetCfgErr: nil,
-//			expBldPlsErr: nil,
-//		},
-//
-//		{
-//			name: "get config : one pool with underscore driver",
-//			configFile: `{
-//							"mode": "cdq",
-//							"timeout": 30,
-//							"logLevel": "debug",
-//							"logFile": "file.log",
-//							"pools": [{
-//								"name": "pool1",
-//								"drivers": ["cool_driver"]
-//							}]
-//						}`,
-//			hostNetDev: map[string][]string{
-//				"cool_driver": []string{"dev1", "dev2", "dev3"},
-//			},
-//			expcfg: Config{
-//				Pools: []*PoolConfig{
-//					{
-//						Name:    "pool1",
-//						Devices: []string{"dev1", "dev2", "dev3"},
-//						Drivers: []string{"cool_driver"},
-//					},
-//				},
-//				Mode:                   "cdq",
-//				UdsTimeout:             30,
-//				RequireUnprivilegedBpf: false,
-//				LogDir:                 "/var/log/afxdp-k8s-plugins/",
-//				LogDirPermission:       0x1e4,
-//				LogFile:                "file.log",
-//				LogFilePermission:      0x1a4,
-//				LogLevel:               "debug",
-//				MinLinuxVersion:        "4.18.0",
-//			},
-//			expGetCfgErr: nil,
-//			expBldPlsErr: nil,
-//		},
+		//		{
+		//			name: "get config : one pool two manually set devices",
+		//			configFile: `{
+		//							"mode": "cdq",
+		//							"timeout": 30,
+		//							"logLevel": "debug",
+		//							"logFile": "file.log",
+		//							"pools": [{
+		//								"name": "pool1",
+		//								"devices": ["dev1", "dev2"]
+		//							}]
+		//						}`,
+		//			hostNetDev: map[string][]string{
+		//				"i40e": []string{"dev1", "dev2", "dev3", "dev4"},
+		//			},
+		//			expcfg: Config{
+		//				Pools: []*PoolConfig{
+		//					{
+		//						Name:    "pool1",
+		//						Devices: []string{"dev1", "dev2"},
+		//					},
+		//				},
+		//				Mode:                   "cdq",
+		//				UdsTimeout:             30,
+		//				RequireUnprivilegedBpf: false,
+		//				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+		//				LogDirPermission:       0x1e4,
+		//				LogFile:                "file.log",
+		//				LogFilePermission:      0x1a4,
+		//				LogLevel:               "debug",
+		//				MinLinuxVersion:        "4.18.0",
+		//			},
+		//			expGetCfgErr: nil,
+		//			expBldPlsErr: nil,
+		//		},
+		//		{
+		//			name: "get config : one pool two manually set devices, the rest in pool 2",
+		//			configFile: `{
+		//							"mode": "cdq",
+		//							"timeout": 30,
+		//							"logLevel": "debug",
+		//							"logFile": "file.log",
+		//							"pools": [{
+		//								"name": "pool1",
+		//								"devices": ["dev1", "dev2"]
+		//							},
+		//							{
+		//								"name": "pool2",
+		//								"drivers": ["i40e"]
+		//							}]
+		//						}`,
+		//			hostNetDev: map[string][]string{
+		//				"i40e": []string{"dev1", "dev2", "dev3", "dev4"},
+		//			},
+		//			expcfg: Config{
+		//				Pools: []*PoolConfig{
+		//					{
+		//						Name:    "pool1",
+		//						Devices: []string{"dev1", "dev2"},
+		//					},
+		//					{
+		//						Name:    "pool2",
+		//						Devices: []string{"dev3", "dev4"},
+		//						Drivers: []string{"i40e"},
+		//					},
+		//				},
+		//				Mode:                   "cdq",
+		//				UdsTimeout:             30,
+		//				RequireUnprivilegedBpf: false,
+		//				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+		//				LogDirPermission:       0x1e4,
+		//				LogFile:                "file.log",
+		//				LogFilePermission:      0x1a4,
+		//				LogLevel:               "debug",
+		//				MinLinuxVersion:        "4.18.0",
+		//			},
+		//			expGetCfgErr: nil,
+		//			expBldPlsErr: nil,
+		//		},
+		//		{
+		//			name: "get config : mix of devices and drivers",
+		//			configFile: `{
+		//							"mode": "cdq",
+		//							"timeout": 30,
+		//							"logLevel": "debug",
+		//							"logFile": "file.log",
+		//							"pools": [{
+		//								"name": "pool1",
+		//								"devices": ["dev5", "dev6"],
+		//								"drivers": ["i40e"]
+		//							},
+		//							{
+		//								"name": "pool2",
+		//								"drivers": ["E810"]
+		//							}]
+		//						}`,
+		//			hostNetDev: map[string][]string{
+		//				"i40e": []string{"dev1", "dev2", "dev3", "dev4"},
+		//				"E810": []string{"dev5", "dev6", "dev7", "dev8"},
+		//			},
+		//			expcfg: Config{
+		//				Pools: []*PoolConfig{
+		//					{
+		//						Name:    "pool1",
+		//						Devices: []string{"dev5", "dev6", "dev1", "dev2", "dev3", "dev4"},
+		//						Drivers: []string{"i40e"},
+		//					},
+		//					{
+		//						Name:    "pool2",
+		//						Devices: []string{"dev7", "dev8"},
+		//						Drivers: []string{"E810"},
+		//					},
+		//				},
+		//				Mode:                   "cdq",
+		//				UdsTimeout:             30,
+		//				RequireUnprivilegedBpf: false,
+		//				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+		//				LogDirPermission:       0x1e4,
+		//				LogFile:                "file.log",
+		//				LogFilePermission:      0x1a4,
+		//				LogLevel:               "debug",
+		//				MinLinuxVersion:        "4.18.0",
+		//			},
+		//			expGetCfgErr: nil,
+		//			expBldPlsErr: nil,
+		//		},
+		//		{
+		//			name: "get config : one_pool three_devices",
+		//			configFile: `{
+		//							"mode": "cdq",
+		//							"timeout": 30,
+		//							"logLevel": "debug",
+		//							"logFile": "file.log",
+		//							"pools": [{
+		//								"name": "pool1",
+		//								"devices": ["dev1", "dev2","dev3"]
+		//							}]
+		//						}`,
+		//			hostNetDev: map[string][]string{
+		//				"i40e": []string{"dev1", "dev2", "dev3", "dev4"},
+		//			},
+		//			expcfg: Config{
+		//				Pools: []*PoolConfig{
+		//					{
+		//						Name:    "pool1",
+		//						Devices: []string{"dev1", "dev2", "dev3"},
+		//					},
+		//				},
+		//				Mode:                   "cdq",
+		//				UdsTimeout:             30,
+		//				RequireUnprivilegedBpf: false,
+		//				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+		//				LogDirPermission:       0x1e4,
+		//				LogFile:                "file.log",
+		//				LogFilePermission:      0x1a4,
+		//				LogLevel:               "debug",
+		//				MinLinuxVersion:        "4.18.0",
+		//			},
+		//			expGetCfgErr: nil,
+		//			expBldPlsErr: nil,
+		//		},
+		//		{
+		//			name: "get config : two_pools four_devices",
+		//			configFile: `{
+		//								"mode": "cdq",
+		//								"timeout": 30,
+		//								"logLevel": "debug",
+		//								"logFile": "file.log",
+		//								"pools": [{
+		//									"name": "pool1",
+		//									"drivers": ["i40e"]
+		//								}, {
+		//									"name": "pool2",
+		//									"drivers": ["E810"]
+		//								}]
+		//							}`,
+		//			hostNetDev: map[string][]string{
+		//				"i40e": []string{"dev1", "dev2"},
+		//				"E810": []string{"dev3", "dev4"},
+		//			},
+		//			expcfg: Config{
+		//				Pools: []*PoolConfig{
+		//					{
+		//						Name:    "pool1",
+		//						Devices: []string{"dev1", "dev2"},
+		//						Drivers: []string{"i40e"},
+		//					},
+		//					{
+		//						Name:    "pool2",
+		//						Devices: []string{"dev3", "dev4"},
+		//						Drivers: []string{"E810"},
+		//					},
+		//				},
+		//				Mode:                   "cdq",
+		//				UdsTimeout:             30,
+		//				RequireUnprivilegedBpf: false,
+		//				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+		//				LogDirPermission:       0x1e4,
+		//				LogFile:                "file.log",
+		//				LogFilePermission:      0x1a4,
+		//				LogLevel:               "debug",
+		//				MinLinuxVersion:        "4.18.0",
+		//			},
+		//			expGetCfgErr: nil,
+		//			expBldPlsErr: nil,
+		//		},
+		//		{
+		//			name: "get config : two_pools six_devices",
+		//			configFile: `{
+		//							"mode": "cdq",
+		//							"timeout": 30,
+		//							"logLevel": "debug",
+		//							"logFile": "file.log",
+		//							"pools": [{
+		//								"name": "pool1",
+		//								"drivers": ["i40e"]
+		//							}, {
+		//								"name": "pool2",
+		//								"drivers": ["E810"]
+		//							}]
+		//						}`,
+		//			hostNetDev: map[string][]string{
+		//				"i40e": []string{"dev1", "dev2", "dev3"},
+		//				"E810": []string{"dev4", "dev5", "dev6"},
+		//			},
+		//			expcfg: Config{
+		//				Pools: []*PoolConfig{
+		//					{
+		//						Name:    "pool1",
+		//						Devices: []string{"dev1", "dev2", "dev3"},
+		//						Drivers: []string{"i40e"},
+		//					},
+		//					{
+		//						Name:    "pool2",
+		//						Devices: []string{"dev4", "dev5", "dev6"},
+		//						Drivers: []string{"E810"},
+		//					},
+		//				},
+		//				Mode:                   "cdq",
+		//				UdsTimeout:             30,
+		//				RequireUnprivilegedBpf: false,
+		//				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+		//				LogDirPermission:       0x1e4,
+		//				LogFile:                "file.log",
+		//				LogFilePermission:      0x1a4,
+		//				LogLevel:               "debug",
+		//				MinLinuxVersion:        "4.18.0",
+		//			},
+		//			expGetCfgErr: nil,
+		//			expBldPlsErr: nil,
+		//		},
+		//
+		//		{
+		//			name: "get config : one pool with hyphenated driver",
+		//			configFile: `{
+		//							"mode": "cdq",
+		//							"timeout": 30,
+		//							"logLevel": "debug",
+		//							"logFile": "file.log",
+		//							"pools": [{
+		//								"name": "pool1",
+		//								"drivers": ["vfio-pci"]
+		//							}]
+		//						}`,
+		//			hostNetDev: map[string][]string{
+		//				"vfio-pci": []string{"dev1", "dev2", "dev3", "dev4"},
+		//			},
+		//			expcfg: Config{
+		//				Pools: []*PoolConfig{
+		//					{
+		//						Name:    "pool1",
+		//						Devices: []string{"dev1", "dev2", "dev3", "dev4"},
+		//						Drivers: []string{"vfio-pci"},
+		//					},
+		//				},
+		//				Mode:                   "cdq",
+		//				UdsTimeout:             30,
+		//				RequireUnprivilegedBpf: false,
+		//				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+		//				LogDirPermission:       0x1e4,
+		//				LogFile:                "file.log",
+		//				LogFilePermission:      0x1a4,
+		//				LogLevel:               "debug",
+		//				MinLinuxVersion:        "4.18.0",
+		//			},
+		//			expGetCfgErr: nil,
+		//			expBldPlsErr: nil,
+		//		},
+		//
+		//		{
+		//			name: "get config : one pool with underscore driver",
+		//			configFile: `{
+		//							"mode": "cdq",
+		//							"timeout": 30,
+		//							"logLevel": "debug",
+		//							"logFile": "file.log",
+		//							"pools": [{
+		//								"name": "pool1",
+		//								"drivers": ["cool_driver"]
+		//							}]
+		//						}`,
+		//			hostNetDev: map[string][]string{
+		//				"cool_driver": []string{"dev1", "dev2", "dev3"},
+		//			},
+		//			expcfg: Config{
+		//				Pools: []*PoolConfig{
+		//					{
+		//						Name:    "pool1",
+		//						Devices: []string{"dev1", "dev2", "dev3"},
+		//						Drivers: []string{"cool_driver"},
+		//					},
+		//				},
+		//				Mode:                   "cdq",
+		//				UdsTimeout:             30,
+		//				RequireUnprivilegedBpf: false,
+		//				LogDir:                 "/var/log/afxdp-k8s-plugins/",
+		//				LogDirPermission:       0x1e4,
+		//				LogFile:                "file.log",
+		//				LogFilePermission:      0x1a4,
+		//				LogLevel:               "debug",
+		//				MinLinuxVersion:        "4.18.0",
+		//			},
+		//			expGetCfgErr: nil,
+		//			expBldPlsErr: nil,
+		//		},
 
 		{
 			name:         "load bad config : device field missing",
@@ -411,9 +411,7 @@ func TestGetConfig(t *testing.T) {
 								"pools": [
 									{
 									"name": "pool1",
-									"drivers": [
-										"ice+"
-									]
+									"drivers": ["ice+"]
 									}
 								]
 							}`,
@@ -422,8 +420,9 @@ func TestGetConfig(t *testing.T) {
 			expcfg: Config{
 				Pools: []*PoolConfig{
 					{
-						Name:    "pool1",
-						Drivers: []string{"ice+"},
+						Name:       "pool1",
+						Drivers:    []string{"ice+"},
+						DeviceInfo: map[string]*networking.Device{},
 					},
 				},
 				Mode:                   "cdq",

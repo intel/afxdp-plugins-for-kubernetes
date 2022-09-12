@@ -28,30 +28,32 @@ import (
 Device object represents networking devices, primary and secondary
 */
 type Device struct {
-	name          string
-	mode          string
-	driver        string
-	pci           string
-	macAddress    string
-	fullyAssigned bool
-	primary       *Device
-	secondaries   []*Device
-	netHandler    Handler
+	name           string
+	mode           string
+	driver         string
+	pci            string
+	macAddress     string
+	fullyAssigned  bool
+	ethtoolFilters []string
+	primary        *Device
+	secondaries    []*Device
+	netHandler     Handler
 }
 
 /*
-PublicDevice is a representation of Device above, but with public fields
+DeviceDetails is a representation of Device above, but with public fields
 This object has no functionality, methods or uses other than debug logging
 and writing the device to a JSON file.
 */
-type PublicDevice struct {
-	Name          string
-	Mode          string
-	Driver        string
-	Pci           string
-	MacAddress    string
-	FullyAssigned bool
-	Primary       *PublicDevice
+type DeviceDetails struct {
+	Name           string
+	Mode           string
+	Driver         string
+	Pci            string
+	MacAddress     string
+	FullyAssigned  bool
+	EthtoolFilters []string
+	Primary        *DeviceDetails
 }
 
 /*
@@ -317,6 +319,14 @@ func (d *Device) Cycle() error {
 }
 
 /*
+GetEthtoolFilters returns a string array of ethtool filters from
+the device object
+*/
+func (d *Device) GetEthtoolFilters() []string {
+	return d.ethtoolFilters
+}
+
+/*
 UnassignedSecondaries returns the number of unassigned secondary devices available on this primary
 */
 func (d *Device) UnassignedSecondaries() int {
@@ -347,15 +357,17 @@ func (d *Device) Exists() (bool, error) {
 Public returns a representation of Device, but with public fields
 To be used in debug logging and writing the device to a JSON file.
 */
-func (d *Device) Public() PublicDevice {
-	return PublicDevice{
-		Name:          d.name,
-		Mode:          d.mode,
-		Driver:        d.driver,
-		Pci:           d.pci,
-		MacAddress:    d.macAddress,
-		FullyAssigned: d.fullyAssigned,
-		Primary: &PublicDevice{
+func (d *Device) Public() DeviceDetails {
+	return DeviceDetails{
+		Name:           d.name,
+		Mode:           d.mode,
+		Driver:         d.driver,
+		Pci:            d.pci,
+		MacAddress:     d.macAddress,
+		FullyAssigned:  d.fullyAssigned,
+		EthtoolFilters: d.ethtoolFilters,
+
+		Primary: &DeviceDetails{
 			Name:          d.primary.name,
 			Mode:          d.primary.mode,
 			Driver:        d.primary.driver,
@@ -440,4 +452,12 @@ func CreateTestDevice(name string, driver string, pci string, macAddress string,
 	dev.primary = dev
 
 	return dev
+}
+
+/*
+SetEthtoolFilter assigns ethtool filters to the ethtoolFilters
+field in the device object.
+*/
+func (d *Device) SetEthtoolFilter(ethtool []string) {
+	d.ethtoolFilters = ethtool
 }

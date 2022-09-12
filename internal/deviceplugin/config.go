@@ -47,10 +47,12 @@ var (
 PoolConfig contains the pool name and device list
 */
 type PoolConfig struct {
-	Name    string   `json:"name"`
-	Devices []string `json:"devices"`
-	Drivers []string `json:"drivers"`
-	UID     int      `json:"uid"`
+	Name        string   `json:"name"`
+	Devices     []string `json:"devices"`
+	DeviceInfo  map[string]*networking.Device
+	Drivers     []string `json:"drivers"`
+	UID         int      `json:"uid"`
+	EthtoolCmds []string `json:"ethtoolCmds"`
 }
 
 /*
@@ -138,6 +140,8 @@ func (c *Config) BuildPools() error {
 		if len(pool.Drivers) > 0 {
 			logging.Debugf("Pool " + pool.Name + " has drivers assigned")
 
+			pool.DeviceInfo = make(map[string]*networking.Device)
+
 			for _, driver := range pool.Drivers {
 				logging.Debugf("Pool " + pool.Name + " discovering devices of type " + driver)
 				devices, err := deviceDiscovery(driver)
@@ -149,9 +153,10 @@ func (c *Config) BuildPools() error {
 				if len(devices) > 0 {
 					logging.Infof("Pool "+pool.Name+" discovered "+driver+" devices: %s", devices)
 
-					for _, device := range devices {
-						pool.Devices = append(pool.Devices, device)
-						assignedInfs = append(assignedInfs, device)
+					for keyDevice, deviceInf := range devices {
+						pool.DeviceInfo[keyDevice] = deviceInf
+						pool.Devices = append(pool.Devices, keyDevice)
+						assignedInfs = append(assignedInfs, keyDevice)
 					}
 				}
 			}
@@ -179,6 +184,14 @@ func (p PoolConfig) Validate() error {
 			),
 			validation.Required.When(len(p.Drivers) == 0).Error("pools must contain devices or drivers"),
 		),
+		validation.Field(
+			&p.EthtoolCmds,
+			validation.Each(
+				validation.Required.When(len(p.EthtoolCmds) > 0).Error("EthtoolCmds cannot be an empty string"),
+				validation.Match(regexp.MustCompile(constants.EthtoolFilter.EthtoolFilterRegex)).Error("EthtoolCmds must be alphanumeric or contain the following charaters (-,.,:)"),
+			),
+		),
+
 		validation.Field(
 			&p.Drivers,
 			validation.Each(
@@ -236,8 +249,8 @@ func (c Config) Validate() error {
 	)
 }
 
-func deviceDiscovery(requiredDriver string) ([]string, error) {
-	var poolDevices []string
+func deviceDiscovery(requiredDriver string) (map[string]*networking.Device, error) {
+	poolDevices := make(map[string]*networking.Device)
 
 	hostDevices, err := netHandler.GetHostDevices()
 	if err != nil {
@@ -245,7 +258,7 @@ func deviceDiscovery(requiredDriver string) ([]string, error) {
 		return poolDevices, err
 	}
 
-	for _, hostDevice := range hostDevices {
+	for device, hostDevice := range hostDevices {
 		if tools.ArrayContainsPrefix(constants.Devices.Prohibited, hostDevice.Name()) {
 			logging.Debugf("%s is an excluded device, skipping", hostDevice.Name())
 			continue
@@ -276,7 +289,7 @@ func deviceDiscovery(requiredDriver string) ([]string, error) {
 				continue
 			}
 
-			poolDevices = append(poolDevices, hostDevice.Name())
+			poolDevices[device] = hostDevice
 			logging.Debugf("Device %s appended to the device list", hostDevice.Name())
 		} else {
 			logging.Debugf("%s has the wrong driver type: %s", hostDevice.Name(), deviceDriver)

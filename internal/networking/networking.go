@@ -16,15 +16,16 @@
 package networking
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	logging "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
+	"io/ioutil"
 	"net"
 	"os"
-	"os/exec"
 	"path/filepath"
 )
 
@@ -49,15 +50,17 @@ type Handler interface {
 	GetDeviceByMAC(mac string) (string, error)
 	GetDeviceByPCI(pci string) (string, error)
 	CycleDevice(interfaceName string) error
-	SetQueueSize(interfaceName string, size string) error
-	SetDefaultQueueSize(interfaceName string) error
 	NetDevExists(device string) (bool, error)
+	GetDeviceFromFile(deviceName string, filepath string) (*Device, error)
+	WriteDeviceFile(device *Device, filepath string) error
+	CreateCdqSubfunction(parentPci string, sfnum string) error                   // see cdq.go
+	DeleteCdqSubfunction(portIndex string) error                                 // see cdq.go
+	IsCdqSubfunction(name string) (bool, error)                                  // see cdq.go
+	NumAvailableCdqSubfunctions(interfaceName string) (int, error)               // see cdq.go
+	GetCdqPortIndex(netdev string) (string, error)                               // see cdq.go
+	SetEthtool(ethtoolCmd []string, interfaceName string, ipResult string) error // see ethtool.go
+	DeleteEthtool(interfaceName string) error                                    // see ethtool.go
 	IsPhysicalPort(name string) (bool, error)
-	CreateCdqSubfunction(parentPci string, sfnum string) error     // see cdq.go
-	DeleteCdqSubfunction(portIndex string) error                   // see cdq.go
-	IsCdqSubfunction(name string) (bool, error)                    // see cdq.go
-	NumAvailableCdqSubfunctions(interfaceName string) (int, error) // see cdq.go
-	GetCdqPortIndex(netdev string) (string, error)                 // see cdq.go
 }
 
 /*
@@ -182,39 +185,6 @@ func (r *handler) GetDevicePci(interfaceName string) (string, error) {
 }
 
 /*
-SetQueueSize sets the queue size for the netdev.
-It executes the command: ethtool -X <interface_name> equal <num_of_queues> start <queue_id>
-*/
-func (r *handler) SetQueueSize(interfaceName string, size string) error {
-	app := "ethtool"
-	args := "-X"
-	startQID := "4"
-
-	_, err := exec.Command(app, args, interfaceName, "equal", size, "start", startQID).Output()
-	if err != nil {
-		logging.Errorf("Error setting queue for device %s: %v", interfaceName, err.Error())
-		return err
-	}
-	return nil
-}
-
-/*
-SetDefaultQueueSize sets the netdev queue size back to default.
-It executes the command: ethtool -X <interface_name> default
-*/
-func (r *handler) SetDefaultQueueSize(interfaceName string) error {
-	app := "ethtool"
-	args := "-X"
-
-	_, err := exec.Command(app, args, interfaceName, "default").Output()
-	if err != nil {
-		logging.Errorf("Error setting default queue for device %s: %v", interfaceName, err.Error())
-		return err
-	}
-	return nil
-}
-
-/*
 MacAddress takes a device name and returns the MAC-address.
 */
 func (r *handler) GetMacAddress(device string) (string, error) {
@@ -243,6 +213,79 @@ func (r *handler) NetDevExists(device string) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+/*
+GetDeviceFromFile extracts device map fields from the device file (device.json).
+It creates and populates a new instance of the device map with the device file field values
+and returns the device object.
+*/
+func (r *handler) GetDeviceFromFile(deviceName string, filepath string) (*Device, error) {
+	deviceDetailsMap := make(map[string]*DeviceDetails)
+
+	raw, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = json.Unmarshal(raw, &deviceDetailsMap); err != nil {
+		return nil, err
+	}
+
+	if deviceDetails, ok := deviceDetailsMap[deviceName]; ok {
+		return &Device{
+			name:           deviceDetails.Name,
+			mode:           deviceDetails.Mode,
+			driver:         deviceDetails.Driver,
+			pci:            deviceDetails.Pci,
+			macAddress:     deviceDetails.MacAddress,
+			fullyAssigned:  deviceDetails.FullyAssigned,
+			ethtoolFilters: deviceDetails.EthtoolFilters,
+			netHandler:     r,
+			primary: &Device{
+				name:          deviceDetails.Primary.Name,
+				mode:          deviceDetails.Primary.Mode,
+				driver:        deviceDetails.Primary.Driver,
+				pci:           deviceDetails.Primary.Pci,
+				macAddress:    deviceDetails.Primary.MacAddress,
+				fullyAssigned: deviceDetails.Primary.FullyAssigned,
+			},
+		}, nil
+	}
+	return nil, nil
+}
+
+/*
+WriteDeviceFile creates and writes the device map fields to file, enabling the
+CNI to read device information.
+*/
+func (r *handler) WriteDeviceFile(device *Device, filepath string) error {
+	fileMap := make(map[string]DeviceDetails)
+
+	raw, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		logging.Warningf("Error reading device file: %v", err)
+	}
+
+	if err := json.Unmarshal(raw, &fileMap); err != nil {
+		logging.Warningf("Error unmarshalling device map: %v", err)
+	}
+
+	fileMap[device.Name()] = device.Public()
+
+	jsonStr, err := json.MarshalIndent(fileMap, "", " ")
+	if err != nil {
+		logging.Errorf("Error marshalling device map to json format: %v", err)
+		return err
+	}
+
+	err = ioutil.WriteFile(filepath, jsonStr, os.FileMode(constants.DeviceFile.DeviceFilePermissions))
+	if err != nil {
+		logging.Errorf("Error writing to device file: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 /*

@@ -8,7 +8,8 @@
 		{
 			"name" : "e2e",
 			"drivers" : ["i40e"],
-			"uid" : 1500
+			"uid" : 1500,
+			"ethtoolCmds" : ["-X -device- equal 5 start 3","--config-ntuple -device- flow-type udp4 dst-ip -ip- action"]
 		}
 	]
 }

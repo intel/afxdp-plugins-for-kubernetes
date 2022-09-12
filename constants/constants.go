@@ -95,6 +95,14 @@ var (
 	handshakeResponseFinAck      = "/fin_ack"              // the response given to acknowledge the connection termination request
 	handshakeResponseBadRequest  = "/nak"                  // general non-acknowledgement response, usually indicates a bad request
 	handshakeResponseError       = "/error"                // general error occurred response, indicates an error occurred on the device plugin end
+
+	/*DeviceFile*/
+	deviceWriteFile       = "device.json"    // file which enables passing of device information from device plugin to CNI in the form of device map object.
+	deviceWriteFileDir    = "/tmp/afxdp_dp/" // host location where deviceWriteFile file is placed.
+	deviceFilePermissions = 0600             // permissions for device file.
+
+	/*EthtoolFilters*/
+	ethtoolFilterRegex = `^[a-zA-Z0-9-:.-/\s/g]+$` // regex to validate ethtool filter commands.
 )
 
 /* Public variables and types */
@@ -117,6 +125,10 @@ var (
 	Pools pools
 	/* Uds contains constants related to the Unix domain sockets */
 	Uds uds
+	/* DeviceFile contains constants related to the devicefile */
+	DeviceFile deviceFile
+	/* DeviceFile contains constants related to the devicefile */
+	EthtoolFilter ethtoolFilter
 )
 
 type cni struct {
@@ -217,6 +229,16 @@ type handshake struct {
 	ResponseError       string
 }
 
+type deviceFile struct {
+	DeviceWriteFile       string
+	DeviceFilePermissions int
+	DeviceWriteFileDir    string
+}
+
+type ethtoolFilter struct {
+	EthtoolFilterRegex string
+}
+
 func init() {
 	Plugins = plugins{
 		Modes: pluginModes,
@@ -306,5 +328,15 @@ func init() {
 			ResponseBadRequest:  handshakeResponseBadRequest,
 			ResponseError:       handshakeResponseError,
 		},
+	}
+
+	DeviceFile = deviceFile{
+		DeviceWriteFile:       deviceWriteFile,
+		DeviceFilePermissions: deviceFilePermissions,
+		DeviceWriteFileDir:    deviceWriteFileDir,
+	}
+
+	EthtoolFilter = ethtoolFilter{
+		EthtoolFilterRegex: ethtoolFilterRegex,
 	}
 }

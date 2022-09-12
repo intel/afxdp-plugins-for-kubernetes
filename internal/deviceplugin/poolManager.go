@@ -39,20 +39,23 @@ PoolManager represents an manages the pool of devices.
 Each PoolManager registers with Kubernetes as a different device type.
 */
 type PoolManager struct {
-	Name          string
-	Mode          string
-	Devices       map[string]*pluginapi.Device
-	UpdateSignal  chan bool
-	DpAPISocket   string
-	DpAPIEndpoint string
-	DpAPIServer   *grpc.Server
-	ServerFactory cndp.ServerFactory
-	BpfHandler    bpf.Handler
-	Timeout       int
-	DevicePrefix  string
-	CndpFuzzTest  bool
-	UID           string
+	Name           string
+	Mode           string
+	Devices        map[string]*pluginapi.Device
+	UpdateSignal   chan bool
+	DpAPISocket    string
+	DpAPIEndpoint  string
+	DpAPIServer    *grpc.Server
+	ServerFactory  cndp.ServerFactory
+	BpfHandler     bpf.Handler
+	Timeout        int
+	DevicePrefix   string
+	CndpFuzzTest   bool
+	UID            string
+	EthtoolFilters []string
 }
+
+var deviceMap = make(map[string]*networking.Device)
 
 /*
 Init is called it initialise the PoolManager.
@@ -61,6 +64,7 @@ func (pm *PoolManager) Init(config *PoolConfig) error {
 	pm.ServerFactory = cndp.NewServerFactory()
 	pm.BpfHandler = bpf.NewHandler()
 	netHandler := networking.NewHandler()
+	deviceMap = config.DeviceInfo
 
 	pm.UID = strconv.Itoa(config.UID)
 	if pm.UID == "0" {
@@ -124,9 +128,8 @@ func (pm *PoolManager) ListAndWatch(empty *pluginapi.Empty,
 		resp := new(pluginapi.ListAndWatchResponse)
 		logging.Debugf("Pool "+pm.DevicePrefix+"/%s device list:", pm.Name)
 
-		for _, dev := range pm.Devices {
-			logging.Debugf("      " + dev.ID + ", " + dev.Health)
-			resp.Devices = append(resp.Devices, dev)
+		for devName := range deviceMap {
+			resp.Devices = append(resp.Devices, &pluginapi.Device{ID: devName, Health: pluginapi.Healthy})
 		}
 
 		if err := stream.Send(resp); err != nil {
@@ -166,6 +169,7 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 func (pm *PoolManager) allocateCndp(ctx context.Context,
 	rqt *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
 	response := pluginapi.AllocateResponse{}
+	netHandler := networking.NewHandler()
 
 	logging.Infof("New CNDP allocate request. Creating new UDS server")
 	cndpServer, udsPath, err := pm.ServerFactory.CreateServer(pm.DevicePrefix+"/"+pm.Name, pm.UID, pm.Timeout, pm.CndpFuzzTest)
@@ -189,6 +193,18 @@ func (pm *PoolManager) allocateCndp(ctx context.Context,
 
 		//loop each device request per container
 		for _, dev := range crqt.DevicesIDs {
+
+			if pm.EthtoolFilters != nil {
+
+				device := deviceMap[dev]
+				device.SetEthtoolFilter(pm.EthtoolFilters)
+				err = netHandler.WriteDeviceFile(device, constants.DeviceFile.DeviceWriteFileDir+constants.DeviceFile.DeviceWriteFile)
+				if err != nil {
+					logging.Debugf("Error writing to device file %v", err)
+					return &response, err
+				}
+			}
+
 			logging.Infof("Loading BPF program on device: %s", dev)
 			fd, err := pm.BpfHandler.LoadBpfSendXskMap(dev)
 			if err != nil {
