@@ -171,6 +171,9 @@ many unused CDQ subfunctions are available
 In this fake handler it currently returns 0
 */
 func (r *fakeHandler) NumAvailableCdqSubfunctions(interfaceName string) (int, error) {
-
 	return 0, nil
+}
+
+func (r *fakeHandler) IsPhysicalPort(name string) (bool, error) {
+	return false, nil
 }

@@ -18,6 +18,8 @@ package networking
 import (
 	"errors"
 	"fmt"
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	logging "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
 	"net"
@@ -47,6 +49,7 @@ type Handler interface {
 	SetQueueSize(interfaceName string, size string) error
 	SetDefaultQueueSize(interfaceName string) error
 	NetDevExists(device string) (bool, error)
+	IsPhysicalPort(name string) (bool, error)
 	CreateCdqSubfunction(parentPci string, sfnum string) error     // see cdq.go
 	DeleteCdqSubfunction(portIndex string) error                   // see cdq.go
 	IsCdqSubfunction(name string) (bool, error)                    // see cdq.go
@@ -237,4 +240,35 @@ func (r *handler) NetDevExists(device string) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+/*
+IsPhysicalPort takes in a device name. It returns true if it is a physical port, and false otherwise.
+*/
+func (r *handler) IsPhysicalPort(name string) (bool, error) {
+	path := filepath.Join(sysClassNet, name, pciLink)
+	physical, err := tools.FilePathExists(path)
+	if err != nil {
+		return false, err
+	}
+
+	if physical {
+		// CDQ subfunctions need a further check
+		driver, err := r.GetDeviceDriver(name)
+		if err != nil {
+			return false, err
+		}
+		if tools.ArrayContains(constants.Drivers.Cdq, driver) {
+			subfunction, err := r.IsCdqSubfunction(name)
+			if err != nil {
+				return false, err
+			}
+			if subfunction {
+				return false, nil
+			}
+		}
+		return true, nil
+	} else {
+		return false, nil
+	}
 }

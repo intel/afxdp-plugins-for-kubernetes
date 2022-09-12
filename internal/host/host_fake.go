@@ -93,4 +93,11 @@ func (r *fakeHandler) HasDevlink() (bool, string, error) {
 	return true, "devlink utility, iproute2-ss200127", nil
 }
 
+/*
+Hostname is a wrapper function for unit testing that calls os.Hostname.
+*/
+func (r *fakeHandler) Hostname() (string, error) {
+	return "k8sNode1", nil
+}
+
 //set setter for setDevLink

@@ -35,6 +35,7 @@ type Handler interface {
 	HasEthtool() (bool, string, error)
 	HasLibbpf() (bool, []string, error)
 	HasDevlink() (bool, string, error)
+	Hostname() (string, error)
 }
 
 /*
@@ -187,6 +188,13 @@ func (r *handler) HasDevlink() (bool, string, error) {
 
 	version := strings.Split(string(output), "\n")[0]
 	return true, version, nil
+}
+
+/*
+Hostname is a wrapper function for unit testing that calls os.Hostname.
+*/
+func (r *handler) Hostname() (string, error) {
+	return os.Hostname()
 }
 
 /*
