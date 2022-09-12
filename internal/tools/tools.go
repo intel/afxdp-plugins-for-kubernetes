@@ -88,8 +88,9 @@ func PrettyString(v interface{}) (string, error) {
 KernelVersionInt takes a kernel version as a string and returns the integer value
 */
 func KernelVersionInt(version string) (int64, error) { // example "5.4.0-89-generic"
-	stripped := strings.Split(version, "-")[0] // "5.4.0"
-	split := strings.Split(stripped, ".")      // [5 4 0]
+	stripped := strings.Replace(version, "+", "", -1) // "5.40-89-generic"
+	stripped = strings.Split(stripped, "-")[0]        // "5.4.0"
+	split := strings.Split(stripped, ".")             // [5 4 0]
 
 	padded := ""
 	for _, val := range split { // 000500040000

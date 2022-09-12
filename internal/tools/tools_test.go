@@ -269,6 +269,12 @@ func TestKernelVersionInt(t *testing.T) {
 			expResult: 500040000,
 			expError:  nil,
 		},
+		{
+			name:      "seventh_test_5.19.0+",
+			version:   "5.19.0+",
+			expResult: 500190000,
+			expError:  nil,
+		},
 	}
 
 	for _, tc := range testCases {
