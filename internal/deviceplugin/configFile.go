@@ -53,6 +53,8 @@ const (
 	poolUdsTimeoutError   = "UDS socket timeout must be between 30 and 300 seconds"
 	poolModeRequiredError = "Plugin must have a mode"
 	poolModeMustBeError   = "Plugin mode must be one of "
+	poolEthtoolNotEmpty   = "Ethtool commands cannot be empty"
+	poolEthtoolCharacters = "Ethtool commands must be alphanumeric or contain only approved charaters"
 
 	// logging errors
 	filenameValidError = "must be a valid .log or .txt filename"
@@ -90,6 +92,7 @@ type configFile_Pool struct {
 	UdsFuzz                 bool                 `json:"UdsFuzz"`
 	RequiresUnprivilegedBpf bool                 `json:"RequiresUnprivilegedBpf"`
 	UID                     int                  `json:"uid"`
+	EthtoolCmds             []string             `json:"ethtoolCmds"`
 }
 
 type configFile struct {
@@ -207,6 +210,10 @@ func (c configFile_Pool) Validate() error {
 			validation.Required.When(len(c.Drivers) == 0 && len(c.Nodes) == 0).Error(poolMustHaveDevsError),
 		),
 		validation.Field(
+			&c.Nodes,
+			validation.Required.When(len(c.Drivers) == 0 && len(c.Devices) == 0).Error(poolMustHaveDevsError),
+		),
+		validation.Field(
 			&c.UdsTimeout,
 			validation.When(
 				c.UdsTimeout != 0,
@@ -218,6 +225,13 @@ func (c configFile_Pool) Validate() error {
 			&c.UID,
 			validation.When(!(c.UID == 0), validation.Max(constants.UID.Maximum)),
 			validation.When(!(c.UID == 0), validation.Min(constants.UID.Minimum)),
+		),
+		validation.Field(
+			&c.EthtoolCmds,
+			validation.Each(
+				validation.Required.When(len(c.EthtoolCmds) > 0).Error(poolEthtoolNotEmpty),
+				validation.Match(regexp.MustCompile(constants.EthtoolFilter.EthtoolFilterRegex)).Error(poolEthtoolCharacters),
+			),
 		),
 	)
 }
@@ -248,17 +262,17 @@ func (c configFile) Validate() error {
 	)
 }
 
-func (c configFile_Driver) GetExcludedDeviceList() []string {
+func (c configFile_Pool) GetDeviceList() []string {
 	var list []string
-	for _, dev := range c.ExcludeDevices {
+	for _, dev := range c.Devices {
 		list = append(list, dev.Name) //TODO needs to also figure pci and mac
 	}
 	return list
 }
 
-func (c configFile_Pool) GetDeviceList() []string {
+func (c configFile_Driver) GetExcludedDeviceList() []string {
 	var list []string
-	for _, dev := range c.Devices {
+	for _, dev := range c.ExcludeDevices {
 		list = append(list, dev.Name) //TODO needs to also figure pci and mac
 	}
 	return list

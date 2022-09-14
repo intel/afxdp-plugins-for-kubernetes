@@ -90,7 +90,6 @@ func (n NetConfig) Validate() error {
 		),
 		validation.Field(
 			&n.Mode,
-			//validation.Required.Error("validate(): Mode is required"), // TODO make required once more modes available
 			validation.In(modes...).Error("validate(): must be "+fmt.Sprintf("%v", modes)),
 		),
 	)
@@ -365,6 +364,25 @@ func CmdDel(args *skel.CmdArgs) error {
 		logging.Errorf(err.Error())
 
 		return err
+	}
+
+	isSf, err := netHandler.IsCdqSubfunction(cfg.Device)
+	if err != nil {
+		logging.Errorf("cmdDel(): error determining if %s is a CDQ subfunction: %v", cfg.Device, err)
+		isSf = false
+	}
+	if isSf {
+		logging.Debugf("cmdDel(): deleting subfunction %s", cfg.Device)
+		portIndex, err := netHandler.GetCdqPortIndex(cfg.Device)
+		if err != nil {
+			logging.Errorf("cmdDel(): error getting port index of device %s: %v", cfg.Device, err)
+		} else {
+			if err := netHandler.DeleteCdqSubfunction(portIndex); err != nil {
+				logging.Errorf("cmdDel(): error deleting CDQ subfunction %s: %v", cfg.Device, err)
+			} else {
+				logging.Infof("cmdDel(): subfunction %s deleted", cfg.Device)
+			}
+		}
 	}
 
 	return nil

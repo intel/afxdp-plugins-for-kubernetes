@@ -6,16 +6,31 @@ metadata:
 data:
   config.json: |
     {
-        "mode": "cdq",
-        "logLevel": "debug",
-        "logFile": "cndp-dp-e2e.log",
-        "pools" : [
-            {
-                "name" : "e2e",
-                "drivers" : ["i40e"],
-                "uid" : 1500
-            }
-        ]
+       "logLevel":"debug",
+       "logFile":"afxdp-dp-e2e.log",
+       "pools":[
+          {
+             "name":"e2eCdq",
+             "mode":"cdq",
+             "uid" : 1500,
+             "drivers":[
+                {
+                   "name":"ice",
+                   "secondary":350
+                }
+             ]
+          },
+          {
+             "name":"e2ePrimary",
+             "mode":"primary",
+             "uid" : 1500,
+             "drivers":[
+                {
+                   "name":"i40e"
+                }
+             ]
+          }
+       ]
     }
 
 ---
@@ -28,7 +43,7 @@ metadata:
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: kube-cndp-device-plugin-e2e
+  name: kube-afxdp-device-plugin-e2e
   namespace: kube-system
   labels:
     tier: node
@@ -53,7 +68,7 @@ spec:
           effect: NoSchedule
       serviceAccountName: afxdp-device-plugin
       containers:
-        - name: kube-cndp
+        - name: kube-afxdp
           image: $DOCKER_REG/test/afxdp-device-plugin-e2e:latest
           imagePullPolicy: Always
           securityContext:

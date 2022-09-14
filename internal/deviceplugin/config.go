@@ -1,300 +1,370 @@
 /*
- * Copyright(c) 2022 Intel Corporation.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+* Copyright(c) 2022 Intel Corporation.
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
  */
 
 package deviceplugin
 
 import (
 	"encoding/json"
-	"fmt"
-	validation "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	logging "github.com/sirupsen/logrus"
 	"io/ioutil"
-	"os"
-	"regexp"
-)
-
-const (
-	maxUdsTimeout     = 300                           // Maximum timeout set to seconds
-	defaultUdsTimeout = 30                            // Default timeout for unset timeout value in config.json
-	logDirPermission  = 0744                          // Permissions for setting log directory
-	logFilePermission = 0644                          // Permissions for setting log file
-	logDir            = "/var/log/afxdp-k8s-plugins/" // Acceptable log directory
-	minLinuxVersion   = "4.18.0"                      // Minimum Linux version for AF_XDP support
 )
 
 var (
-	assignedInfs []string
-	netHandler   networking.Handler
+	network     networking.Handler
+	node        host.Handler
+	cfgFile     *configFile
+	hostDevices map[string]*networking.Device
 )
 
 /*
-PoolConfig contains the pool name and device list
+PluginConfig is the object that represents the overall plugin config.
+Global configurations such as log levels are contained here.
+*/
+type PluginConfig struct {
+	LogFile  string
+	LogLevel string
+}
+
+/*
+PoolConfig is the object representing the config of an individual device pool.
+It contains pool specific details, such as mode and the device list.
+This object is passed into the PoolManager.
 */
 type PoolConfig struct {
-	Name        string   `json:"name"`
-	Devices     []string `json:"devices"`
-	DeviceInfo  map[string]*networking.Device
-	Drivers     []string `json:"drivers"`
-	UID         int      `json:"uid"`
-	EthtoolCmds []string `json:"ethtoolCmds"`
+	Name                    string                        // the name of the pool, used for logging and advertising resource to K8s. Pods will request this resource
+	Mode                    string                        // the mode that this pool operates in
+	Devices                 map[string]*networking.Device // a map of devices that the pool will manage
+	Filters                 []string                      // the ethtool/rss filters we apply to devices from this pool
+	UdsServerDisable        bool                          // a boolean to say if pods in this pool require BPF loading the UDS server
+	UdsTimeout              int                           // timeout value in seconds for the UDS sockets, user provided or defaults to value from constants package
+	UdsFuzz                 bool                          // a boolean to turn on fuzz testing within the UDS server, has no use outside of development and testing
+	RequiresUnprivilegedBpf bool                          // a boolean to say if this pool requires unprivileged BPF
+	UID                     int                           // the id of the pod user, we give this user ACL access to the UDS socket
+	EthtoolCmds             []string                      // list of ethtool filters to apply to the netdev
 }
 
 /*
-Config contains the overall configuration for the device plugin
+GetPluginConfig returns the global config for the device plugin.
+This config is returned in a PluginConfig object
 */
-type Config struct {
-	LogDir                 string
-	LogDirPermission       os.FileMode
-	LogFilePermission      os.FileMode
-	MinLinuxVersion        string
-	Pools                  []*PoolConfig `json:"pools"`
-	Mode                   string        `json:"mode"`
-	LogFile                string        `json:"logFile"`
-	LogLevel               string        `json:"logLevel"`
-	UdsTimeout             int           `json:"timeout"`
-	RequireUnprivilegedBpf bool          `json:"requireUnprivilegedBpf"`
-	CndpFuzzing            bool          `json:"cndpFuzz"`
-}
+func GetPluginConfig(configFile string) (PluginConfig, error) {
+	var pluginConfig PluginConfig
 
-/*
-GetConfig returns the overall config for the device plugin
-*/
-func GetConfig(configFile string, networking networking.Handler) (Config, error) {
-	cfg := Config{
-		LogDir:            logDir,
-		LogDirPermission:  logDirPermission,
-		LogFilePermission: logFilePermission,
-		MinLinuxVersion:   minLinuxVersion,
+	if cfgFile == nil {
+		if err := readConfigFile(configFile); err != nil {
+			logging.Errorf("Error reading config file: %v", err)
+			return pluginConfig, err
+		}
 	}
-	netHandler = networking
 
-	logging.Infof("Reading config file: %s", configFile)
-	raw, err := ioutil.ReadFile(configFile)
+	pluginConfig = PluginConfig{
+		LogFile:  cfgFile.LogFile,
+		LogLevel: cfgFile.LogLevel,
+	}
+
+	return pluginConfig, nil
+}
+
+/*
+GetPoolConfigs returns a slice of PoolConfig objects.
+Each object containing the config and device list for one pool.
+*/
+func GetPoolConfigs(configFile string, net networking.Handler, host host.Handler) ([]PoolConfig, error) {
+	var poolConfigs []PoolConfig
+	network = net
+	node = host
+
+	if cfgFile == nil {
+		if err := readConfigFile(configFile); err != nil {
+			logging.Errorf("Error reading config file: %v", err)
+			return poolConfigs, err
+		}
+	}
+
+	hostname, err := node.Hostname()
 	if err != nil {
-		logging.Errorf("Error reading config file: %v", err)
-		return cfg, err
+		logging.Errorf("Error getting node hostname: %v", err)
+		return poolConfigs, err
 	}
 
-	logging.Infof("Unmarshalling config data")
-	if err := json.Unmarshal(raw, &cfg); err != nil {
-		logging.Errorf("Error unmarshalling config data: %v", err)
-		return cfg, err
+	unprivBpfAllowed, err := node.AllowsUnprivilegedBpf()
+	if err != nil {
+		logging.Errorf("Error checking if host allows unprivileged BPF operations: %v", err)
 	}
-
-	logging.Infof("Validating config data")
-	if err := cfg.Validate(); err != nil {
-		logging.Errorf("Config validation error: %v", err)
-		return cfg, err
-	}
-
-	if cfg.UdsTimeout == -1 {
-		cfg.UdsTimeout = 0
-		logging.Debugf("Timeout is set to: %d seconds", cfg.UdsTimeout)
-	} else if cfg.UdsTimeout == 0 {
-		cfg.UdsTimeout = defaultUdsTimeout
-		logging.Debugf("Using default value, timeout set to: %d seconds", cfg.UdsTimeout)
+	if unprivBpfAllowed {
+		logging.Debugf("Unprivileged BPF is allowed on this host")
 	} else {
-		logging.Debugf("Timeout is set to: %d seconds", cfg.UdsTimeout)
+		logging.Warningf("Unprivileged BPF is disabled on this host")
 	}
 
-	return cfg, nil
-}
-
-/*
-BuildPools builds up the device list in each of the configured pools
-*/
-func (c *Config) BuildPools() error {
-	logging.Debugf("Checking pools for manually assigned devices")
-	for _, pool := range c.Pools {
-		for _, device := range pool.Devices {
-			logging.Debugf("Device " + device + " has been manually assigned to pool " + pool.Name)
-
-			if tools.ArrayContains(assignedInfs, device) {
-				logging.Warningf("Device " + device + " is already assigned to another pool, removing from " + pool.Name)
-				pool.Devices = tools.RemoveFromArray(pool.Devices, device)
-				continue
-			}
-
-			assignedInfs = append(assignedInfs, device)
-		}
-	}
-
-	logging.Debugf("Checking pools for assigned drivers")
-	for _, pool := range c.Pools {
-		if len(pool.Drivers) > 0 {
-			logging.Debugf("Pool " + pool.Name + " has drivers assigned")
-
-			pool.DeviceInfo = make(map[string]*networking.Device)
-
-			for _, driver := range pool.Drivers {
-				logging.Debugf("Pool " + pool.Name + " discovering devices of type " + driver)
-				devices, err := deviceDiscovery(driver)
-				if err != nil {
-					logging.Errorf("Error discovering devices: %v", err.Error())
-					return err
-				}
-
-				if len(devices) > 0 {
-					logging.Infof("Pool "+pool.Name+" discovered "+driver+" devices: %s", devices)
-
-					for keyDevice, deviceInf := range devices {
-						pool.DeviceInfo[keyDevice] = deviceInf
-						pool.Devices = append(pool.Devices, keyDevice)
-						assignedInfs = append(assignedInfs, keyDevice)
-					}
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-/*
-Validate validates the contents of the PoolConfig struct
-*/
-func (p PoolConfig) Validate() error {
-	return validation.ValidateStruct(&p,
-		validation.Field(
-			&p.Name,
-			validation.Required.Error("pools must have a name"),
-			is.Alphanumeric.Error("pool names must only contain letters and numbers"),
-		),
-		validation.Field(
-			&p.Devices,
-			validation.Each(
-				validation.Required.Error("devices must have a name"),
-				validation.Match(regexp.MustCompile(constants.Devices.ValidNameRegex)).Error("device names must only contain letters, numbers and selected symbols"),
-			),
-			validation.Required.When(len(p.Drivers) == 0).Error("pools must contain devices or drivers"),
-		),
-		validation.Field(
-			&p.EthtoolCmds,
-			validation.Each(
-				validation.Required.When(len(p.EthtoolCmds) > 0).Error("EthtoolCmds cannot be an empty string"),
-				validation.Match(regexp.MustCompile(constants.EthtoolFilter.EthtoolFilterRegex)).Error("EthtoolCmds must be alphanumeric or contain the following charaters (-,.,:)"),
-			),
-		),
-
-		validation.Field(
-			&p.Drivers,
-			validation.Each(
-				validation.Required.Error("drivers must have a name"),
-				validation.Match(regexp.MustCompile(constants.Drivers.ValidNameRegex)).Error("driver names must only contain letters, numbers and selected symbols"),
-			),
-		),
-		validation.Field(
-			&p.UID,
-			validation.When(!(p.UID == 0), validation.Max(constants.UID.Maximum)),
-			validation.When(!(p.UID == 0), validation.Min(constants.UID.Minimum)),
-		),
-	)
-}
-
-/*
-Validate validates the contents of the Config struct
-*/
-func (c Config) Validate() error {
-	var (
-		allowedLogLevels               = constants.Logging.Levels
-		allowedModes                   = constants.Plugins.Modes
-		logLevels        []interface{} = make([]interface{}, len(allowedLogLevels))
-		modes            []interface{} = make([]interface{}, len(allowedModes))
-	)
-
-	for i, logLevel := range allowedLogLevels {
-		logLevels[i] = logLevel
-	}
-	for i, mode := range allowedModes {
-		modes[i] = mode
-	}
-
-	return validation.ValidateStruct(&c,
-		validation.Field(
-			&c.Pools,
-			validation.Each(
-				validation.NotNil.Error("cannot be null"),
-			),
-		),
-		validation.Field(
-			&c.LogLevel,
-			validation.In(logLevels...).Error("must be "+fmt.Sprintf("%v", logLevels)),
-		),
-		validation.Field(
-			&c.UdsTimeout,
-			validation.When(!(c.UdsTimeout == -1 || c.UdsTimeout == 0), validation.Min(defaultUdsTimeout)),
-			validation.When(!(c.UdsTimeout == -1 || c.UdsTimeout == 0), validation.Max(maxUdsTimeout)),
-		),
-		validation.Field(
-			&c.Mode,
-			//validation.Required.Error("validate(): Mode is required"), // TODO make required once more modes available
-			validation.In(modes...).Error("validate(): must be "+fmt.Sprintf("%v", modes)),
-		),
-	)
-}
-
-func deviceDiscovery(requiredDriver string) (map[string]*networking.Device, error) {
-	poolDevices := make(map[string]*networking.Device)
-
-	hostDevices, err := netHandler.GetHostDevices()
+	hostDevices, err = network.GetHostDevices()
 	if err != nil {
-		logging.Warningf("Error setting up Interfaces: %v", err)
-		return poolDevices, err
+		logging.Errorf("Error getting host devices: %v", err)
+		return poolConfigs, err
 	}
 
-	for device, hostDevice := range hostDevices {
-		if tools.ArrayContainsPrefix(constants.Devices.Prohibited, hostDevice.Name()) {
-			logging.Debugf("%s is an excluded device, skipping", hostDevice.Name())
+	for device := range hostDevices {
+		physical, err := network.IsPhysicalPort(device)
+		if err != nil {
+			logging.Errorf("Error determining if %s is a physical device: %v", device, err)
+			delete(hostDevices, device)
+			continue
+		}
+		if !physical {
+			logging.Debugf("%s is not a physical device, removing from list of host devices", device)
+			delete(hostDevices, device)
+			continue
+		}
+		if tools.ArrayContainsPrefix(constants.Devices.Prohibited, device) {
+			logging.Debugf("%s a globally prohibited device, removing from list of host devices", device)
+			delete(hostDevices, device)
+			continue
+		}
+	}
+
+	prettyDevices, err := tools.PrettyString(hostDevices)
+	if err != nil {
+		logging.Errorf("Error printing host devices: %v", err)
+	} else {
+		logging.Debugf("Host devices:\n%s", prettyDevices)
+	}
+
+	for _, pool := range cfgFile.Pools {
+		logging.Infof("Processing Pool: %s", pool.Name)
+
+		// check if pool requires unprivileged BPF and if the host allows it
+		if pool.RequiresUnprivilegedBpf && !unprivBpfAllowed {
+			logging.Warningf("Pool %s requires unprivileged BPF which is not allowed on this node", pool.Name)
 			continue
 		}
 
-		deviceDriver, err := netHandler.GetDeviceDriver(hostDevice.Name())
-		if err != nil {
-			logging.Errorf("Error getting driver name: %v", err.Error())
-			return poolDevices, err
+		// uds timeout - user disabled, user did not set, user set
+		if pool.UdsTimeout == -1 {
+			pool.UdsTimeout = 0
+			logging.Debugf("UDS timeout is disabled: %d seconds", pool.UdsTimeout)
+		} else if pool.UdsTimeout == 0 {
+			pool.UdsTimeout = constants.Uds.MinTimeout
+			logging.Debugf("Using default UDS timeout: %d seconds", pool.UdsTimeout)
+		} else {
+			logging.Debugf("UDS timeout is set to: %d seconds", pool.UdsTimeout)
 		}
 
-		if deviceDriver == requiredDriver {
-			logging.Debugf("Device %s is type %s", hostDevice.Name(), requiredDriver)
-
-			if tools.ArrayContains(assignedInfs, hostDevice.Name()) {
-				logging.Infof("Device %s is already assigned to a pool, skipping", hostDevice.Name())
-				continue
+		// check if we have specific config for this node
+		for _, node := range pool.Nodes {
+			if node.Hostname == hostname {
+				logging.Debugf("Pool %s has specific config for this node - %s", pool.Name, hostname)
+				pool.Devices = node.Devices
+				pool.Drivers = node.Drivers
+				logging.Debugf("Devices and drivers updated to specific node config")
+				break
 			}
+		}
 
-			addrs, err := netHandler.GetIPAddresses(hostDevice.Name())
-			if err != nil {
-				logging.Errorf("Error getting device IP: %v", err.Error())
-				return poolDevices, err
+		// if devices are configured check that they exist, are in a valid mode, etc.
+		if pool.Devices != nil {
+			var validDevices []*configFile_Device
+			for _, device := range pool.Devices {
+				if hostDev, ok := hostDevices[device.Name]; ok {
+					if !validateDevice(hostDev, nil, pool) {
+						continue
+					}
+					validDevices = append(validDevices, device)
+				} else {
+					logging.Warningf("Device %s does not exist on this node", device.Name)
+				}
 			}
+			pool.Devices = validDevices
+		}
 
-			if len(addrs) > 0 {
-				logging.Infof("Device %s has an assigned IP address, skipping", hostDevice.Name())
-				continue
+		// if drivers are configured, get devices of that type
+		if pool.Drivers != nil {
+			for _, driver := range pool.Drivers {
+				devices := getDeviceListOfDriverType(driver, pool)
+				pool.Devices = append(pool.Devices, devices...)
 			}
+		}
 
-			poolDevices[device] = hostDevice
-			logging.Debugf("Device %s appended to the device list", hostDevice.Name())
-		} else {
-			logging.Debugf("%s has the wrong driver type: %s", hostDevice.Name(), deviceDriver)
+		/*
+			up until this point we have been building, configuring and validating our pool devices
+			these devices have been of type configFile_Device, a basic object identifying a device
+			getSecondaryDevices will take these objects and process them
+			what is returned is a map of fully functional device objects from the networking package
+			our devices become "real" at this point
+		*/
+		devices := getSecondaryDevices(pool)
+
+		if len(devices) != 0 {
+			poolConfigs = append(poolConfigs, PoolConfig{
+				Name:                    pool.Name,
+				Mode:                    pool.Mode,
+				Devices:                 devices,
+				UdsServerDisable:        pool.UdsServerDisable,
+				UdsTimeout:              pool.UdsTimeout,
+				UdsFuzz:                 pool.UdsFuzz,
+				RequiresUnprivilegedBpf: pool.RequiresUnprivilegedBpf,
+				UID:                     pool.UID,
+			})
 		}
 
 	}
-	return poolDevices, nil
+
+	return poolConfigs, nil
+}
+
+func getDeviceListOfDriverType(driver *configFile_Driver, pool *configFile_Pool) []*configFile_Device {
+	var devices []*configFile_Device
+	var counting bool
+
+	deviceLimit := driver.Primary
+	deviceCount := 0
+	if deviceLimit > 0 {
+		counting = true
+	} else {
+		counting = false
+	}
+
+	for _, hostDev := range hostDevices {
+		hostDevDriver, err := hostDev.Driver()
+		if err != nil {
+			logging.Errorf("Error determining driver of device %s: %v", hostDev.Name(), err)
+		}
+		if hostDevDriver != driver.Name {
+			logging.Debugf("%s is the wrong driver type: %s ", hostDev.Name(), hostDevDriver)
+			continue
+		}
+
+		if !validateDevice(hostDev, driver, pool) {
+			continue
+		}
+
+		device := configFile_Device{Name: hostDev.Name(), Secondary: driver.Secondary} // the device inherits the secondary limit from its driver
+		devices = append(devices, &device)
+		logging.Infof("%s added to pool", hostDev.Name())
+		deviceCount++
+
+		if counting && deviceCount >= deviceLimit {
+			logging.Debugf("Pool %s has filled primary device allocation for %s driver", pool.Name, driver.Name)
+			break
+		}
+	}
+
+	logging.Debugf("Exit discovery.")
+	return devices
+}
+
+func getSecondaryDevices(pool *configFile_Pool) map[string]*networking.Device {
+	secondaryDevices := make(map[string]*networking.Device)
+
+	for _, configDevice := range pool.Devices {
+		if hostDevice, ok := hostDevices[configDevice.Name]; ok {
+			switch pool.Mode {
+			case "primary":
+				dev, err := hostDevice.AssignAsPrimary()
+				if err != nil {
+					logging.Errorf("Error assigning device %s as primary: %v", hostDevice.Name(), err)
+					continue
+				}
+				secondaryDevices[dev.Name()] = dev
+			case "cdq":
+				sfs, err := hostDevice.AssignCdqSecondaries(configDevice.Secondary)
+				if err != nil {
+					logging.Errorf("Error assigning subfunctions from device %s: %v", hostDevice.Name(), err)
+					continue
+				}
+				for _, sf := range sfs {
+					secondaryDevices[sf.Name()] = sf
+				}
+			default:
+				logging.Errorf("Unsupported Mode: %s", pool.Mode)
+			}
+		} else {
+			logging.Errorf("Device %s is not available on this host", configDevice.Name)
+		}
+	}
+	return secondaryDevices
+}
+
+func validateDevice(device *networking.Device, driver *configFile_Driver, pool *configFile_Pool) bool {
+	if _, ok := hostDevices[device.Name()]; !ok {
+		logging.Debugf("Device %s does not exist on this node", device.Name())
+		return false
+	}
+
+	if device.IsFullyAssigned() {
+		logging.Debugf("Device %s is fully assigned", device.Name())
+		return false
+	}
+
+	if tools.ArrayContainsPrefix(constants.Devices.Prohibited, device.Name()) {
+		logging.Debugf("%s a globally prohibited device", device.Name())
+		return false
+	}
+
+	if driver != nil {
+		// if passed a driver, check that this device was not already manually configured
+		if tools.ArrayContains(pool.GetDeviceList(), device.Name()) {
+			logging.Debugf("%s is already in this pool", device.Name())
+			return false
+		}
+		if tools.ArrayContains(driver.GetExcludedDeviceList(), device.Name()) {
+			logging.Debugf("%s is an excluded device for %s driver", device.Name(), driver.Name)
+			return false
+		}
+	}
+
+	if (device.Mode() != "") && (device.Mode() != pool.Mode) {
+		logging.Warningf("Device %s in the wrong mode: %s", device.Name(), device.Mode())
+		return false
+	}
+
+	return true
+}
+
+func readConfigFile(file string) error {
+	cfgFile = &configFile{}
+
+	logging.Infof("Reading config file: %s", file)
+	raw, err := ioutil.ReadFile(file)
+	if err != nil {
+		logging.Errorf("Error reading config file: %v", err)
+		return err
+	}
+
+	logging.Infof("Unmarshalling config data")
+	if err := json.Unmarshal(raw, &cfgFile); err != nil {
+		logging.Errorf("Error unmarshalling config data: %v", err)
+		return err
+	}
+
+	if cfgFile.LogLevel == "debug" {
+		pretty, err := tools.PrettyString(cfgFile)
+		if err != nil {
+			logging.Errorf("Error printing config data: %v", err)
+		} else {
+			logging.Infof("Config Data:\n%s", pretty)
+		}
+	}
+
+	logging.Infof("Validating config data")
+	if err := cfgFile.Validate(); err != nil {
+		logging.Errorf("Config validation error: %v", err)
+		return err
+	}
+	return nil
 }

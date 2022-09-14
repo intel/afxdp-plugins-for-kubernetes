@@ -110,7 +110,7 @@ func (h *handler) Listen() (CleanupFunc, error) {
 	}
 
 	//ACL Permissions
-	if h.uid != "" {
+	if h.uid != "0" {
 		logging.Infof("Giving permissions to UID %s", h.uid)
 		err = host.GivePermissions(h.socketPath, h.uid, "rwx")
 		if err != nil {

@@ -1,0 +1,49 @@
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: afxdp-e2e-cdq
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: afxdp/e2eCdq
+spec:
+  config: '{
+      "cniVersion": "0.3.0",
+      "type": "afxdp",
+      "mode": "cdq",
+      "logFile": "afxdp-cni-e2e.log",
+      "logLevel": "debug",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "192.168.0.0/20",
+        "rangeStart": "192.168.0.1",
+        "rangeEnd": "192.168.15.254",
+        "routes": [
+          { "dst": "0.0.0.0/0" }
+        ],
+        "gateway": "192.168.1.1"
+      }
+    }'
+---
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: afxdp-e2e-primary
+  annotations:
+    k8s.v1.cni.cncf.io/resourceName: afxdp/e2ePrimary
+spec:
+  config: '{
+      "cniVersion": "0.3.0",
+      "type": "afxdp",
+      "mode": "primary",
+      "logFile": "afxdp-cni-e2e.log",
+      "logLevel": "debug",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "192.168.0.0/20",
+        "rangeStart": "192.168.0.1",
+        "rangeEnd": "192.168.15.254",
+        "routes": [
+          { "dst": "0.0.0.0/0" }
+        ],
+        "gateway": "192.168.1.1"
+      }
+    }'

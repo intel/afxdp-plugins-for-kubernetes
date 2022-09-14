@@ -97,16 +97,7 @@ func (d *Device) AssignCdqSecondaries(limit int) ([]*Device, error) {
 	}
 
 	if d.secondaries == nil {
-		pci, err := d.Pci()
-		if err != nil {
-			return nil, fmt.Errorf("Error getting PCI address of device %s: %v", d.name, err)
-		}
-
-		numSF, err := d.netHandler.NumAvailableCdqSubfunctions(pci)
-		if err != nil {
-			return nil, fmt.Errorf("Error finding the number of available subfunctions on device %s: %v", d.name, err)
-		}
-
+		numSF := constants.Devices.SecondaryMax
 		for i := 1; i <= numSF; i++ {
 			newSF, err := newSecondaryDevice(d.name+"sf"+strconv.Itoa(i), d)
 			if err != nil {
@@ -439,11 +430,12 @@ CreateTestDevice returns a device object and is intended for unit testing purpos
 This function should not be used outside of testing
 Devices should always be created via a net handler
 */
-func CreateTestDevice(name string, driver string, pci string, macAddress string,
+func CreateTestDevice(name string, mode string, driver string, pci string, macAddress string,
 	netHandler Handler) *Device {
 
 	dev := &Device{
 		name:       name,
+		mode:       mode,
 		driver:     driver,
 		pci:        pci,
 		macAddress: macAddress,

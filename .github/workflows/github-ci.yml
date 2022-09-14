@@ -37,14 +37,14 @@ jobs:
           for i in $(kubectl get nodes | awk '{print $1}' | awk '{if (NR!=1) {print}}')
           do
             echo "Cleaning up logs on node $i"
-            ssh $i "rm -f /var/log/afxdp-k8s-plugins/cndp-cni-e2e.log && rm -f /var/log/afxdp-k8s-plugins/cndp-dp-e2e.log" || true
+            ssh $i "rm -f /var/log/afxdp-k8s-plugins/afxdp-cni-e2e.log && rm -f /var/log/afxdp-k8s-plugins/afxdp-dp-e2e.log" || true
           done
       - name: E2E Test (full host run)
         run: ulimit -l 65536 && make e2efull
-      - name: E2E Test (full daemonset run)
+      - name: E2E Test (full CI daemonset run)
         env:
           DOCKER_REG: ${{ secrets.DOCKER_REG }}
-        run: ulimit -l 65536 && make image && cd test/e2e/ && ./e2e-test.sh --full --daemonset --ci
+        run: ulimit -l 65536 && make image && cd test/e2e/ && ./e2e-test.sh --ci
       - name: CNI logs
         if: always()
         run: |
@@ -54,7 +54,7 @@ jobs:
             echo "CNI logs from node $i"
             echo "**********************************************************************************************************************************************************"
             echo
-            ssh $i "cat /var/log/afxdp-k8s-plugins/cndp-cni-e2e.log" || true
+            ssh $i "cat /var/log/afxdp-k8s-plugins/afxdp-cni-e2e.log" || true
             echo -e "\n\n\n\n\n\n\n"
           done
       - name: Device Plugin logs
@@ -66,7 +66,7 @@ jobs:
             echo "Device plugin logs from node $i"
             echo "**********************************************************************************************************************************************************"
             echo
-            ssh $i "cat /var/log/afxdp-k8s-plugins/cndp-dp-e2e.log" || true
+            ssh $i "cat /var/log/afxdp-k8s-plugins/afxdp-dp-e2e.log" || true
             echo -e "\n\n\n\n\n\n\n"
           done
       - name: UDS Directory
@@ -75,6 +75,15 @@ jobs:
           for i in $(kubectl get nodes | awk '{print $1}' | awk '{if (NR!=1) {print}}')
           do
             echo "UDS directory on node $i"
-            ssh $i "ls -la /tmp/afxdp_dp/cndp_e2e/" || true
+            ssh $i "ls -la /tmp/afxdp_dp/afxdp_e2e/" || true
+            echo
+          done
+      - name: Remaining Subfunctions
+        if: always()
+        run: |
+          for i in $(kubectl get nodes | awk '{print $1}' | awk '{if (NR!=1) {print}}')
+          do
+            echo "Subfunctions on node $i"
+            ssh $i "devlink port list" || true
             echo
           done

@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  generateName: afxdp-e2e-
+  "labels": {
+    "app" : "afxdp-e2e"
+  }
+  annotations:
+    k8s.v1.cni.cncf.io/networks: afxdp-e2e-cdq, afxdp-e2e-cdq, afxdp-e2e-cdq, afxdp-e2e-cdq 
+spec:
+  securityContext:
+    runAsUser: 1500
+  containers:
+  - name: afxdp1
+    image: afxdp-e2e-test:latest
+    imagePullPolicy: Never
+    command: ["/bin/sh", "-c"]
+    args: ["udsTest &> /tmp/udsTest.txt; tail -f /dev/null"]
+    resources:
+      requests:
+        afxdp/e2eCdq: '2'
+      limits:
+        afxdp/e2eCdq: '2'
+  - name: afxdp2
+    image: afxdp-e2e-test:latest
+    imagePullPolicy: Never
+    command: ["/bin/sh", "-c"]
+    args: ["udsTest &> /tmp/udsTest.txt; tail -f /dev/null"]
+    resources:
+      requests:
+        afxdp/e2eCdq: '1'
+      limits:
+        afxdp/e2eCdq: '1'
+  - name: afxdp3
+    image: afxdp-e2e-test:latest
+    imagePullPolicy: Never
+    command: ["/bin/sh", "-c"]
+    args: ["udsTest &> /tmp/udsTest.txt; tail -f /dev/null"]
+    resources:
+      requests:
+        afxdp/e2eCdq: '1'
+      limits:
+        afxdp/e2eCdq: '1'
+  restartPolicy: Never

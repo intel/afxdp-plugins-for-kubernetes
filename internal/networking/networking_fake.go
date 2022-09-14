@@ -41,12 +41,9 @@ func NewFakeHandler() FakeHandler {
 }
 
 /*
-GetHostDevices - TODO remove from unit-tests
+GetHostDevices returns a map of devices on the host
 */
 func (r *fakeHandler) GetHostDevices() (map[string]*Device, error) {
-	//devices := make(map[string]*Device)
-
-	//devices["devName"], _ = newPrimaryDevice("devName", "ice", "", "", r)
 
 	return interfaceList, nil
 }

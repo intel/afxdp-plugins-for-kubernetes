@@ -21,13 +21,37 @@ import (
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/cndp"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	"github.com/stretchr/testify/assert"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"testing"
 )
 
 func TestAllocate(t *testing.T) {
-	pm := &PoolManager{Mode: "cdq", Timeout: 30}
+	netHandler := networking.NewFakeHandler()
+
+	config := PoolConfig{
+		Name: "myPool",
+		Mode: "primary",
+		Devices: map[string]*networking.Device{
+			"dev_1": networking.CreateTestDevice("dev_1", "primary", "ice", "0000:81:00.1", "68:05:ca:2d:e9:01", netHandler),
+			"dev_2": networking.CreateTestDevice("dev_2", "primary", "ice", "0000:81:00.2", "68:05:ca:2d:e9:02", netHandler),
+			"dev_3": networking.CreateTestDevice("dev_3", "primary", "ice", "0000:81:00.3", "68:05:ca:2d:e9:03", netHandler),
+			"dev_4": networking.CreateTestDevice("dev_4", "primary", "ice", "0000:81:00.4", "68:05:ca:2d:e9:04", netHandler),
+			"dev_5": networking.CreateTestDevice("dev_5", "primary", "ice", "0000:81:00.5", "68:05:ca:2d:e9:05", netHandler),
+			"dev_6": networking.CreateTestDevice("dev_6", "primary", "ice", "0000:81:00.6", "68:05:ca:2d:e9:06", netHandler),
+			"dev_7": networking.CreateTestDevice("dev_7", "primary", "ice", "0000:81:00.7", "68:05:ca:2d:e9:07", netHandler),
+			"dev_8": networking.CreateTestDevice("dev_8", "primary", "ice", "0000:81:00.8", "68:05:ca:2d:e9:08", netHandler),
+			"dev_9": networking.CreateTestDevice("dev_9", "primary", "ice", "0000:81:00.9", "68:05:ca:2d:e9:09", netHandler),
+		},
+		UdsServerDisable:        false,
+		UdsTimeout:              0,
+		UdsFuzz:                 false,
+		RequiresUnprivilegedBpf: false,
+		UID:                     1500,
+	}
+
+	pm := NewPoolManager(config)
 	pm.ServerFactory = cndp.NewFakeServerFactory()
 	pm.BpfHandler = bpf.NewFakeHandler()
 

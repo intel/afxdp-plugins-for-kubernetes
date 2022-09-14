@@ -1,15 +1,15 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: cndp-e2e-test
+  name: afxdp-e2e-test
   annotations:
-    k8s.v1.cni.cncf.io/networks: cndp-e2e-test
+    k8s.v1.cni.cncf.io/networks: afxdp-e2e-test
 spec:
   securityContext:
     runAsUser: 1500
   containers:
-  - name: cndp
-    image: cndp-e2e-test:latest
+  - name: afxdp
+    image: afxdp-e2e-test:latest
     imagePullPolicy: Never
     command: ["tail", "-f", "/dev/null"]
     resources:

@@ -102,7 +102,7 @@ func (r *handler) GetCdqPortIndex(netdev string) (string, error) {
 	devList, err := exec.Command("sh", "-c", devlinkList).CombinedOutput()
 	if err != nil {
 		if strings.Contains(err.Error(), "exit status 1") {
-			return "", fmt.Errorf("device %s not found by devlink", netdev)
+			return "", fmt.Errorf("device %s not found by devlink (1)", netdev)
 		}
 		return "", err
 	}
@@ -118,7 +118,7 @@ func (r *handler) GetCdqPortIndex(netdev string) (string, error) {
 		return portAddrIndex, nil
 	}
 
-	return "", fmt.Errorf("device %s not found by devlink", netdev)
+	return "", fmt.Errorf("device %s not found by devlink (2)", netdev)
 }
 
 /*
@@ -134,8 +134,8 @@ func (r *handler) NumAvailableCdqSubfunctions(pci string) (int, error) {
 		logging.Errorf("Error getting devlink resource for pci %s: %v", pci, err)
 		return 0, err
 	}
-	lines := strings.Split(string(resourceInfo), "\n")
 
+	lines := strings.Split(string(resourceInfo), "\n")
 	totalSFs, err := strconv.Atoi(strings.Fields(lines[3])[3]) //line 3, word 3 - "size"
 	if err != nil {
 		logging.Errorf("Error converting total available SFs to int %s", err)
