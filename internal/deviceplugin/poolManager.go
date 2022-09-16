@@ -19,9 +19,9 @@ import (
 	"fmt"
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
-	"github.com/intel/afxdp-plugins-for-kubernetes/internal/cndp"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/udsserver"
 	logging "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -48,11 +48,11 @@ type PoolManager struct {
 	UdsServerDisable bool
 	UdsTimeout       int
 	DevicePrefix     string
-	CndpFuzzTest     bool
+	UdsFuzz          bool
 	UID              string
 	EthtoolFilters   []string
 	DpAPIServer      *grpc.Server
-	ServerFactory    cndp.ServerFactory
+	ServerFactory    udsserver.ServerFactory
 	BpfHandler       bpf.Handler
 	NetHandler       networking.Handler
 }
@@ -68,7 +68,7 @@ func NewPoolManager(config PoolConfig) PoolManager {
 		UdsServerDisable: config.UdsServerDisable,
 		UdsTimeout:       config.UdsTimeout,
 		DevicePrefix:     constants.Plugins.DevicePlugin.DevicePrefix,
-		CndpFuzzTest:     config.UdsFuzz,
+		UdsFuzz:          config.UdsFuzz,
 		UID:              strconv.Itoa(config.UID),
 		EthtoolFilters:   config.EthtoolCmds,
 	}
@@ -78,7 +78,7 @@ func NewPoolManager(config PoolConfig) PoolManager {
 Init is called it initialise the PoolManager.
 */
 func (pm *PoolManager) Init(config PoolConfig) error {
-	pm.ServerFactory = cndp.NewServerFactory()
+	pm.ServerFactory = udsserver.NewServerFactory()
 	pm.BpfHandler = bpf.NewHandler()
 	pm.NetHandler = networking.NewHandler()
 
@@ -145,7 +145,7 @@ the Device available in the container.
 func (pm *PoolManager) Allocate(ctx context.Context,
 	rqt *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
 	response := pluginapi.AllocateResponse{}
-	var udsServer cndp.Server
+	var udsServer udsserver.Server
 	var udsPath string
 	var err error
 
@@ -153,7 +153,7 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 
 	if !pm.UdsServerDisable {
 		logging.Infof("Creating new UDS server")
-		udsServer, udsPath, err = pm.ServerFactory.CreateServer(pm.DevicePrefix+"/"+pm.Name, pm.UID, pm.UdsTimeout, pm.CndpFuzzTest)
+		udsServer, udsPath, err = pm.ServerFactory.CreateServer(pm.DevicePrefix+"/"+pm.Name, pm.UID, pm.UdsTimeout, pm.UdsFuzz)
 		if err != nil {
 			logging.Errorf("Error Creating new UDS server: %v", err)
 			return &response, err

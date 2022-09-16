@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package cndp
+package udsserver
 
 import (
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/resourcesapi"
@@ -23,7 +23,7 @@ import (
 )
 
 func TestCreateNewServer(t *testing.T) {
-	//cndp := NewServerFactory() //TODO
+	//uds := NewServerFactory() //TODO
 
 	testCases := []struct {
 		testName       string
@@ -33,9 +33,9 @@ func TestCreateNewServer(t *testing.T) {
 	}{
 		{
 			testName:   "Create UDS Server",
-			deviceType: "cndp/device",
+			deviceType: "uds/device",
 			expectedServer: &server{
-				deviceType: "cndp/device",
+				deviceType: "uds/device",
 				devices:    make(map[string]int),
 				uds:        uds.NewFakeHandler(),
 				podRes:     resourcesapi.NewFakeHandler(),
@@ -45,7 +45,7 @@ func TestCreateNewServer(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			//TODO compare individual elements
-			//receivedServer, _ := cndp.CreateServer(tc.deviceType)
+			//receivedServer, _ := udsserver.CreateServer(tc.deviceType)
 			//assert.DeepEqual(t, tc.expectedServer, receivedServer, cmp.AllowUnexported(server{}, uds.udsHandler{}))
 		})
 	}
@@ -92,28 +92,28 @@ func TestStart(t *testing.T) {
 	fakeResAPI := resourcesapi.NewFakeHandler()
 
 	testCases := []struct {
-		testName          string
-		fakePodName       string
-		fakePodNamespace  string
-		fakeResourceName  string
-		cndpServerDevType string
-		fakePodDevices    []string
-		cndpServerDevices []string
-		fakeRequests      map[int]string
-		expectedResponse  map[int]string
+		testName         string
+		fakePodName      string
+		fakePodNamespace string
+		fakeResourceName string
+		udsServerDevType string
+		fakePodDevices   []string
+		udsServerDevices []string
+		fakeRequests     map[int]string
+		expectedResponse map[int]string
 	}{
 		/***************************************
 		Positive Tests - validate and disconnect
 		***************************************/
 		{
 			//Try connect good podA which has 1 good device - devA
-			testName:          "Connect successfully and disconnect, 1 device",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA"},
-			cndpServerDevices: []string{"devA"},
+			testName:         "Connect successfully and disconnect, 1 device",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA"},
+			udsServerDevices: []string{"devA"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFin,
@@ -125,13 +125,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Try connect good podA which has 2 good devices - devA and devB
-			testName:          "Connect successfully and disconnect, 2 device",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Connect successfully and disconnect, 2 device",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFin,
@@ -143,13 +143,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Try connect good podA which has 10 good devices - devA to devJ
-			testName:          "Connect successfully and disconnect, 2 device",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB", "devC", "devD", "devE", "devF", "devG", "devH", "devI", "devJ"},
-			cndpServerDevices: []string{"devA", "devB", "devC", "devD", "devE", "devF", "devG", "devH", "devI", "devJ"},
+			testName:         "Connect successfully and disconnect, 2 device",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB", "devC", "devD", "devE", "devF", "devG", "devH", "devI", "devJ"},
+			udsServerDevices: []string{"devA", "devB", "devC", "devD", "devE", "devF", "devG", "devH", "devI", "devJ"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFin,
@@ -161,13 +161,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Try connect good podA, in non-default namespace, which has 2 good devices - devA and devB
-			testName:          "Connect a pod in non-default NS",
-			fakePodName:       "podA",
-			fakePodNamespace:  "someOtherNamespace",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Connect a pod in non-default NS",
+			fakePodName:      "podA",
+			fakePodNamespace: "someOtherNamespace",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFin,
@@ -182,13 +182,13 @@ func TestStart(t *testing.T) {
 		*********************************************************/
 		{
 			//Connect podA, request FD for it's single device - devA
-			testName:          "Connect and request good FD, 1 device",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA"},
-			cndpServerDevices: []string{"devA"},
+			testName:         "Connect and request good FD, 1 device",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA"},
+			udsServerDevices: []string{"devA"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFd + ", devA",
@@ -202,13 +202,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Connect podA, request FDs for it's 3 devices - devA devB devC
-			testName:          "Connect and request good FDs, 3 devices",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB", "devC"},
-			cndpServerDevices: []string{"devA", "devB", "devC"},
+			testName:         "Connect and request good FDs, 3 devices",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB", "devC"},
+			udsServerDevices: []string{"devA", "devB", "devC"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFd + ", devA",
@@ -226,13 +226,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Connect podA, request version and disconnect
-			testName:          "Connect and request version",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Connect and request version",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestVersion,
@@ -246,13 +246,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Connect and test full handshake
-			testName:          "Full handshake",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB", "devC"},
-			cndpServerDevices: []string{"devA", "devB", "devC"},
+			testName:         "Full handshake",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB", "devC"},
+			udsServerDevices: []string{"devA", "devB", "devC"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestVersion,
@@ -278,13 +278,13 @@ func TestStart(t *testing.T) {
 		*************************************************************************************/
 		{
 			//Try connect without passing any pod
-			testName:          "No hostname (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "No hostname (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect,
 				1: requestFin,
@@ -296,13 +296,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Try connect without passing any pod, include the comma
-			testName:          "No hostname (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "No hostname (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ",",
 				1: requestFin,
@@ -314,13 +314,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Try connect 2 hostnames
-			testName:          "Two hostnames",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Two hostnames",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA, podB",
 				1: requestFin,
@@ -332,13 +332,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Try connect 5 hostnames
-			testName:          "Many hostnames",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Many hostnames",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA, podB, podC, podD, podE",
 				1: requestFin,
@@ -350,13 +350,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put the podname before connect request
-			testName:          "Hostname before request",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Hostname before request",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "podA, " + requestConnect,
 				1: requestFin,
@@ -368,13 +368,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put the podname before and after connect request
-			testName:          "Hostname before and after request",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Hostname before and after request",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "podA, " + requestConnect + ", podA",
 				1: requestFin,
@@ -386,13 +386,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put a null byte before an otherwise good connect request
-			testName:          "Null byte before good connect request (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Null byte before good connect request (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: `\0` + requestConnect + ", podA",
 				1: requestFin,
@@ -404,13 +404,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put a null byte an otherwise good connect request
-			testName:          "Null byte before good connect request (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Null byte before good connect request (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "\\0" + requestConnect + ", podA",
 				1: requestFin,
@@ -422,13 +422,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage before an otherwise good connect request
-			testName:          "Garbage before good connect request (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage before good connect request (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "dkjfhgkjdfs" + requestConnect + ", podA",
 				1: requestFin,
@@ -440,13 +440,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage before an otherwise good connect request
-			testName:          "Garbage before good connect request (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage before good connect request (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: " " + requestConnect + ", podA",
 				1: requestFin,
@@ -458,13 +458,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage before an otherwise good connect request
-			testName:          "Garbage before good connect request (3)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage before good connect request (3)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: `\` + requestConnect + ", podA",
 				1: requestFin,
@@ -476,13 +476,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage before an otherwise good connect request
-			testName:          "Garbage before good connect request (4)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage before good connect request (4)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "\\\\" + requestConnect + ", podA",
 				1: requestFin,
@@ -494,13 +494,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage before an otherwise good connect request
-			testName:          "Garbage before good connect request (5)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage before good connect request (5)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "," + requestConnect + ", podA",
 				1: requestFin,
@@ -512,13 +512,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put a null byte after an otherwise good connect request
-			testName:          "Null byte after good connect request (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Null byte after good connect request (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA" + `\0`,
 				1: requestFin,
@@ -530,13 +530,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put a null byte after an otherwise good connect request
-			testName:          "Null byte after good connect request (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Null byte after good connect request (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA" + "\\0",
 				1: requestFin,
@@ -548,13 +548,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage after an otherwise good connect request
-			testName:          "Garbage after good connect request (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage after good connect request (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podAdkjfhgkjdfs",
 				1: requestFin,
@@ -566,13 +566,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage after an otherwise good connect request
-			testName:          "Garbage after good connect request (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage after good connect request (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA,dkjfhgkjdfs",
 				1: requestFin,
@@ -584,13 +584,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage after an otherwise good connect request
-			testName:          "Garbage after good connect request (3)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage after good connect request (3)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA" + `\`,
 				1: requestFin,
@@ -602,13 +602,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage after an otherwise good connect request
-			testName:          "Garbage after good connect request (4)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage after good connect request (4)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA\\\\",
 				1: requestFin,
@@ -620,13 +620,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage after an otherwise good connect request
-			testName:          "Garbage after good connect request (5)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage after good connect request (5)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA,",
 				1: requestFin,
@@ -638,13 +638,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put null byte within otherwise good connect request
-			testName:          "Null byte within good connect request (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Null byte within good connect request (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + `\0` + ", podA",
 				1: requestFin,
@@ -656,13 +656,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put null byte within otherwise good connect request
-			testName:          "Null byte within good connect request (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Null byte within good connect request (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + "\\0" + ", podA",
 				1: requestFin,
@@ -674,13 +674,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Null byte before connect
-			testName:          "Send a null byte (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Send a null byte (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: `\0`,
 				1: requestFin,
@@ -692,13 +692,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Null byte before connect
-			testName:          "Send a null byte (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Send a null byte (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "\\0",
 				1: requestFin,
@@ -710,13 +710,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Garbage request before connect
-			testName:          "Garbage request, before connect (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage request, before connect (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "asdfxc",
 				1: requestFin,
@@ -728,13 +728,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Garbage request before connect
-			testName:          "Garbage request, before connect (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage request, before connect (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "asdfxc,",
 				1: requestFin,
@@ -746,13 +746,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Garbage request before connect
-			testName:          "Garbage request, before connect (3)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage request, before connect (3)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "asdfxc, podA,",
 				1: requestFin,
@@ -764,13 +764,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Garbage request before connect
-			testName:          "Garbage request, before connect (4)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage request, before connect (4)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: `\`,
 				1: requestFin,
@@ -782,13 +782,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Garbage request before connect
-			testName:          "Garbage request, before connect (5)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage request, before connect (5)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "\\\\",
 				1: requestFin,
@@ -800,13 +800,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Garbage request before connect
-			testName:          "Garbage request, before connect (6)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage request, before connect (6)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "*",
 				1: requestFin,
@@ -818,13 +818,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Send varient of the accepted /connect request
-			testName:          "Bad connect request (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Bad connect request (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "connect",
 				1: requestFin,
@@ -836,13 +836,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Send varient of the accepted /connect request
-			testName:          "Bad connect request (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Bad connect request (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "connect/",
 				1: requestFin,
@@ -854,13 +854,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Send varient of the accepted /connect request
-			testName:          "Bad connect request (3)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Bad connect request (3)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "/Connect",
 				1: requestFin,
@@ -872,13 +872,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Send varient of the accepted /connect request
-			testName:          "Bad connect request (4)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Bad connect request (4)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "/connect*",
 				1: requestFin,
@@ -890,13 +890,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Send varient of the accepted /connect request
-			testName:          "Bad connect request (5)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Bad connect request (5)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: `\/connect*`,
 				1: requestFin,
@@ -908,13 +908,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Send varient of the accepted /connect request
-			testName:          "Bad connect request (6)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Bad connect request (6)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "*/connect*",
 				1: requestFin,
@@ -926,13 +926,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Try connect podX but we only know podA. podX has 2 good devices - devA and devB
-			testName:          "Bad hostname, Good Devices",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Bad hostname, Good Devices",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podX",
 				1: requestFin,
@@ -944,13 +944,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Try connect good podA, but we have 2 bad devices - devX and devY
-			testName:          "Good hostname, Bad Devices",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devX", "devY"},
+			testName:         "Good hostname, Bad Devices",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devX", "devY"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFin,
@@ -962,13 +962,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Try connect good podA, but 1 of 4 devices is bad - devX
-			testName:          "Good hostname, Single bad device (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB", "devC", "devD"},
-			cndpServerDevices: []string{"devA", "devB", "devC", "devX"},
+			testName:         "Good hostname, Single bad device (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB", "devC", "devD"},
+			udsServerDevices: []string{"devA", "devB", "devC", "devX"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFin,
@@ -980,13 +980,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Try connect good podA, but 1 of 4 devices is bad - devX
-			testName:          "Good hostname, Single bad device (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB", "devC", "devD"},
-			cndpServerDevices: []string{"devX", "devB", "devC", "devD"},
+			testName:         "Good hostname, Single bad device (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB", "devC", "devD"},
+			udsServerDevices: []string{"devX", "devB", "devC", "devD"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFin,
@@ -998,13 +998,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Try connect good podA, but 1 of 4 devices is bad - devX
-			testName:          "Good hostname, Single bad device (3)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB", "devC", "devD"},
-			cndpServerDevices: []string{"devA", "devB", "devX", "devD"},
+			testName:         "Good hostname, Single bad device (3)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB", "devC", "devD"},
+			udsServerDevices: []string{"devA", "devB", "devX", "devD"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFin,
@@ -1016,13 +1016,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Try connect good podA, all 4 devices are good, but we have one extra - devX
-			testName:          "Good hostname, good devices, 1 extra device (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB", "devC", "devD"},
-			cndpServerDevices: []string{"devA", "devB", "devC", "devD", "devX"},
+			testName:         "Good hostname, good devices, 1 extra device (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB", "devC", "devD"},
+			udsServerDevices: []string{"devA", "devB", "devC", "devD", "devX"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFin,
@@ -1034,13 +1034,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Try connect good podA, all devices are good, but we are missing one - devD
-			testName:          "Good hostname, good devices, 1 missing device",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB", "devC", "devD"},
-			cndpServerDevices: []string{"devA", "devB", "devC"},
+			testName:         "Good hostname, good devices, 1 missing device",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB", "devC", "devD"},
+			udsServerDevices: []string{"devA", "devB", "devC"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFin,
@@ -1051,14 +1051,14 @@ func TestStart(t *testing.T) {
 			},
 		},
 		{
-			//Try connect good podA, both devices are good, but they are of the wrong type - cndp/badType
-			testName:          "Good hostname, good device, bad device type",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/badType",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			//Try connect good podA, both devices are good, but they are of the wrong type - uds/badType
+			testName:         "Good hostname, good device, bad device type",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/badType",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFin,
@@ -1073,13 +1073,13 @@ func TestStart(t *testing.T) {
 		****************************************************************/
 		{
 			//Connect podA, request FD device it does not have - devX
-			testName:          "Connect and request bad FD, 1 device",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA"},
-			cndpServerDevices: []string{"devA"},
+			testName:         "Connect and request bad FD, 1 device",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA"},
+			udsServerDevices: []string{"devA"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFd + ", devX",
@@ -1093,13 +1093,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Connect podA, request one bad FD out of 3 - devX
-			testName:          "Connect and request 2 good and 1 bad FD",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB", "devC"},
-			cndpServerDevices: []string{"devA", "devB", "devC"},
+			testName:         "Connect and request 2 good and 1 bad FD",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB", "devC"},
+			udsServerDevices: []string{"devA", "devB", "devC"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFd + ", devA",
@@ -1120,13 +1120,13 @@ func TestStart(t *testing.T) {
 		******************************************************/
 		{
 			//Send FD request without any device
-			testName:          "Request no FD (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA"},
-			cndpServerDevices: []string{"devA"},
+			testName:         "Request no FD (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA"},
+			udsServerDevices: []string{"devA"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFd,
@@ -1140,13 +1140,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Send FD request without any device, include comma
-			testName:          "Request no FD (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA"},
-			cndpServerDevices: []string{"devA"},
+			testName:         "Request no FD (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA"},
+			udsServerDevices: []string{"devA"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFd + ",",
@@ -1160,13 +1160,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Send FD request for 2 devs
-			testName:          "Request 2 FD",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Request 2 FD",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFd + ", devA, devB",
@@ -1180,13 +1180,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Send dev before FD request
-			testName:          "Device before FD request",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Device before FD request",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: "devA, " + requestFd,
@@ -1200,13 +1200,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Send dev before and after FD request
-			testName:          "Device before and after FD request",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Device before and after FD request",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: "devA, " + requestFd + ", devA",
@@ -1220,13 +1220,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put null byte before an otherwise good FD request
-			testName:          "Null byte before good FD request (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Null byte before good FD request (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: `\0` + requestFd + ", devA",
@@ -1240,13 +1240,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put null byte before an otherwise good FD request
-			testName:          "Null byte before good FD request (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Null byte before good FD request (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: "\\0" + requestFd + ", devA",
@@ -1260,13 +1260,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage before an otherwise good FD request
-			testName:          "Garbage before good FD request (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage before good FD request (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: "dkjfhgkjdfs" + requestFd + ", devA",
@@ -1280,13 +1280,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage before an otherwise good FD request
-			testName:          "Garbage before good FD request (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage before good FD request (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: " " + requestFd + ", devA",
@@ -1300,13 +1300,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage before an otherwise good FD request
-			testName:          "Garbage before good FD request (3)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage before good FD request (3)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: `\` + requestFd + ", devA",
@@ -1320,13 +1320,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage before an otherwise good FD request
-			testName:          "Garbage before good FD request (4)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage before good FD request (4)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: "\\\\" + requestFd + ", devA",
@@ -1340,13 +1340,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage before an otherwise good FD request
-			testName:          "Garbage before good FD request (5)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage before good FD request (5)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: "," + requestFd + ", devA",
@@ -1360,13 +1360,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put null byte after an otherwise good FD request
-			testName:          "Null byte after good FD request (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Null byte after good FD request (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFd + "," + `\0`,
@@ -1380,13 +1380,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put null byte after an otherwise good FD request
-			testName:          "Null byte after good FD request (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Null byte after good FD request (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFd + "," + "\\0",
@@ -1400,13 +1400,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage after an otherwise good FD request
-			testName:          "Garbage after good FD request (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage after good FD request (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFd + ", devAdkjfhgkjdfs",
@@ -1420,13 +1420,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage after an otherwise good FD request
-			testName:          "Garbage after good FD request (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage after good FD request (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFd + ", devA,dkjfhgkjdfs",
@@ -1440,13 +1440,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage after an otherwise good FD request
-			testName:          "Garbage after good FD request (3)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage after good FD request (3)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFd + ", devA" + `\`,
@@ -1460,13 +1460,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage after an otherwise good FD request
-			testName:          "Garbage after good FD request (4)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage after good FD request (4)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFd + ", devA\\\\",
@@ -1480,13 +1480,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Put garbage after an otherwise good FD request
-			testName:          "Garbage after good FD request (5)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Garbage after good FD request (5)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFd + ", devA,",
@@ -1503,13 +1503,13 @@ func TestStart(t *testing.T) {
 		***************************************************/
 		{
 			//Validate but then send null byte
-			testName:          "Validate and send null byte (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send null byte (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: `\0`,
@@ -1523,13 +1523,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Validate but then send null byte
-			testName:          "Validate and send null byte (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send null byte (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: "\\0",
@@ -1543,13 +1543,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Validate but then send garbage request
-			testName:          "Validate and send no request (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send no request (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: "",
@@ -1563,13 +1563,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Validate but then send garbage request
-			testName:          "Validate and send no request (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send no request (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: " ",
@@ -1583,13 +1583,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Validate but then send garbage request
-			testName:          "Validate and send garbage request (1)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send garbage request (1)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: ",",
@@ -1603,13 +1603,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Validate but then send garbage request
-			testName:          "Validate and send garbage request (2)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send garbage request (2)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: "/",
@@ -1623,13 +1623,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Validate but then send garbage request
-			testName:          "Validate and send garbage request (3)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send garbage request (3)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: `\`,
@@ -1643,13 +1643,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Validate but then send garbage request
-			testName:          "Validate and send garbage request (4)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send garbage request (4)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: "dkjfhgkjdfs",
@@ -1663,13 +1663,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Validate but then send garbage request
-			testName:          "Validate and send garbage request (5)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send garbage request (5)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: "*",
@@ -1683,13 +1683,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Validate but then send garbage request
-			testName:          "Validate and send garbage request (6)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send garbage request (6)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: ";",
@@ -1703,13 +1703,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Validate but then send garbage request
-			testName:          "Validate and send garbage request (7)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send garbage request (7)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: "\n",
@@ -1723,13 +1723,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Validate but then send garbage request
-			testName:          "Validate and send garbage request (8)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send garbage request (8)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestVersion + requestFin,
@@ -1743,13 +1743,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Validate but then send garbage request
-			testName:          "Validate and send garbage request (9)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send garbage request (9)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestVersion + " " + requestFin,
@@ -1763,13 +1763,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Validate but then send garbage request
-			testName:          "Validate and send garbage request (10)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send garbage request (10)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestVersion + "," + requestFin,
@@ -1783,13 +1783,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Validate but then send garbage request
-			testName:          "Validate and send garbage request (10)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send garbage request (10)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestVersion + "\n" + requestFin,
@@ -1803,13 +1803,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Validate but then send garbage request
-			testName:          "Validate and send garbage request (11)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send garbage request (11)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFd + requestFin,
@@ -1823,13 +1823,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Validate but then send garbage request
-			testName:          "Validate and send garbage request (12)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send garbage request (12)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFd + " " + requestFin,
@@ -1843,13 +1843,13 @@ func TestStart(t *testing.T) {
 		},
 		{
 			//Validate but then send garbage request
-			testName:          "Validate and send garbage request (13)",
-			fakePodName:       "podA",
-			fakePodNamespace:  "default",
-			fakeResourceName:  "cndp/testing",
-			cndpServerDevType: "cndp/testing",
-			fakePodDevices:    []string{"devA", "devB"},
-			cndpServerDevices: []string{"devA", "devB"},
+			testName:         "Validate and send garbage request (13)",
+			fakePodName:      "podA",
+			fakePodNamespace: "default",
+			fakeResourceName: "uds/testing",
+			udsServerDevType: "uds/testing",
+			fakePodDevices:   []string{"devA", "devB"},
+			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: requestConnect + ", podA",
 				1: requestFd + ", " + requestFin,
@@ -1866,7 +1866,7 @@ func TestStart(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			// make a new server each time to clear things like device list
 			server := &server{
-				deviceType: tc.cndpServerDevType,
+				deviceType: tc.udsServerDevType,
 				devices:    make(map[string]int),
 				uds:        fakeUDS,
 				podRes:     fakeResAPI,
@@ -1875,7 +1875,7 @@ func TestStart(t *testing.T) {
 			fakeResAPI.CreateFakePod(tc.fakePodName, tc.fakePodNamespace, tc.fakeResourceName, tc.fakePodDevices)
 			fakeUDS.SetRequests(tc.fakeRequests)
 
-			for fd, device := range tc.cndpServerDevices {
+			for fd, device := range tc.udsServerDevices {
 				server.AddDevice(device, fd)
 			}
 
