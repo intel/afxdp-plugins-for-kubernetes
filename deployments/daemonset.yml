@@ -6,9 +6,9 @@ metadata:
 data:
   config.json: |
     {
-        "mode": "cndp",
+        "mode": "primary",
         "logLevel": "debug",
-        "logFile": "/var/log/afxdp-k8s-plugins/cndp-dp.log",
+        "logFile": "/var/log/afxdp-k8s-plugins/afxdp-dp.log",
         "pools" : [
             {
                 "name" : "intel",
@@ -52,7 +52,7 @@ spec:
           effect: NoSchedule
       serviceAccountName: afxdp-device-plugin
       containers:
-        - name: kube-cndp
+        - name: kube-afxdp
           image: afxdp-device-plugin:latest
           imagePullPolicy: IfNotPresent
           securityContext:

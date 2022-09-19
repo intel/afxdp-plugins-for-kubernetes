@@ -1189,7 +1189,7 @@ func TestReadConfigFile(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cfgFile = nil
 			content := []byte(tc.configFile)
-			dir, dirErr := ioutil.TempDir("/tmp", "test-cndp-")
+			dir, dirErr := ioutil.TempDir("/tmp", "test-afxdp-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			testDir := filepath.Join(dir, "tmpfile")
 			err := ioutil.WriteFile(testDir, content, 0666)

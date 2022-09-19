@@ -12,7 +12,7 @@ spec:
     command: ["tail", "-f", "/dev/null"]
     resources:
       requests:
-        cndp/fuzz: '1'
+        afxdp/fuzz: '1'
       limits:
-        cndp/fuzz: '1'
+        afxdp/fuzz: '1'
   restartPolicy: Never

@@ -3,12 +3,12 @@ kind: NetworkAttachmentDefinition
 metadata:
   name: afxdp-fuzz-test
   annotations:
-    k8s.v1.cni.cncf.io/resourceName: cndp/fuzz
+    k8s.v1.cni.cncf.io/resourceName: afxdp/fuzz
 spec:
   config: '{
       "cniVersion": "0.3.0",
       "type": "afxdp-fuzz",
-      "mode": "cndp",
+      "mode": "afxdp",
       "logFile": "/var/log/afxdp-k8s-plugins/afxdp-cni-fuzz.log",
       "logLevel": "debug",
       "ipam": {

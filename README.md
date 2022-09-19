@@ -1,6 +1,6 @@
 # AF_XDP Plugins for Kubernetes
 
-A Kubernetes device plugin and CNI plugin to provide AF_XDP networking to Kubernetes pods. The plugins will have multiple modes of operation. Currently the only implemented mode is to provide AF_XDP networking to pods using Intel's Cloud Native Data Plane (CNDP) framework.
+A Kubernetes device plugin and CNI plugin to provide AF_XDP networking to Kubernetes pods. The plugins will have multiple modes of operation.
 ## Prerequisites
 ### Required
 The following prerequisites are required to build and deploy the plugins:
@@ -160,14 +160,14 @@ A log file and log level can be configured for the device plugin. As above, thes
 
 ### Mode
 
-The device plugin allows for different modes of operation. CNDP is the only mode at present, with additional modes to be implemented in due course.
+The device plugin allows for different modes of operation. Primary and CDQ are the modes at present.
 Mode type must be configured for both device plugin and CNI. 
 
 Mode setting for device plugin is set via the `config.json` file. Please see example below:
 
 ```
 {
-    "mode": "cndp"
+    "mode": "primary"
     "pools" : [
         {
             "name" : "i40e",

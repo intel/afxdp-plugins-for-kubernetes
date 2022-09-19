@@ -1,7 +1,7 @@
 {
 	"logLevel": "debug",
-	"mode": "cndp",
-	"cndpFuzz": true,
+	"mode": "primary",
+	"udsFuzz": true,
 	"pools" : [
 		{
 			"name" : "fuzz",

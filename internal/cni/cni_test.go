@@ -95,7 +95,7 @@ func TestGetConfig(t *testing.T) {
 		},
 		{
 			name:      "load good config 7 - bad device name",
-			config:    `{"cniVersion":"0.3.0","deviceID":"dev1^","name":"test-network","pciBusID":"","type":"afxdp","mode":"cndp","Queues":"4"}`,
+			config:    `{"cniVersion":"0.3.0","deviceID":"dev1^","name":"test-network","pciBusID":"","type":"afxdp","mode":"primary","Queues":"4"}`,
 			expConfig: nil,
 			expErr:    errors.New("loadConf(): Config validation error: deviceID: device names must only contain letters, numbers and selected symbols"),
 		},

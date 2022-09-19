@@ -67,7 +67,7 @@ A successful test will also show the environment variables of the pod. Note that
 ***** Pod Env Vars *****
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-HOSTNAME=cndp-e2e-test
+HOSTNAME=afxdp-e2e-test
 CNDP_DEVICES=ens801f2
 KUBERNETES_SERVICE_PORT_HTTPS=443
 KUBERNETES_PORT=tcp://10.96.0.1:443
@@ -86,26 +86,26 @@ A successful test will also show the output from the udsTest app as it tests the
 ```
 ***** UDS Test *****
 
-2021-08-27T11:53:46Z [info] cndp.go:168 New connection accepted. Waiting for requests.
-2021-08-27T11:53:46Z [debug] uds.go:187 Request: /connect, cndp-e2e-test
+2021-08-27T11:53:46Z [info] udsserver.go:168 New connection accepted. Waiting for requests.
+2021-08-27T11:53:46Z [debug] uds.go:187 Request: /connect, afxdp-e2e-test
 2021-08-27T11:53:46Z [debug] uds.go:218 Request contains no file descriptor
-2021-08-27T11:53:46Z [info] cndp.go:248 Pod unvalidated - Request: /connect, cndp-e2e-test
-2021-08-27T11:53:46Z [debug] cndp.go:339 Pod cndp-e2e-test - Validating pod hostname
+2021-08-27T11:53:46Z [info] udsserver.go:248 Pod unvalidated - Request: /connect, afxdp-e2e-test
+2021-08-27T11:53:46Z [debug] udsserver.go:339 Pod afxdp-e2e-test - Validating pod hostname
 2021-08-27T11:53:46Z [debug] resources_api.go:77 Opening Pod Resource API connection
 2021-08-27T11:53:46Z [debug] resources_api.go:92 Requesting pod resource list
 2021-08-27T11:53:46Z [debug] resources_api.go:88 Closing Pod Resource API connection
-2021-08-27T11:53:46Z [debug] cndp.go:343 Pod cndp-e2e-test - Found on node
-2021-08-27T11:53:46Z [info] cndp.go:373 Pod cndp-e2e-test - valid for this UDS connection
-2021-08-27T11:53:46Z [info] cndp.go:253 Pod cndp-e2e-test - Response: /host_ok
+2021-08-27T11:53:46Z [debug] udsserver.go:343 Pod afxdp-e2e-test - Found on node
+2021-08-27T11:53:46Z [info] udsserver.go:373 Pod afxdp-e2e-test - valid for this UDS connection
+2021-08-27T11:53:46Z [info] udsserver.go:253 Pod afxdp-e2e-test - Response: /host_ok
 2021-08-27T11:53:46Z [debug] uds.go:238 Response: /host_ok
 
-Request: /connect, cndp-e2e-test
+Request: /connect, afxdp-e2e-test
 Response: /host_ok
 
 2021-08-27T11:53:48Z [debug] uds.go:187 Request: /version
 2021-08-27T11:53:48Z [debug] uds.go:218 Request contains no file descriptor
-2021-08-27T11:53:48Z [info] cndp.go:248 Pod cndp-e2e-test - Request: /version
-2021-08-27T11:53:48Z [info] cndp.go:253 Pod cndp-e2e-test - Response: 0.1
+2021-08-27T11:53:48Z [info] udsserver.go:248 Pod afxdp-e2e-test - Request: /version
+2021-08-27T11:53:48Z [info] udsserver.go:253 Pod afxdp-e2e-test - Response: 0.1
 2021-08-27T11:53:48Z [debug] uds.go:238 Response: 0.1
 
 Request: /version
@@ -113,9 +113,9 @@ Response: 0.1
 
 2021-08-27T11:53:50Z [debug] uds.go:187 Request: /xsk_map_fd, ens801f2
 2021-08-27T11:53:50Z [debug] uds.go:218 Request contains no file descriptor
-2021-08-27T11:53:50Z [info] cndp.go:248 Pod cndp-e2e-test - Request: /xsk_map_fd, ens801f2
-2021-08-27T11:53:50Z [debug] cndp.go:280 Pod cndp-e2e-test - Device ens801f2 recognised
-2021-08-27T11:53:50Z [info] cndp.go:261 Pod cndp-e2e-test - Response: /fd_ack, FD: 7
+2021-08-27T11:53:50Z [info] udsserver.go:248 Pod afxdp-e2e-test - Request: /xsk_map_fd, ens801f2
+2021-08-27T11:53:50Z [debug] udsserver.go:280 Pod afxdp-e2e-test - Device ens801f2 recognised
+2021-08-27T11:53:50Z [info] udsserver.go:261 Pod afxdp-e2e-test - Response: /fd_ack, FD: 7
 2021-08-27T11:53:50Z [debug] uds.go:231 Response: /fd_ack, FD: 7
 
 Request: /xsk_map_fd, ens801f2
@@ -124,9 +124,9 @@ File Descriptor: 6
 
 2021-08-27T11:53:52Z [debug] uds.go:187 Request: /xsk_map_fd, bad-device
 2021-08-27T11:53:52Z [debug] uds.go:218 Request contains no file descriptor
-2021-08-27T11:53:52Z [info] cndp.go:248 Pod cndp-e2e-test - Request: /xsk_map_fd, bad-device
-2021-08-27T11:53:52Z [warning] cndp.go:285 Pod cndp-e2e-test - Device bad-device not recognised
-2021-08-27T11:53:52Z [info] cndp.go:253 Pod cndp-e2e-test - Response: /fd_nak
+2021-08-27T11:53:52Z [info] udsserver.go:248 Pod afxdp-e2e-test - Request: /xsk_map_fd, bad-device
+2021-08-27T11:53:52Z [warning] udsserver.go:285 Pod afxdp-e2e-test - Device bad-device not recognised
+2021-08-27T11:53:52Z [info] udsserver.go:253 Pod afxdp-e2e-test - Response: /fd_nak
 2021-08-27T11:53:52Z [debug] uds.go:238 Response: /fd_nak
 
 Request: /xsk_map_fd, bad-device
@@ -135,8 +135,8 @@ File Descriptor: NA
 
 2021-08-27T11:53:54Z [debug] uds.go:187 Request: /bad-request
 2021-08-27T11:53:54Z [debug] uds.go:218 Request contains no file descriptor
-2021-08-27T11:53:54Z [info] cndp.go:248 Pod cndp-e2e-test - Request: /bad-request
-2021-08-27T11:53:54Z [info] cndp.go:253 Pod cndp-e2e-test - Response: /nak
+2021-08-27T11:53:54Z [info] udsserver.go:248 Pod afxdp-e2e-test - Request: /bad-request
+2021-08-27T11:53:54Z [info] udsserver.go:253 Pod afxdp-e2e-test - Response: /nak
 2021-08-27T11:53:54Z [debug] uds.go:238 Response: /nak
 
 Request: /bad-request
@@ -144,8 +144,8 @@ Response: /nak
 
 2021-08-27T11:53:56Z [debug] uds.go:187 Request: /fin
 2021-08-27T11:53:56Z [debug] uds.go:218 Request contains no file descriptor
-2021-08-27T11:53:56Z [info] cndp.go:248 Pod cndp-e2e-test - Request: /fin
-2021-08-27T11:53:56Z [info] cndp.go:253 Pod cndp-e2e-test - Response: /fin_ack
+2021-08-27T11:53:56Z [info] udsserver.go:248 Pod afxdp-e2e-test - Request: /fin
+2021-08-27T11:53:56Z [info] udsserver.go:253 Pod afxdp-e2e-test - Response: /fin_ack
 2021-08-27T11:53:56Z [debug] uds.go:238 Response: /fin_ack
 2021-08-27T11:53:56Z [debug] uds.go:151 Closing connection
 2021-08-27T11:53:56Z [debug] uds.go:153 Closing socket file

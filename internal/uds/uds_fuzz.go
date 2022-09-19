@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	cndpFuzzFile   = "/var/log/afxdp-k8s-plugins/cndp-fuzz.log"
+	fuzzFile       = "/var/log/afxdp-k8s-plugins/fuzz.log"
 	filePermission = 0644
 )
 
@@ -112,9 +112,9 @@ func fuzzLogging() error {
 
 	logging.SetReportCaller(true)
 
-	fp, err := os.OpenFile(cndpFuzzFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, filePermission)
+	fp, err := os.OpenFile(fuzzFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, filePermission)
 	if err != nil {
-		err = fmt.Errorf("fuzzlogging(): cannot open logfile %s: %w", cndpFuzzFile, err)
+		err = fmt.Errorf("fuzzlogging(): cannot open logfile %s: %w", fuzzFile, err)
 		return err
 	}
 	logging.SetOutput(io.MultiWriter(fp, os.Stdout))
