@@ -78,12 +78,30 @@ jobs:
             ssh $i "ls -la /tmp/afxdp_dp/afxdp_e2e/" || true
             echo
           done
-      - name: Remaining Subfunctions
+      - name: List Remaining Subfunctions
         if: always()
         run: |
           for i in $(kubectl get nodes | awk '{print $1}' | awk '{if (NR!=1) {print}}')
           do
             echo "Subfunctions on node $i"
             ssh $i "devlink port list" || true
+            echo
+          done
+      - name: Remove Remaining Subfunctions
+        if: always()
+        run: |
+          for i in $(kubectl get nodes | awk '{print $1}' | awk '{if (NR!=1) {print}}')
+          do
+            echo "Removing subfunctions on node $i"
+            ssh $i "
+            devlink_output=(\$(devlink port list | awk '{print \$1}' | sed 's/.\$//'))
+            for i in \"\${devlink_output[@]}\"; do
+              if [[ \$i == \"pci/\"* ]] && [[ \$i != *\"/0\" ]]; then
+                devlink port function set \$i state inactive
+                devlink port del \$i
+                echo \$i
+              fi
+            done
+            "
             echo
           done

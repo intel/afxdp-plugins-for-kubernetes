@@ -13,6 +13,7 @@ data:
              "name":"e2eCdq",
              "mode":"cdq",
              "uid" : 1500,
+             "udsTimeout":60,
              "drivers":[
                 {
                    "name":"ice",

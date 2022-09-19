@@ -30,7 +30,8 @@ cleanup() {
 	echo "*                     Cleanup                       *"
 	echo "*****************************************************"
 	echo "Delete Pod"
-	kubectl delete pod --grace-period 0 --ignore-not-found=true afxdp-e2e-test &> /dev/null
+	kubectl delete pod --grace-period=0 --ignore-not-found=true afxdp-e2e-test &> /dev/null
+	kubectl delete pods -l app=afxdp-e2e -n default --grace-period=0 --ignore-not-found=true &> /dev/null
 	echo "Delete Test App"
 	rm -f ./udsTest &> /dev/null
 	echo "Delete CNI"
