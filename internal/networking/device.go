@@ -348,8 +348,8 @@ func (d *Device) Exists() (bool, error) {
 Public returns a representation of Device, but with public fields
 To be used in debug logging and writing the device to a JSON file.
 */
-func (d *Device) Public() DeviceDetails {
-	return DeviceDetails{
+func (d *Device) Public() *DeviceDetails {
+	return &DeviceDetails{
 		Name:           d.name,
 		Mode:           d.mode,
 		Driver:         d.driver,

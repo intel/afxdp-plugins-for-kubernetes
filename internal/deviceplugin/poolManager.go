@@ -218,8 +218,7 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 
 			if pm.EthtoolFilters != nil {
 				device.SetEthtoolFilter(pm.EthtoolFilters)
-				err = pm.NetHandler.WriteDeviceFile(device, constants.DeviceFile.DeviceWriteFileDir+constants.DeviceFile.DeviceWriteFile)
-				if err != nil {
+				if err = pm.NetHandler.WriteDeviceFile(device, constants.DeviceFile.Directory+constants.DeviceFile.Name); err != nil {
 					logging.Debugf("Error writing to device file %v", err)
 					return &response, err
 				}

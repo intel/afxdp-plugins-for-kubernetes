@@ -97,9 +97,9 @@ var (
 	handshakeResponseError       = "/error"                // general error occurred response, indicates an error occurred on the device plugin end
 
 	/*DeviceFile*/
-	deviceWriteFile       = "device.json"    // file which enables passing of device information from device plugin to CNI in the form of device map object.
-	deviceWriteFileDir    = "/tmp/afxdp_dp/" // host location where deviceWriteFile file is placed.
-	deviceFilePermissions = 0600             // permissions for device file.
+	name            = "device.json"    // file which enables passing of device information from device plugin to CNI in the form of device map object.
+	directory       = "/tmp/afxdp_dp/" // host location where deviceFile file is placed.
+	filePermissions = 0600             // permissions for device file.
 
 	/*EthtoolFilters*/
 	ethtoolFilterRegex = `^[a-zA-Z0-9-:.-/\s/g]+$` // regex to validate ethtool filter commands.
@@ -230,9 +230,9 @@ type handshake struct {
 }
 
 type deviceFile struct {
-	DeviceWriteFile       string
-	DeviceFilePermissions int
-	DeviceWriteFileDir    string
+	Name            string
+	FilePermissions int
+	Directory       string
 }
 
 type ethtoolFilter struct {
@@ -331,9 +331,9 @@ func init() {
 	}
 
 	DeviceFile = deviceFile{
-		DeviceWriteFile:       deviceWriteFile,
-		DeviceFilePermissions: deviceFilePermissions,
-		DeviceWriteFileDir:    deviceWriteFileDir,
+		Name:            name,
+		FilePermissions: filePermissions,
+		Directory:       directory,
 	}
 
 	EthtoolFilter = ethtoolFilter{

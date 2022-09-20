@@ -221,19 +221,16 @@ It creates and populates a new instance of the device map with the device file f
 and returns the device object.
 */
 func (r *handler) GetDeviceFromFile(deviceName string, filepath string) (*Device, error) {
-	deviceDetailsMap := make(map[string]*DeviceDetails)
+	var device *Device
 
-	raw, err := ioutil.ReadFile(filepath)
+	deviceDetailsMap, err := readDeviceMap(filepath)
 	if err != nil {
-		return nil, err
-	}
-
-	if err = json.Unmarshal(raw, &deviceDetailsMap); err != nil {
-		return nil, err
+		logging.Errorf("Error reading device file: %v", err)
+		return device, err
 	}
 
 	if deviceDetails, ok := deviceDetailsMap[deviceName]; ok {
-		return &Device{
+		device = &Device{
 			name:           deviceDetails.Name,
 			mode:           deviceDetails.Mode,
 			driver:         deviceDetails.Driver,
@@ -250,9 +247,15 @@ func (r *handler) GetDeviceFromFile(deviceName string, filepath string) (*Device
 				macAddress:    deviceDetails.Primary.MacAddress,
 				fullyAssigned: deviceDetails.Primary.FullyAssigned,
 			},
-		}, nil
+		}
+
+		delete(deviceDetailsMap, deviceName)
 	}
-	return nil, nil
+	if err = writeDeviceMap(filepath, deviceDetailsMap); err != nil {
+		logging.Errorf("Error writing to device file: %v", err)
+		return device, err
+	}
+	return device, nil
 }
 
 /*
@@ -260,31 +263,13 @@ WriteDeviceFile creates and writes the device map fields to file, enabling the
 CNI to read device information.
 */
 func (r *handler) WriteDeviceFile(device *Device, filepath string) error {
-	fileMap := make(map[string]DeviceDetails)
+	deviceDetailsMap := make(map[string]*DeviceDetails)
+	deviceDetailsMap[device.Name()] = device.Public()
 
-	raw, err := ioutil.ReadFile(filepath)
-	if err != nil {
-		logging.Warningf("Error reading device file: %v", err)
-	}
-
-	if err := json.Unmarshal(raw, &fileMap); err != nil {
-		logging.Warningf("Error unmarshalling device map: %v", err)
-	}
-
-	fileMap[device.Name()] = device.Public()
-
-	jsonStr, err := json.MarshalIndent(fileMap, "", " ")
-	if err != nil {
-		logging.Errorf("Error marshalling device map to json format: %v", err)
-		return err
-	}
-
-	err = ioutil.WriteFile(filepath, jsonStr, os.FileMode(constants.DeviceFile.DeviceFilePermissions))
-	if err != nil {
+	if err := writeDeviceMap(filepath, deviceDetailsMap); err != nil {
 		logging.Errorf("Error writing to device file: %v", err)
 		return err
 	}
-
 	return nil
 }
 
@@ -360,4 +345,39 @@ func (r *handler) IsPhysicalPort(name string) (bool, error) {
 	} else {
 		return false, nil
 	}
+}
+
+/*
+readDevice reads the device file unmarshalls device information to
+a device map object
+*/
+func readDeviceMap(filepath string) (map[string]*DeviceDetails, error) {
+	deviceMap := make(map[string]*DeviceDetails)
+	raw, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		return deviceMap, err
+	}
+
+	if err = json.Unmarshal(raw, &deviceMap); err != nil {
+		return deviceMap, err
+	}
+	return deviceMap, nil
+}
+
+/*
+writeDevice marshals device information and writes a device information to
+writeDeviceFile.
+*/
+func writeDeviceMap(filepath string, deviceMap map[string]*DeviceDetails) error {
+	jsonStr, err := json.MarshalIndent(deviceMap, "", " ")
+	if err != nil {
+		logging.Errorf("Error marshalling device map to json format: %v", err)
+		return err
+	}
+
+	if err = ioutil.WriteFile(filepath, jsonStr, os.FileMode(constants.DeviceFile.FilePermissions)); err != nil {
+		logging.Errorf("Error writing to device file: %v", err)
+		return err
+	}
+	return nil
 }

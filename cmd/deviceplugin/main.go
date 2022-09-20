@@ -34,6 +34,7 @@ import (
 var (
 	hostHandler = host.NewHandler()
 	netHandler  = networking.NewHandler()
+	deviceFile  = constants.DeviceFile.Directory + constants.DeviceFile.Name
 )
 
 type devicePlugin struct {
@@ -58,6 +59,17 @@ func main() {
 	if err := configureLogging(cfg); err != nil {
 		logging.Errorf("Error configuring logging: %v", err)
 		exit(constants.Plugins.DevicePlugin.ExitLogError)
+	}
+
+	//device file
+	exists, err := tools.FilePathExists(deviceFile)
+	if err != nil {
+		logging.Errorf("Error checking device file path: %v", err)
+	}
+	if exists {
+		if err = os.Remove(deviceFile); err != nil {
+			logging.Errorf("Error deleting device file: %v", err)
+		}
 	}
 
 	logging.Infof("Starting AF_XDP Device Plugin")

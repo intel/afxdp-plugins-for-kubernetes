@@ -193,13 +193,13 @@ func CmdAdd(args *skel.CmdArgs) error {
 		}
 	}
 
-	deviceFile, err := tools.FilePathExists(constants.DeviceFile.DeviceWriteFileDir + constants.DeviceFile.DeviceWriteFile)
+	deviceFile, err := tools.FilePathExists(constants.DeviceFile.Directory + constants.DeviceFile.Name)
 	if err != nil {
-		logging.Errorf("cmdAdd(): Failed to locate deviceWriteFile: %v", err)
+		logging.Errorf("cmdAdd(): Failed to locate deviceFile: %v", err)
 	}
 
 	if deviceFile {
-		deviceDetails, err = netHandler.GetDeviceFromFile(cfg.Device, constants.DeviceFile.DeviceWriteFileDir+constants.DeviceFile.DeviceWriteFile)
+		deviceDetails, err = netHandler.GetDeviceFromFile(cfg.Device, constants.DeviceFile.Directory+constants.DeviceFile.Name)
 		if err != nil {
 			logging.Errorf("cmdAdd():- Failed to extract device map values: %v", err)
 			return err

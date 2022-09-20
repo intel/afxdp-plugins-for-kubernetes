@@ -219,6 +219,7 @@ func GetPoolConfigs(configFile string, net networking.Handler, host host.Handler
 				UdsFuzz:                 pool.UdsFuzz,
 				RequiresUnprivilegedBpf: pool.RequiresUnprivilegedBpf,
 				UID:                     pool.UID,
+				EthtoolCmds:             pool.EthtoolCmds,
 			})
 		}
 
