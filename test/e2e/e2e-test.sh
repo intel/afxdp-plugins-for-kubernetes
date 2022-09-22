@@ -306,21 +306,29 @@ wait_for_pods_to_start() {
 	counter=0
 	while true
 	do
-		starting_pods=$( kubectl get pods | grep afxdp-e2e| awk '{print $3}' | grep -v Running || true )
+		#starting_pods=( $( kubectl get pods | grep afxdp-e2e | awk '$3 != "Running" {print $1}' ) )
+		mapfile -t starting_pods < <(kubectl get pods | grep afxdp-e2e | awk '$3 != "Running" {print $1}')
 
-		if [ -z "$starting_pods" ]
-		then
-				echo "All pods have started"
-				break
+		if (( ${#starting_pods[@]} == 0 )); then
+			echo "All pods have started"
+			break
 		else
-				echo "Waiting for pods to start..."
-				counter=$((counter+1))
+			echo "Waiting for pods to start..."
+			counter=$((counter+1))
 		fi
 
-		if (( counter > 30 )); then
-				echo "Error: Pods took too long to start"
-				cleanup
-				exit 1
+		if (( counter > 60 )); then
+			echo "Error: Pods took too long to start"
+
+			for pod in "${starting_pods[@]}"
+			do
+				kubectl describe pod "$pod"
+				echo -e "\n\n\n"
+			done
+
+			echo "Error: Pods took too long to start"
+			cleanup
+			exit 1
 		fi
 
 		sleep 10

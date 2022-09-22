@@ -75,7 +75,7 @@ jobs:
           for i in $(kubectl get nodes | awk '{print $1}' | awk '{if (NR!=1) {print}}')
           do
             echo "UDS directory on node $i"
-            ssh $i "ls -la /tmp/afxdp_dp/afxdp_e2e/" || true
+            ssh $i "ls -laR /tmp/afxdp_dp/" || true
             echo
           done
       - name: List Remaining Subfunctions
