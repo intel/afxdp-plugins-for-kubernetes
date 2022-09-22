@@ -261,11 +261,7 @@ run_ci_pods() {
 			echo "$kubectlOutput"
 		done
 
-		# this pause varies depending on the number of pods and containers being created
-		# it may have to be tweaked if tests spin up a lot more pods/containers/devices
-		pause=$((pods * containers + 20))
-		echo "Pausing for $pause seconds to allow pods to start"
-		sleep $pause
+		wait_for_pods_to_start
 
 		echo "*****************************************************"
 		echo "*                Kubectl Get Pods                   *"
@@ -304,6 +300,31 @@ run_ci_pods() {
 	echo "*                  Delete Pods                      *"
 	echo "*****************************************************"	
 	kubectl delete pods -l app=afxdp-e2e -n default --grace-period=0
+}
+
+wait_for_pods_to_start() {
+	counter=0
+	while true
+	do
+		starting_pods=$( kubectl get pods | grep afxdp-e2e| awk '{print $3}' | grep -v Running || true )
+
+		if [ -z "$starting_pods" ]
+		then
+				echo "All pods have started"
+				break
+		else
+				echo "Waiting for pods to start..."
+				counter=$((counter+1))
+		fi
+
+		if (( counter > 30 )); then
+				echo "Error: Pods took too long to start"
+				cleanup
+				exit 1
+		fi
+
+		sleep 10
+	done
 }
 
 display_help() {
