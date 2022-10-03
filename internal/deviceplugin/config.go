@@ -180,13 +180,18 @@ func GetPoolConfigs(configFile string, net networking.Handler, host host.Handler
 		if pool.Devices != nil {
 			var validDevices []*configFile_Device
 			for _, device := range pool.Devices {
-				if hostDev, ok := hostDevices[device.Name]; ok {
-					if !validateDevice(hostDev, nil, pool) {
-						continue
-					}
-					validDevices = append(validDevices, device)
+				name := getDeviceName(device)
+				if name == "" {
+					logging.Warningf("Unable to get name of device %v", device)
 				} else {
-					logging.Warningf("Device %s does not exist on this node", device.Name)
+					if hostDev, ok := hostDevices[device.Name]; ok {
+						if !validateDevice(hostDev, nil, pool) {
+							continue
+						}
+						validDevices = append(validDevices, device)
+					} else {
+						logging.Warningf("Device %s does not exist on this node", name)
+					}
 				}
 			}
 			pool.Devices = validDevices
@@ -319,11 +324,11 @@ func validateDevice(device *networking.Device, driver *configFile_Driver, pool *
 
 	if driver != nil {
 		// if passed a driver, check that this device was not already manually configured
-		if tools.ArrayContains(pool.GetDeviceList(), device.Name()) {
+		if tools.ArrayContains(pool.getDeviceList(), device.Name()) {
 			logging.Debugf("%s is already in this pool", device.Name())
 			return false
 		}
-		if tools.ArrayContains(driver.GetExcludedDeviceList(), device.Name()) {
+		if tools.ArrayContains(driver.getExcludedDeviceList(), device.Name()) {
 			logging.Debugf("%s is an excluded device for %s driver", device.Name(), driver.Name)
 			return false
 		}
@@ -368,4 +373,21 @@ func readConfigFile(file string) error {
 		return err
 	}
 	return nil
+}
+
+func getDeviceName(device *configFile_Device) string {
+	name := ""
+	var err error
+	if device.Name != "" {
+		name = device.Name
+	} else if device.Mac != "" {
+		if name, err = network.GetDeviceByMAC(device.Mac); err != nil {
+			logging.Warnf("Cannot get device name from mac %s", device.Mac)
+		}
+	} else if device.Pci != "" {
+		if name, err = network.GetDeviceByPCI(device.Pci); err != nil {
+			logging.Warnf("Cannot get device name from pci %s", device.Pci)
+		}
+	}
+	return name
 }

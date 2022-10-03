@@ -262,18 +262,18 @@ func (c configFile) Validate() error {
 	)
 }
 
-func (c configFile_Pool) GetDeviceList() []string {
+func (c configFile_Pool) getDeviceList() []string {
 	var list []string
 	for _, dev := range c.Devices {
-		list = append(list, dev.Name) //TODO needs to also figure pci and mac
+		list = append(list, getDeviceName(dev))
 	}
 	return list
 }
 
-func (c configFile_Driver) GetExcludedDeviceList() []string {
+func (c configFile_Driver) getExcludedDeviceList() []string {
 	var list []string
 	for _, dev := range c.ExcludeDevices {
-		list = append(list, dev.Name) //TODO needs to also figure pci and mac
+		list = append(list, getDeviceName(dev))
 	}
 	return list
 }
