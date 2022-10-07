@@ -193,44 +193,44 @@ func CmdAdd(args *skel.CmdArgs) error {
 		}
 	}
 
-	deviceFile, err := tools.FilePathExists(constants.DeviceFile.Directory + constants.DeviceFile.Name)
-	if err != nil {
-		logging.Errorf("cmdAdd(): Failed to locate deviceFile: %v", err)
-	}
-
-	if deviceFile {
-		deviceDetails, err = netHandler.GetDeviceFromFile(cfg.Device, constants.DeviceFile.Directory+constants.DeviceFile.Name)
+	if cfg.Mode == "primary" {
+		deviceFile, err := tools.FilePathExists(constants.DeviceFile.Directory + constants.DeviceFile.Name)
 		if err != nil {
-			logging.Errorf("cmdAdd():- Failed to extract device map values: %v", err)
-			return err
+			logging.Errorf("cmdAdd(): Failed to locate deviceFile: %v", err)
 		}
 
-		ethInstalled, version, err := host.HasEthtool()
-		if err != nil {
-			logging.Warningf("cmdAdd(): failed to discover ethtool on host: %v", err)
-		}
+		if deviceFile {
+			deviceDetails, err = netHandler.GetDeviceFromFile(cfg.Device, constants.DeviceFile.Directory+constants.DeviceFile.Name)
+			if err != nil {
+				logging.Errorf("cmdAdd():- Failed to extract device map values: %v", err)
+				return err
+			}
 
-		if ethInstalled {
-			logging.Debugf("cmdAdd(): ethtool found on host")
-			logging.Debugf("\t" + version)
-			if deviceDetails != nil {
-				if deviceDetails.GetEthtoolFilters() != nil {
-					if deviceDetails.IsPrimary() && !deviceDetails.IsSecondary() {
+			ethInstalled, version, err := host.HasEthtool()
+			if err != nil {
+				logging.Warningf("cmdAdd(): failed to discover ethtool on host: %v", err)
+			}
 
-						logging.Infof("cmdAdd(): applying ethtool filters on device: %s", cfg.Device)
-						ethtoolCommand := deviceDetails.GetEthtoolFilters()
-						iPAddr, err := extractIP(result)
-						if err != nil {
-							logging.Errorf("cmdAdd(): Error extracting IP from result interface %v", err)
-							return err
-						}
-						err = netHandler.SetEthtool(ethtoolCommand, cfg.Device, iPAddr)
-						if err != nil {
-							logging.Errorf("cmdAdd(): unable to executed ethtool filter: %v", err)
-							return err
-						}
+			if ethInstalled {
+				logging.Debugf("cmdAdd(): ethtool found on host")
+				logging.Debugf("\t" + version)
+				if deviceDetails != nil {
+					if deviceDetails.GetEthtoolFilters() != nil {
+							logging.Infof("cmdAdd(): applying ethtool filters on device: %s", cfg.Device)
+							ethtoolCommand := deviceDetails.GetEthtoolFilters()
+							iPAddr, err := extractIP(result)
+							if err != nil {
+								logging.Errorf("cmdAdd(): Error extracting IP from result interface %v", err)
+								return err
+							}
+							err = netHandler.SetEthtool(ethtoolCommand, cfg.Device, iPAddr)
+							if err != nil {
+								logging.Errorf("cmdAdd(): unable to executed ethtool filter: %v", err)
+								return err
+							}
+						} else {
+						logging.Debugf("cmdAdd(): ethtool filters have not been specified")
 					}
-					logging.Debugf("cmdAdd(): ethtool filters have not been specified")
 				}
 			}
 		}
@@ -337,20 +337,6 @@ func CmdDel(args *skel.CmdArgs) error {
 		return err
 	}
 
-	logging.Debugf("cmdDel: checking host for Ethtool")
-	ethInstalled, _, err := host.HasEthtool()
-	if err != nil {
-		logging.Errorf("cmdDel(): error checking if Ethtool is present on host: %v", err)
-		return err
-	}
-	if ethInstalled {
-		logging.Infof("cmdDel(): Removing ethtool filters on device: %s", cfg.Device)
-		err := netHandler.DeleteEthtool(cfg.Device)
-		if err != nil {
-			logging.Warningf("cmdDel(): failed to remove ethtool filter: %v", err)
-		}
-	}
-
 	logging.Infof("cmdDel(): cleaning IPAM config on device")
 	if cfg.IPAM.Type != "" {
 		if err := ipam.ExecDel(cfg.IPAM.Type, args.StdinData); err != nil {
@@ -366,21 +352,39 @@ func CmdDel(args *skel.CmdArgs) error {
 		return err
 	}
 
-	isSf, err := netHandler.IsCdqSubfunction(cfg.Device)
-	if err != nil {
-		logging.Errorf("cmdDel(): error determining if %s is a CDQ subfunction: %v", cfg.Device, err)
-		isSf = false
-	}
-	if isSf {
-		logging.Debugf("cmdDel(): deleting subfunction %s", cfg.Device)
-		portIndex, err := netHandler.GetCdqPortIndex(cfg.Device)
+	if cfg.Mode == "primary" {
+		logging.Debugf("cmdDel: checking host for Ethtool")
+		ethInstalled, _, err := host.HasEthtool()
 		if err != nil {
-			logging.Errorf("cmdDel(): error getting port index of device %s: %v", cfg.Device, err)
-		} else {
-			if err := netHandler.DeleteCdqSubfunction(portIndex); err != nil {
-				logging.Errorf("cmdDel(): error deleting CDQ subfunction %s: %v", cfg.Device, err)
+			logging.Errorf("cmdDel(): error checking if Ethtool is present on host: %v", err)
+			return err
+		}
+		if ethInstalled {
+			logging.Infof("cmdDel(): Removing ethtool filters on device: %s", cfg.Device)
+			err := netHandler.DeleteEthtool(cfg.Device)
+			if err != nil {
+				logging.Warningf("cmdDel(): failed to remove ethtool filter: %v", err)
+			}
+		}
+	}
+
+	if cfg.Mode == "cdq" {
+		isSf, err := netHandler.IsCdqSubfunction(cfg.Device)
+		if err != nil {
+			logging.Errorf("cmdDel(): error determining if %s is a CDQ subfunction: %v", cfg.Device, err)
+			isSf = false
+		}
+		if isSf {
+			logging.Debugf("cmdDel(): deleting subfunction %s", cfg.Device)
+			portIndex, err := netHandler.GetCdqPortIndex(cfg.Device)
+			if err != nil {
+				logging.Errorf("cmdDel(): error getting port index of device %s: %v", cfg.Device, err)
 			} else {
-				logging.Infof("cmdDel(): subfunction %s deleted", cfg.Device)
+				if err := netHandler.DeleteCdqSubfunction(portIndex); err != nil {
+					logging.Errorf("cmdDel(): error deleting CDQ subfunction %s: %v", cfg.Device, err)
+				} else {
+					logging.Infof("cmdDel(): subfunction %s deleted", cfg.Device)
+				}
 			}
 		}
 	}
