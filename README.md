@@ -1,14 +1,16 @@
 # AF_XDP Plugins for Kubernetes
 
-A Kubernetes device plugin and CNI plugin to provide AF_XDP networking to Kubernetes pods. The plugins will have multiple modes of operation.
+A Kubernetes device plugin and CNI plugin to provide AF_XDP networking to Kubernetes pods.
 ## Prerequisites
 ### Required
 The following prerequisites are required to build and deploy the plugins:
 
 - **OS**
-	- Tested on Ubuntu 20.04.  	
+	- Any OS that supports Kubernetes should work.
+	- Tested on Ubuntu 20.04.
 - **Docker**
-	- All recent versions should work. Tested on `20.10.5`, `20.10.7`, `20.10.12`, `20.10.14`.
+	- All recent versions should work.
+	- Tested on `20.10.5`, `20.10.7`, `20.10.12`, `20.10.14`, `20.10.18`.
 	- **Note:** You may need to disable memlock on Docker.
 		Add the following section to `/etc/docker/daemon.json`:
 		```
@@ -22,16 +24,18 @@ The following prerequisites are required to build and deploy the plugins:
 		```
 		Restart the Docker service: `systemctl restart docker.service`
 - **Kubernetes**
- 	- All recent versions should work. Tested on `1.20.2`, `1.21.1`, `v1.22.4`, `v1.23.0`, `v1.23.5`.
+ 	- All recent versions should work.
+ 	- Tested on `1.20.2`, `1.21.1`, `v1.22.4`, `v1.22.8`, `v1.23.0`, `v1.23.5`.
 - **A CNI network**
 	- To serve as the [default network](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md#key-concepts) to the Kubernetes pods.
 	- Any CNI should work. Tested with [Flannel](https://github.com/flannel-io/flannel).
 - **Multus CNI**
-	- To enable attaching multiple network interfaces to pods.
+	- To enable attaching of multiple network interfaces to pods.
 	- [Multus quickstart guide](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md).
 - **GoLang**
 	- To build the plugin binaries.
-	- All recent versions should work. Tested on `1.13.8`, `1.15.15`, `1.17`, `1.17.1`, `1.17.8`, `1.18`.
+	- All recent versions should work.
+	- Tested on `1.13.8`, `1.15.15`, `1.17`, `1.17.1`, `1.17.8`, `1.18`, `1.19`.
 	- [Download and install](https://golang.org/doc/install).
 - **Libbpf**
 	- To load and unload the XDP program onto the network device.
@@ -45,7 +49,7 @@ The following prerequisites are required to build and deploy the plugins:
 	- Install on Ubuntu: `apt install binutils`
 
 ### Development
-The following static analysis, linting and formatting tools are not required for building and deploying, but are built into some of the Make targets and enforced by CI. It is recommended to have these installed on your development system.
+The following static analysis, linting and formatting tools are not required for building and deploying but are built into some of the Make targets and enforced by CI. It is recommended to have these installed on your development system.
 
 - **[GoFmt](https://pkg.go.dev/cmd/gofmt)**
 	- Applies standard formatting to Go code.
@@ -53,10 +57,6 @@ The following static analysis, linting and formatting tools are not required for
 - **[Go Vet](https://pkg.go.dev/cmd/vet)**
 	- Examines Go source code and reports suspicious constructs.
 	- Supplied with GoLang.
-- **[Go Lint](https://github.com/golang/lint)**
-	- A linter for Go source code.
-	- Install: `go get -u golang.org/x/lint/golint`
-	- *Note: Deprecated, but still useful in day to day development as a quick check*
 - **[GolangCI-Lint](https://golangci-lint.run/)**
 	- A Go linters aggregator.
 	- Install: `curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.42.1`
@@ -83,8 +83,8 @@ The following steps happen **automatically**:
 
 1. `make build` is executed, resulting in CNI and Device Plugin binaries in `./bin`.
 2. `make image` is executed, resulting in the creation of a new Docker image that includes the CNI and Device Plugin binaries.
-	- ***Note:** if testing on a multi-node cluster. The current absence of a Docker registry means this image will need to be manually copied to all nodes (or rebuilt on all nodes using: `make image`).*
-3. The damenonset will run on all nodes, installing the CNI and starting the Device Plugin running on each node.
+	- ***Note:** If testing on a multi-node cluster. The current absence of a Docker registry means this image will first need to be manually copied to all nodes (or rebuilt on all nodes using: `make image`).*
+3. The daemonset will run on all nodes, installing the CNI and starting the Device Plugin running on each node.
 
 The CNI and Device Plugin are now deployed.
 
@@ -105,98 +105,302 @@ Under normal circumstances the device plugin config is set as part of a config m
 
 The device plugin binary can also be run manually on the host for development and testing purposes. In these scenarios the device plugin will search for a `config.json` file in its current directory, or the device plugin can be pointed to a config file using the `-config` flag followed by a filepath. 
 
-### Driver Pools
-It is possible to have multiple driver types in a single device pool. The example below will result in a pool named `afxdp/intel` that contains all the x710 and all E810 devices on the node.
+In both scenarios, daemonset deployment or manually running the binary, the structure of the config is identical JSON format.
 
+### Pools
+The device plugin has a concept of device pools. Devices in this case being network devices, netdevs. The device plugin can simultaneously have multiple pools of devices. Different pools can have different configurations to suit different use cases. Devices can be added/configured to the pool in a few different ways, explained below.
+Pools have two required fields, a **name** and a **mode**.
+
+The **name** is the unique name used to identify a pool. The name is used in the pod spec to request devices from this pool. For example, if a pool is named `myPool`, any pods requiring devices from this pool will request resources of type `afxdp/myPool`.
+
+The **mode** is the mode this pool operates in. Modes determines how pools scales and there are currently two accepted modes - `primary` and `cdq`. Primary mode means there is no scaling, the AF_XDP pod is provided with the full NIC port (the primary device). CDQ mode means that subfunctions will be used to scale the pool, so pods each get their own secondary device (a subfunction) meaning many pods can share a primary device (NIC port).
+Additional secondary device modes are planned.
+
+The example below shows how to configure two pools in different modes.
 ```
 {
-    "pools" : [
-        {
-            "name" : "intel",
-            "drivers" : ["i40e", "E810"]
-        }
-    ]
+   "pools":[
+      {
+         "name":"myCdqPool",
+         "mode":"cdq"
+      },
+      {
+         "name":"myPrimarypool",
+         "mode":"primary"
+      }
+   ]
+}
+```
+*Note that the above is not a fully working example as the pools have not yet been configured with devices. This will not pass the device plugin's config validation.*
+
+### Pool Drivers
+In production environments, the most common way to add devices to a pool is through configuring drivers for that pool. When a driver is configured to a pool, the device plugin will search the node for devices using this driver and add them to that pool. A pool can have multiple drivers associated with it. Drivers are identified by their name.
+
+The example below shows how to configure a single pool that is associated with two drivers.
+```
+{
+   "pools":[
+      {
+         "name":"myPool",
+         "mode":"primary",
+         "drivers":[
+            {
+               "name":"i40e"
+            },
+            {
+               "name":"ice"
+            }
+         ]
+      }
+   ]
+}
+```
+In the example above the device plugin will assign all devices of driver type `i40e` and `ice` to the pool `myPool`. The following explains how to add optional configurations that will limit the devices assigned per driver:
+
+ - The **primary** field is an integer and it sets the maximum number of primary devices this pool will take, per node.
+ - The **secondary** field is an integer and, if the pool is in a secondary device mode such as cdq, sets the maximum number of secondary devices this pool will create, per primary device.
+ - The **excludeDevices** field is an array of devices. Any primary device identified in this array will **not** be added to the pool. See [Pool Devices](#pool-devices) for more info on identifying devices.
+
+In the example below a single pool is given the **name** `myPool`. The pool **mode** is `cdq`, meaning the device plugin will create subfunctions on top of the primary devices. To add primary devices to the pool the **drivers** field is used. In this case a single driver is identified by its **name**, `ice`, meaning the pool will be assigned primary devices that use the ice driver. To limit the number of primary ice devices assigned to the pool the **primary** field in this driver is set to `2`, meaning only two ice devices (per node) will be assigned to this pool. Also, in use here is the **excludeDevices** field. Two excluded devices are identified in this case by their **name**, `ens802f1` and `ens802f2`. As above, this pool will take two primary devices per node, neither will be ens802f1 or ens802f2. Finally, the **secondary** field is set to `50`, meaning 50 secondary devices will be created per primary device. Since the pool mode in this case is cdq, it means those secondary devices will be subfunctions.
+
+In summary: The pool `afxdp/myPool` will take two ice devices per node, where available. It will create a maximum of 50 subfunctions on top of each of those devices, meaning each node will have a maximum of 100 subfunctions. The devices ens802f1 and ens802f2 will not be used in this pool.
+```
+{
+   "pools":[
+      {
+         "name":"myPool",
+         "mode":"cdq",
+         "drivers":[
+            {
+               "name":"ice",
+               "primary":2,
+               "secondary":50,
+               "excludeDevices":[
+                  {
+                     "name":"ens802f1"
+                  },
+                  {
+                     "name":"ens802f2"
+                  }
+               ]
+            }
+         ]
+      }
+   ]
 }
 ```
 
-### Device Pools
-It is possible to assign individual devices to a pool. The example below will generate a pool named `afxdp/test` with the two listed devices.
-This is not scalable over many nodes and is intended only for development and testing purposes.
+### Pool Devices
+In addition to drivers, it is also possible to assign individual primary devices to a pool. This is not as scalable as drivers, so is intended more for smaller clusters or test environments. It should be noted that a pool can be assigned devices and drivers simultaneously.
+
+Devices can be identified in three ways: Name, MAC and PCI. Only one form of identification can be used per device.
+Like drivers, devices also have an optional secondary field that limits the number of secondary devices to be created on top of the identified primary device.
+
+In the example below a single pool is given the **name** `myPool`. The pool **mode** is `cdq`, meaning the device plugin will create subfunctions on top of the primary devices. To add primary devices to the pool the **devices** field is used. In this case three devices have been added:
+ - The first device identified by its **name** is `ens801f0`
+ - The second device identified by its **mac** address is `68:05:ca:2d:e9:1b`
+ - The third device identified by its **pci** address is `0000:81:00.1`
+
+The three devices, `ens801f0`, `68:05:ca:2d:e9:1b` and `0000:81:00.1` have the **secondary** field set to `10`, `20` and `30`, meaning the device plugin will create 10, 20 and 30 secondary devices on these devices, respectively. Since the pool mode in this case is cdq, it means those secondary devices will be subfunctions.
 
 ```
 {
-    "pools" : [
-        {
-            "name" : "test",
-            "devices" : ["ens801f0", "ens801f1"],
-        }
-    ]
+   "pools":[
+      {
+         "name":"myPool",
+         "mode":"cdq",
+         "devices":[
+            {
+               "name":"ens801f0",
+               "secondary":10
+            },
+            {
+               "mac":"68:05:ca:2d:e9:1b",
+               "secondary":20
+            },
+            {
+               "pci":"0000:81:00.1",
+               "secondary":30
+            }
+         ]
+      }
+   ]
+}
+```
+
+### Pool Nodes
+Pools have the option to include per-node configurations. This is done via the **nodes** field within the pool config. In general all nodes will adhere to the general configuration of the pool, meaning nodes will be assigned [devices](#pool-devices) or [drivers](#pool-drivers) as described in the sections above. However, if a node is listed under the nodes field of the pool, the device plugin will apply a unique configuration for that particular node. This means that on chosen nodes the pool can be configured with custom device and driver settings.
+
+It should be noted that pools do not require the general device or driver configurations and a pool can be configured entirely with per-node configurations, if desired.
+
+Nodes are identified by their **hostname**. This is the hostname as it would appear when running the command `kubectl get nodes`. Nodes are configured with [devices](#pool-devices) and [drivers](#pool-drivers) exactly as described in the corresponding sections above.
+
+In the example below a single pool is given the **name**  `myPool`. The pool **mode** is `cdq`, meaning the device plugin will create subfunctions on top of the primary devices. For this pool, the **drivers** field is configured so that most nodes will assign all their `ice` devices, but will exclude any ice device named `ens801f3` due to it being listed under **excludedDevices**.
+However, there are also three node-specific configs included:
+
+ - The first node with **hostname** `k8snode1` is simply configured to assign `ice` devices to the pool. This is very similar to the general pool config for `myPool`, except there are no excluded devices. If `ens801f3` exists on this node, it will be added to `myPool`.
+
+ - The second node with **hostname**  `k8snode2` is configured with both devices and drivers:
+	 - Two **devices**, `ens801f3` and `ens801f1`, will be added to `myPool` from `k8snode2`.
+
+	 - There is one driver configured under the **drivers** field, the driver is named `ice`. The **primary** setting of `1` means only one of the available ice devices will be added form `k8snode2` and the **excludedDevices** setting ensures this device will not be `ens801f2`.
+	
+ - The third node with **hostname** `k8snode3` has no devices or drivers configured. Even if `k8snode3` has ice devices available, they will not be added to `myPool`.
+
+```
+{
+   "pools":[
+      {
+         "name":"myPool",
+         "mode":"cdq",
+         "drivers":[
+            {
+               "name":"ice",
+               "excludeDevices":[
+                  {
+                     "name":"ens801f3"
+                  }
+               ]
+            }
+         ],
+         "nodes":[
+            {
+               "hostname":"k8snode1",
+               "drivers":[
+                  {
+                     "name":"ice"
+                  }
+               ]
+            },
+            {
+               "hostname":"k8snode2",
+               "devices":[
+                  {
+                     "name":"ens801f3"
+                  },
+                  {
+                     "name":"ens801f1"
+                  }
+               ],
+               "drivers":[
+                  {
+                     "name":"ice",
+                     "ExcludeDevices":[
+                        {
+                           "name":"ens801f2"
+                        }
+                     ],
+                     "primary":1,
+                     "secondary":20
+                  }
+               ]
+            },
+            {
+               "hostname":"k8snode3"
+            }
+         ]
+      }
+   ]
+}
+```
+
+### Other Pool Configurations
+Below are some additional optional configurations that can be applied to pools.
+
+#### UID
+UID is an integer configuration. It is useful in scenarios where the AF_XDP pod runs as a non-zero user. This configuration can be used to inform the device plugin about the user ID of the pod. This allows that non-zero user to use the UDS without issue. If unset, then only user 0 can use the UDS.
+Note: User 0 does not imply that the pod needs to be privileged.
+
+#### EthtoolCmds
+EthtoolCmds is an array of strings. This is a setting that can be applied to devices in a `primary` mode pool. Here the user can provide a list of Ethtool filters to apply to the devices as they are being allocated to a pod. These strings should be formatted exactly as if setting Ethtool filters manually from the command line. Some Ethtool filters require the netdev name or the IP address and in these instances, the user can substitute these with `-device-` and `-ip-`  respectively. The plugins will apply the filters with the correct name and IP address when they become known during pod creation.
+
+#### UdsServerDisable
+UdsServerDisable is a Boolean configuration. If set to true, devices in this pool will not have the BPF app loaded onto the netdev. This means no UDS server is spun up when a device is allocated to a pod. By default, this is set to false.
+
+#### UdsTimeout
+UdsTimeout is an integer configuration. This value sets the amount of time, in seconds, that the UDS server will wait while there is no activity on the UDS. When this timeout limit is reached, the UDS server terminates and the UDS is deleted from the filesystem. This can be a useful setting, for example, in scenarios where large batches of pods are created together. Large batches of pods tend to take some time to spin up, so it might be beneficial to have the UDS server sit waiting a little longer for the pod to start. The maximum allowed value is 300 seconds (5 min). The minimum and default value is 30 seconds.
+
+#### RequiresUnprivilegedBpf 
+RequiresUnprivilegedBpf is a Boolean configuration. Linux systems can be configured with a sysctl setting called *unprivileged_bpf_disabled*. If *unprivileged_bpf_disabled* is set, it means eBPF operations cannot be performed by unprivileged users (or pods) on this host. If your use case requires unprivileged eBPF, this pool configuration should be set to true. When set to true, the pool will not take any devices from a node where unprivileged eBPF has been prohibited. This will mean that pods requesting devices from this pool will only be scheduled on nodes where unprivileged eBPF is allowed. The default value is false.
+
+#### Examples
+The example below has two pools configured.
+
+The first pool:
+ - Has the **name** `myPrimarypool`.
+ - Is in `primary` **mode**, meaning no secondary devices will be created. Pods requesting `afxdp/myPrimarypool` will be allocated the full NIC port.
+ - The **drivers** field for this pool has one driver, `i40e`, meaning this pool will be assigned i40e devices, where available.
+ - The **uid** field for this pool is set to `1500` meaning the AF_XDP pod can run as user 1500 and use the UDS without issue.
+ - The **udsTimeout** field for this pool is set to `300`, meaning the UDS server will only time out and terminate after 5 minutes of inactivity on the UDS.
+ - The **RequiresUnprivilegedBpf** field is set to `true` meaning this pool will only be assigned devices from nodes where unprivileged eBPF is allowed.
+ - Finally, the **ethtoolCmds** field has two filters configured. This means the filters `ethtool -X <device> equal 5 start 3` and `ethtool --config-ntuple -device- flow-type udp4 dst-ip <ip> action` will be configured on all devices as they are being attached to the AF_XDP pods. The plugins will substitute `<device>` and `<ip>` accordingly.
+
+The second pool:
+ - Has the **name** `myCdqPool`.
+ - Is in `cdq` **mode**, meaning the device plugin will create subfunctions on top of the primary devices.
+ - The **drivers** field for this pool has one driver, `ice`, meaning this pool will be assigned ice devices, where available.
+ - The **UdsServerDisable** field is set to `true`, meaning no BPF app will be loaded onto the devices as they are being allocated to pods, so pods requesting `afxdp/myCdqPool` will be allocated "raw" subfunctions with nothing loaded.
+```
+{
+   "pools":[
+      {
+         "name":"myPrimarypool",
+         "mode":"primary",
+         "uid":1500,
+         "udsTimeout":300,
+         "RequiresUnprivilegedBpf":true,
+         "ethtoolCmds":[
+            "-X -device- equal 5 start 3",
+            "--config-ntuple -device- flow-type udp4 dst-ip -ip- action"
+         ],
+         "drivers":[
+            {
+               "name":"i40e"
+            }
+         ]
+      },
+      {
+         "name":"myCdqPool",
+         "mode":"cdq",
+         "UdsServerDisable":true,
+         "drivers":[
+            {
+               "name":"ice"
+            }
+         ]
+      }
+   ]
 }
 ```
 
 ### Logging
-A log file and log level can be configured for the device plugin. As above, these are set in the config map at the top of the [daemonset.yml](./deployments/daemonset.yml) file. Or, as above, a `config.json` file.
-- The log file is set using `logFile`. This file should be placed under `/var/log/afxdp-k8s-plugins/`. 
-- The log level is set using `logLevel`. Available options are:
+A log file and log level can be configured for the device plugin.
+- The log file is set using the **logFile** field. This file will be placed under `/var/log/afxdp-k8s-plugins/`. 
+- The log level is set using the **logLevel** field. Available options are:
 	- `error` - Only logs errors.
 	- `warning` - Logs errors and warnings.
 	- `info` - Logs errors, warnings and basic info about the operation of the device plugin.
-	- `debug` - Logs all of the above along with additional in-depth info about the operation of the device plugin.
-- Example config including log settings:
+	- `debug` - Logs all the above along with additional in-depth info about the operation of the device plugin.
 
+The example below shows a config including log settings.
 ```
 {
-    "logLevel": "debug",
-    "logFile": "/var/log/afxdp-k8s-plugins/afxdp-dp.log",
-    "timeout": 30,
-    "pools" : [
-        {
-            "name" : "i40e",
-            "drivers" : ["i40e"]
-        }
-    ]
-}
-```
-
-### Mode
-
-The device plugin allows for different modes of operation. Primary and CDQ are the modes at present.
-Mode type must be configured for both device plugin and CNI. 
-
-Mode setting for device plugin is set via the `config.json` file. Please see example below:
-
-```
-{
-    "mode": "primary"
-    "pools" : [
-        {
-            "name" : "i40e",
-            "drivers" : ["i40e"]
-        }
-    ]
-}
-```
-
-Mode setting for CNI is set via the network-attachment-definition(NAD) file `NAD.yml`.  Please see mode example: [examples/network-attachment-definition.yaml](./examples/network-attachment-definition.yaml)
-
-
-### Timeout 
-The device plugin includes a timeout action for the unix domain sockets(UDS). 
-Once the timeout is invoked, the UDS is closed and disconnected.
-
-The timeout can be set to a minimum of 30 seconds and a maximum of 300 seconds. If no timeout is configured, the plugin will default to the minimum 30.
-
-The timeout value is set in the `config.json` file. Please see example below.
-
-```
-{
-    "timeout": 30,
-    "pools" : [
-        {
-            "name" : "i40e",
-            "drivers" : ["i40e"]
-        }
-    ]
+   "logLevel":"debug",
+   "logFile":"afxdp-dp.log",
+   "pools":[
+      {
+         "name":"myPool",
+         "mode":"primary",
+         "drivers":[
+            {
+               "name":"i40e"
+            },
+            {
+               "name":"ice"
+            }
+         ]
+      }
+   ]
 }
 ```
 

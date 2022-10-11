@@ -27,14 +27,17 @@ skinparam sequence {
 	LifeLineBackgroundColor LightGray
 }
 
-legend top right
+
+ legend top right
 |= |= Legend |
 |<back:LightBlue>   </back>| Participants from this project - Device Plugin and CNI |
 |<back:Dodgerblue>   </back>| Threads within Device Plugin |
 |<back:Business>   </back>| Participants external to this project |
 |<back:Turquoise>   </back>| Code waits, listening on socket |
 |<back:Yellow>   </back>| Notes |
-endlegend
+endlegend 
+
+
 
 actor "User"
 participant "Linux"
@@ -44,7 +47,7 @@ box "Device Plugin" #LightBlue
 	participant "DP UDS Server Thread" #dodgerblue
 end box
 participant "CNI" #LightBlue
-participant "Pod/CNDP App"
+participant "Pod/AF_XDP App"
 
 == Initialization ==
 autonumber
@@ -62,12 +65,12 @@ activate "DP Main Thread" #DarkGray
 note right #DarkGray: <color #White>discover resources</color>
 
 "Linux" --> "DP Main Thread": interface list
-"DP Main Thread" -> "Linux": ethtool.DriverName()
+
+"DP Main Thread" -> "Linux" : os.Readlink /sys/class/net/<interface>/device/driver
+"Linux" --> "DP Main Thread" : driver name
 
 activate "DP Main Thread" #SlateGray
 note right #SlateGray: <color #White>loop interfaces, build device list</color>
-
-"Linux" --> "DP Main Thread": driver
 
 deactivate "DP Main Thread"
 
@@ -77,7 +80,6 @@ autonumber resume
 
 deactivate "DP Main Thread"
 
-"DP Main Thread" -> "Linux" : cycle devices (netlink up/down)
 "DP Main Thread" -> "DP Main Thread": start GRPC
 "DP Main Thread" -> "Kubelet": GRPC: register
 "DP Main Thread" -> "Kubelet": GRPC: device list
@@ -88,17 +90,24 @@ deactivate "DP Main Thread"
 autonumber
 
 "User" -> "Kubelet": create pod
-"Kubelet" -> "DP Main Thread": GRPC: Allocate(ifname)
+"Kubelet" -> "DP Main Thread": GRPC: Allocate(subfunction)
 activate "DP Main Thread"
 
-"DP Main Thread" -> "Linux": net.if_nametoindex(ifname)
+"DP Main Thread" -> "Linux" : devlink port add pci/0000:3b:00.0 flavour pcisf pfnum 0 sfnum 123
+"Linux" --> "DP Main Thread" : pci/port/index (e.g. pci/0000:3b:00.0/12)
+
+"DP Main Thread" -> "Linux" : devlink port function set pci/0000:3b:00.0/12 state active
+"Linux" --> "DP Main Thread" : return 0
+
+"DP Main Thread" -> "Linux": net.if_nametoindex(subfunction)
 "Linux" --> "DP Main Thread": if_index
 "DP Main Thread" -> "Linux": bpf.xsk_setup_xdp_prog(if_index)
 "Linux" --> "DP Main Thread": XSK file descriptor
 
-"DP Main Thread" -> "DP Main Thread": create UDS
+"DP Main Thread" -> "Linux": create UDS
+
 "DP Main Thread" -> "DP UDS Server Thread" ** : create & start UDS server
-"DP Main Thread" -> "DP UDS Server Thread" : ifname, XSK FD, UDS filepath
+"DP Main Thread" -> "DP UDS Server Thread" : subfunction, XSK FD, UDS filepath
 
 hnote over "DP UDS Server Thread" #Turquoise
 	  listen for
@@ -109,16 +118,14 @@ endhnote
 deactivate "DP Main Thread"
 
 autonumber stop
-"Kubelet" -[#Red]>> "Pod/CNDP App" : <color:Red>Kubelet starts creating the pod around now
+"Kubelet" -[#Red]>> "Pod/AF_XDP App" : <color:Red>Kubelet starts creating the pod around now
 autonumber resume
 
-"Kubelet" -> "CNI" : cmdAdd(ifname, namespace, config)
+"Kubelet" -> "CNI" : cmdAdd(subfunction, namespace, config)
 activate "CNI"
 "CNI" -> "CNI" : cni.IPAM
-"CNI" -> "Linux" : ethtool filters
 
-
-"CNI" -> "Pod/CNDP App" : place interface in pod netns
+"CNI" -> "Pod/AF_XDP App" : place subfunction in pod netns
 "CNI" -> "Kubelet" : return 0
 
 deactivate "CNI"
@@ -127,30 +134,30 @@ autonumber stop
 
 == Pod Running ==
 
-"Kubelet" -> "Pod/CNDP App" : start pod
-"Pod/CNDP App" -> "Pod/CNDP App" : application start
-activate "Pod/CNDP App"
+"Kubelet" -> "Pod/AF_XDP App" : start pod
+"Pod/AF_XDP App" -> "Pod/AF_XDP App" : application start
+activate "Pod/AF_XDP App"
 
-"Pod/CNDP App" -> "DP UDS Server Thread": /connect,hostname
+"Pod/AF_XDP App" -> "DP UDS Server Thread": /connect,hostname
 note right
-	CNDP application starts
+	AF_XDP application starts
 	UDS handshake begins
 end note
 activate "DP UDS Server Thread"
 "DP UDS Server Thread" -> "Kubelet": podresources.ListPodResourcesRequest()
 "Kubelet" --> "DP UDS Server Thread": podresources.ListPodResourcesResponse()
-"DP UDS Server Thread" -> "DP UDS Server Thread": validate hostname against ifname
-"DP UDS Server Thread" --> "Pod/CNDP App": /host_ok
+"DP UDS Server Thread" -> "DP UDS Server Thread": validate hostname against subfunction
+"DP UDS Server Thread" --> "Pod/AF_XDP App": /host_ok
 deactivate "DP UDS Server Thread"
 hnote over "DP UDS Server Thread" #Turquoise
 	listen for
 	request
 end note
 
-"Pod/CNDP App" -> "DP UDS Server Thread": /xsk_map_fd,ifname
+"Pod/AF_XDP App" -> "DP UDS Server Thread": /xsk_map_fd,subfunction
 activate "DP UDS Server Thread"
-"DP UDS Server Thread" -> "DP UDS Server Thread": FD for ifname
-"DP UDS Server Thread" --> "Pod/CNDP App": /fd_ack,FD
+"DP UDS Server Thread" -> "DP UDS Server Thread": FD for subfunction
+"DP UDS Server Thread" --> "Pod/AF_XDP App": /fd_ack,FD
 deactivate "DP UDS Server Thread"
 
 hnote over "DP UDS Server Thread" #Turquoise
@@ -158,11 +165,11 @@ hnote over "DP UDS Server Thread" #Turquoise
 	request
 endhnote
 
-"Pod/CNDP App" -> "DP UDS Server Thread": /config_busy_poll,FD
+"Pod/AF_XDP App" -> "DP UDS Server Thread": /config_busy_poll,FD
 activate "DP UDS Server Thread"
 "DP UDS Server Thread" -> "Linux" : bpf.setsockopt(FD, BUSY_POLL)
 "Linux" --> "DP UDS Server Thread" : return 0
-"DP UDS Server Thread" --> "Pod/CNDP App": /config_busy_poll_ack
+"DP UDS Server Thread" --> "Pod/AF_XDP App": /config_busy_poll_ack
 deactivate "DP UDS Server Thread"
 
 hnote over "DP UDS Server Thread" #Turquoise
@@ -170,11 +177,11 @@ hnote over "DP UDS Server Thread" #Turquoise
 	request
 endhnote
 
-"Pod/CNDP App" -> "DP UDS Server Thread": /fin
+"Pod/AF_XDP App" -> "DP UDS Server Thread": /fin
 activate "DP UDS Server Thread"
-"DP UDS Server Thread" --> "Pod/CNDP App": /fin_ack
-"Pod/CNDP App" [hidden]-> "Pod/CNDP App"
-note left: UDS handshake ends
+"DP UDS Server Thread" --> "Pod/AF_XDP App": /fin_ack
+
+note right: UDS handshake ends
 deactivate "DP UDS Server Thread"
 
 destroy "DP UDS Server Thread"
@@ -183,23 +190,32 @@ destroy "DP UDS Server Thread"
 autonumber
 
 "User" -> "Kubelet": delete pod
-"Kubelet" -> "Pod/CNDP App" : stop pod
-deactivate "Pod/CNDP App"
-"Kubelet" -> "CNI" : cmdDel(ifname, config)
+"Kubelet" -> "Pod/AF_XDP App" : stop pod
+deactivate "Pod/AF_XDP App"
+"Kubelet" -> "CNI" : cmdDel(subfunction, config)
 activate "CNI"
-"CNI" -> "Pod/CNDP App" : interface from pod to host netns
-"Pod/CNDP App" --> "CNI" : interface
+"CNI" -> "Pod/AF_XDP App" : subfunction from pod to host netns
+"Pod/AF_XDP App" --> "CNI" : subfunction
+"CNI" -> "Linux" : clear ethtool filters
 "CNI" -> "CNI" : clear IPAM
-"CNI" -> "Linux": net.if_nametoindex(ifname)
+"CNI" -> "Linux": net.if_nametoindex(subfunction)
 "Linux" --> "CNI": if_index
 "CNI" -> "Linux": bpf.set_link_xdp_fd(if_index, -1)
 "Linux" --> "CNI": return 0
 
-"CNI" -> "Linux" : clear ethtool filters
+"CNI" -> "Linux" : devlink port list | grep subfunction
+"Linux" --> "CNI" : pci/port/index (e.g. pci/0000:3b:00.0/12)
+
+"CNI" -> "Linux" : devlink port function set pci/0000:3b:00.0/12 state inactive
+"Linux" --> "CNI" : return 0
+
+"CNI" -> "Linux" : devlink port del pci/0000:3b:00.0/12 
+"Linux" --> "CNI" : return 0
+
 "CNI" --> "Kubelet": return 0
 deactivate "CNI"
 
-"Kubelet" -> "Pod/CNDP App" : delete pod
-deactivate "Pod/CNDP App"
+"Kubelet" -> "Pod/AF_XDP App" : delete pod
+deactivate "Pod/AF_XDP App"
 
 @enduml

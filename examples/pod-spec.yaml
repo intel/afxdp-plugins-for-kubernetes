@@ -9,12 +9,12 @@ metadata:
 spec:
   containers:
   - name: afxdp
-    image: afxdp-docker-image:latest           # Specify the docker image here
+    image: docker-image:latest                 # Specify your docker image here, along with PullPolicy and command
     imagePullPolicy: IfNotPresent
     command: ["tail", "-f", "/dev/null"]
     resources:
       requests:
-        afxdp/i40e: '1'                        # The resource requested needs to match the device plugin pool name / resource type
+        afxdp/myPool: '1'                      # The resource requested needs to match the device plugin pool name / resource type
       limits:                                  # The number requested needs to match the amount requested in annotations list above
-        afxdp/i40e: '1'                        # Requests and limits should match
+        afxdp/myPool: '1'                      # Requests and limits should match
   restartPolicy: Never
