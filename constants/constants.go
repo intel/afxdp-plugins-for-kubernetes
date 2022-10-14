@@ -41,7 +41,7 @@ var (
 	deviceValidNameMax   = 50                                                       // maximum length of a device name
 	deviceValidPciRegex  = `[0-9a-f]{4}:[0-9a-f]{2,4}:[0-9a-f]{2}\.[0-9a-f]`        // regex to check if a string is a valid pci address
 	deviceSecondaryMin   = 1                                                        // minimum number of secondary devices that can be created on top of a primary device
-	deviceSecondaryMax   = 350                                                      // maximum number of secondary devices that can be created on top of a primary device
+	deviceSecondaryMax   = 64                                                       // maximum number of secondary devices that can be created on top of a primary device
 
 	/* Drivers */
 	driversZeroCopy      = []string{"i40e", "E810", "ice"} // drivers that support zero copy AF_XDP
