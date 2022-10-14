@@ -113,7 +113,7 @@ Pools have two required fields, a **name** and a **mode**.
 
 The **name** is the unique name used to identify a pool. The name is used in the pod spec to request devices from this pool. For example, if a pool is named `myPool`, any pods requiring devices from this pool will request resources of type `afxdp/myPool`.
 
-The **mode** is the mode this pool operates in. Modes determines how pools scales and there are currently two accepted modes - `primary` and `cdq`. Primary mode means there is no scaling, the AF_XDP pod is provided with the full NIC port (the primary device). CDQ mode means that subfunctions will be used to scale the pool, so pods each get their own secondary device (a subfunction) meaning many pods can share a primary device (NIC port).
+The **mode** is the mode this pool operates in. Mode determines how pools scale and there are currently two accepted modes - `primary` and `cdq`. Primary mode means there is no scaling, the AF_XDP pod is provided with the full NIC port (the primary device). CDQ mode means that subfunctions will be used to scale the pool, so pods each get their own secondary device (a subfunction) meaning many pods can share a primary device (NIC port).
 Additional secondary device modes are planned.
 
 The example below shows how to configure two pools in different modes.
@@ -132,6 +132,8 @@ The example below shows how to configure two pools in different modes.
 }
 ```
 *Note that the above is not a fully working example as the pools have not yet been configured with devices. This will not pass the device plugin's config validation.*
+
+**Note:** Each pool created will require its own network attachment definition. See the [Running Pods](#running-pods) section above and the [network-attachment-definition.yaml](./examples/network-attachment-definition.yaml) example file for more info. The resource name provided as `k8s.v1.cni.cncf.io/resourceName` must match the pool name.
 
 ### Pool Drivers
 In production environments, the most common way to add devices to a pool is through configuring drivers for that pool. When a driver is configured to a pool, the device plugin will search the node for devices using this driver and add them to that pool. A pool can have multiple drivers associated with it. Drivers are identified by their name.
@@ -411,21 +413,24 @@ Output from CLOC (count lines of code) - github.com/AlDanial/cloc
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-Go                              35            837           1442           7430
-YAML                            17             10              8            747
-Bourne Shell                     6             52             64            475
-Markdown                         3             87              0            453
+Go                              35            837           1451           7479
+YAML                            17              9              8            772
+Markdown                         3            107              0            640
+Bourne Shell                     6             58             63            500
 C                                2             34             32            158
 make                             1             19             12            117
 JSON                             2              0              0             32
 C/C++ Header                     2             10             28             28
 Dockerfile                       1              1             12              3
 -------------------------------------------------------------------------------
-SUM:                            69           1050           1598           9443
+SUM:                            69           1075           1606           9729
 -------------------------------------------------------------------------------
 
 ```
 <!---clocend--->
+
+## High Level Architecture
+![](./docs/high_level_arch.png)
 
 ## Sequence Diagram
 ![](./docs/sequence.png)
