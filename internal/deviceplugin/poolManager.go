@@ -16,11 +16,12 @@
 package deviceplugin
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
-	"github.com/intel/afxdp-plugins-for-kubernetes/internal/cndp"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/udsserver"
 	logging "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -33,36 +34,53 @@ import (
 	"time"
 )
 
-const (
-	envVarDevs = "CNDP_DEVICES"
-)
-
 /*
 PoolManager represents an manages the pool of devices.
 Each PoolManager registers with Kubernetes as a different device type.
 */
 type PoolManager struct {
-	Name          string
-	Mode          string
-	Devices       map[string]*pluginapi.Device
-	UpdateSignal  chan bool
-	DpAPISocket   string
-	DpAPIEndpoint string
-	DpAPIServer   *grpc.Server
-	ServerFactory cndp.ServerFactory
-	BpfHandler    bpf.Handler
-	Timeout       int
-	DevicePrefix  string
-	CndpFuzzTest  bool
+	Name             string
+	Mode             string
+	Devices          map[string]*networking.Device
+	UpdateSignal     chan bool
+	DpAPISocket      string
+	DpAPIEndpoint    string
+	UdsServerDisable bool
+	UdsTimeout       int
+	DevicePrefix     string
+	UdsFuzz          bool
+	UID              string
+	EthtoolFilters   []string
+	DpAPIServer      *grpc.Server
+	ServerFactory    udsserver.ServerFactory
+	BpfHandler       bpf.Handler
+	NetHandler       networking.Handler
+}
+
+func NewPoolManager(config PoolConfig) PoolManager {
+	return PoolManager{
+		Name:             config.Name,
+		Mode:             config.Mode,
+		Devices:          config.Devices,
+		UpdateSignal:     make(chan bool),
+		DpAPISocket:      pluginapi.DevicePluginPath + constants.Plugins.DevicePlugin.DevicePrefix + "-" + config.Name + ".sock",
+		DpAPIEndpoint:    constants.Plugins.DevicePlugin.DevicePrefix + "-" + config.Name + ".sock",
+		UdsServerDisable: config.UdsServerDisable,
+		UdsTimeout:       config.UdsTimeout,
+		DevicePrefix:     constants.Plugins.DevicePlugin.DevicePrefix,
+		UdsFuzz:          config.UdsFuzz,
+		UID:              strconv.Itoa(config.UID),
+		EthtoolFilters:   config.EthtoolCmds,
+	}
 }
 
 /*
 Init is called it initialise the PoolManager.
 */
-func (pm *PoolManager) Init(config *PoolConfig) error {
-	pm.ServerFactory = cndp.NewServerFactory()
+func (pm *PoolManager) Init(config PoolConfig) error {
+	pm.ServerFactory = udsserver.NewServerFactory()
 	pm.BpfHandler = bpf.NewHandler()
-	netHandler := networking.NewHandler()
+	pm.NetHandler = networking.NewHandler()
 
 	if err := pm.registerWithKubelet(); err != nil {
 		return err
@@ -73,18 +91,6 @@ func (pm *PoolManager) Init(config *PoolConfig) error {
 		return err
 	}
 	logging.Infof("Pool "+pm.DevicePrefix+"/%s started serving", pm.Name)
-
-	for _, device := range config.Devices {
-		logging.Debugf("Cycling state of device %s", device)
-		if err := netHandler.CycleDevice(device); err != nil {
-			logging.Errorf("Error cycling the state of device %s: %v", device, err)
-			logging.Errorf("Device %s was not added to pool %s", device, pm.Name)
-			continue
-		}
-
-		newdev := pluginapi.Device{ID: device, Health: pluginapi.Healthy}
-		pm.Devices[device] = &newdev
-	}
 
 	if len(pm.Devices) > 0 {
 		pm.UpdateSignal <- true
@@ -119,11 +125,9 @@ func (pm *PoolManager) ListAndWatch(empty *pluginapi.Empty,
 	for {
 		<-pm.UpdateSignal
 		resp := new(pluginapi.ListAndWatchResponse)
-		logging.Debugf("Pool "+pm.DevicePrefix+"/%s device list:", pm.Name)
 
-		for _, dev := range pm.Devices {
-			logging.Debugf("      " + dev.ID + ", " + dev.Health)
-			resp.Devices = append(resp.Devices, dev)
+		for devName := range pm.Devices {
+			resp.Devices = append(resp.Devices, &pluginapi.Device{ID: devName, Health: pluginapi.Healthy})
 		}
 
 		if err := stream.Send(resp); err != nil {
@@ -140,75 +144,102 @@ the Device available in the container.
 */
 func (pm *PoolManager) Allocate(ctx context.Context,
 	rqt *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
-	var err error
-	var response *pluginapi.AllocateResponse
-
-	logging.Debugf("New allocate request")
-	if pm.Mode == "cndp" {
-		response, err = pm.allocateCndp(ctx, rqt)
-		if err != nil {
-			logging.Errorf("Error during CNDP pod allocation: %v", err)
-			return response, err
-		}
-
-		return response, nil
-	}
-
-	err = fmt.Errorf("Unrecognised device plugin mode")
-	logging.Errorf("Allocate error: %v", err)
-
-	return nil, err
-}
-
-func (pm *PoolManager) allocateCndp(ctx context.Context,
-	rqt *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
 	response := pluginapi.AllocateResponse{}
+	var udsServer udsserver.Server
+	var udsPath string
+	var err error
 
-	logging.Infof("New CNDP allocate request. Creating new UDS server")
-	cndpServer, udsPath, err := pm.ServerFactory.CreateServer(pm.DevicePrefix+"/"+pm.Name, pm.Timeout, pm.CndpFuzzTest)
-	if err != nil {
-		logging.Errorf("Error Creating new UDS server: %v", err)
-		return &response, err
+	logging.Debugf("New allocate request on pool %s", pm.Name)
+
+	if !pm.UdsServerDisable {
+		logging.Infof("Creating new UDS server")
+		udsServer, udsPath, err = pm.ServerFactory.CreateServer(pm.DevicePrefix+"/"+pm.Name, pm.UID, pm.UdsTimeout, pm.UdsFuzz)
+		if err != nil {
+			logging.Errorf("Error Creating new UDS server: %v", err)
+			return &response, err
+		}
 	}
 
-	logging.Infof("UDS socket path: %s", udsPath)
-
-	//loop each container
+	//loop each container request
 	for _, crqt := range rqt.ContainerRequests {
 		cresp := new(pluginapi.ContainerAllocateResponse)
 		envs := make(map[string]string)
 
-		cresp.Mounts = append(cresp.Mounts, &pluginapi.Mount{
-			HostPath:      udsPath,
-			ContainerPath: "/tmp/cndp.sock",
-			ReadOnly:      false,
-		})
+		if !pm.UdsServerDisable {
+			cresp.Mounts = append(cresp.Mounts, &pluginapi.Mount{
+				HostPath:      udsPath,
+				ContainerPath: constants.Uds.PodPath,
+				ReadOnly:      false,
+			})
+		}
 
 		//loop each device request per container
-		for _, dev := range crqt.DevicesIDs {
-			logging.Infof("Loading BPF program on device: %s", dev)
-			fd, err := pm.BpfHandler.LoadBpfSendXskMap(dev)
-			if err != nil {
-				logging.Errorf("Error loading BPF Program on interface %s: %v", dev, err)
+		for _, devName := range crqt.DevicesIDs {
+			device := pm.Devices[devName]
+			pretty, _ := tools.PrettyString(device.Public())
+			logging.Debugf("Device: %s", pretty)
+
+			if device.Mode() != pm.Mode {
+				err := fmt.Errorf("Pool mode %s does not match device mode %s", pm.Mode, device.Mode())
+				logging.Errorf("%v", err)
 				return &response, err
 			}
-			logging.Infof("BPF program loaded on: %s File descriptor: %s", dev, strconv.Itoa(fd))
 
-			cndpServer.AddDevice(dev, fd)
+			switch pm.Mode {
+			case "primary":
+				logging.Debugf("Primary mode")
+			case "cdq":
+				if err := device.ActivateCdqSubfunction(); err != nil {
+					logging.Errorf("Error creating CDQ subfunction: %v", err)
+					return &response, err
+				}
+			default:
+				err := fmt.Errorf("Unsupported pool mode: %s", pm.Mode)
+				logging.Errorf("%v", err)
+				return &response, err
+			}
+
+			logging.Debugf("Cycling state of device %s", device.Name())
+			if err := device.Cycle(); err != nil {
+				logging.Errorf("Error cycling the state of device %s: %v", device.Name(), err)
+				continue
+			}
+
+			if !pm.UdsServerDisable {
+				logging.Infof("Loading BPF program on device: %s", device.Name())
+				fd, err := pm.BpfHandler.LoadBpfSendXskMap(device.Name())
+				if err != nil {
+					logging.Errorf("Error loading BPF Program on interface %s: %v", device.Name(), err)
+					return &response, err
+				}
+				logging.Infof("BPF program loaded on: %s File descriptor: %s", device.Name(), strconv.Itoa(fd))
+				udsServer.AddDevice(device.Name(), fd)
+			}
+
+			if pm.EthtoolFilters != nil {
+				device.SetEthtoolFilter(pm.EthtoolFilters)
+				if err = pm.NetHandler.WriteDeviceFile(device, constants.DeviceFile.Directory+constants.DeviceFile.Name); err != nil {
+					logging.Debugf("Error writing to device file %v", err)
+					return &response, err
+				}
+			}
 		}
-		envs[envVarDevs] = strings.Join(crqt.DevicesIDs, " ")
-		envsJSON, err := json.MarshalIndent(envs, "", " ")
+
+		envs[constants.Devices.EnvVarList] = strings.Join(crqt.DevicesIDs, " ")
+		envsPrint, err := tools.PrettyString(envs)
 		if err != nil {
-			logging.Errorf("error while marshalling envs: %v", err)
+			logging.Errorf("Error printing container environment variables: %v", err)
+		} else {
+			logging.Debugf("Container environment variables: %s", envsPrint)
 		}
-		logging.Infof("Setting environment variables: %s", string(envsJSON))
-
 		cresp.Envs = envs
-
 		response.ContainerResponses = append(response.ContainerResponses, cresp)
+
 	}
 
-	cndpServer.Start()
+	if !pm.UdsServerDisable {
+		udsServer.Start()
+	}
 
 	return &response, nil
 }

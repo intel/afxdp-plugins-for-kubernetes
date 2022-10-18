@@ -17,7 +17,7 @@ package uds
 
 import (
 	"fmt"
-	"github.com/google/gofuzz"
+	fuzz "github.com/google/gofuzz"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/logformats"
 	logging "github.com/sirupsen/logrus"
 	"io"
@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	cndpFuzzFile   = "/var/log/afxdp-k8s-plugins/cndp-fuzz.log"
+	fuzzFile       = "/var/log/afxdp-k8s-plugins/fuzz.log"
 	filePermission = 0644
 )
 
@@ -56,7 +56,7 @@ func NewFuzzHandler() Handler {
 Init should initialises the Unix domain socket. The fuzzlogging() function is called which creates a separate
 file for fuzzing logs.
 */
-func (f *fuzzHandler) Init(socketPath string, protocol string, msgbufSize int, ctlBufSize int, timeout time.Duration) error {
+func (f *fuzzHandler) Init(socketPath string, protocol string, msgbufSize int, ctlBufSize int, timeout time.Duration, uid string) error {
 	if err := fuzzLogging(); err != nil {
 		return err
 	}
@@ -112,9 +112,9 @@ func fuzzLogging() error {
 
 	logging.SetReportCaller(true)
 
-	fp, err := os.OpenFile(cndpFuzzFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, filePermission)
+	fp, err := os.OpenFile(fuzzFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, filePermission)
 	if err != nil {
-		err = fmt.Errorf("fuzzlogging(): cannot open logfile %s: %w", cndpFuzzFile, err)
+		err = fmt.Errorf("fuzzlogging(): cannot open logfile %s: %w", fuzzFile, err)
 		return err
 	}
 	logging.SetOutput(io.MultiWriter(fp, os.Stdout))

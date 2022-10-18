@@ -41,8 +41,8 @@ var ch = make(chan string)
 /*
 Fuzz seeds fuzzed data to UDS write function.
 The input data is considered:
- - uninteresting if is caught by an existing error
- - interesting if it does not result in an error, input priority increases for subsequent fuzzing
+  - uninteresting if is caught by an existing error
+  - interesting if it does not result in an error, input priority increases for subsequent fuzzing
 */
 func Fuzz(data []byte) int {
 	if len(data) == 0 {
@@ -60,7 +60,7 @@ func Fuzz(data []byte) int {
 	time.Sleep(10 * time.Millisecond)
 
 	uds := uds.NewHandler()
-	err := uds.Init(udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, udsIdleTimeout)
+	err := uds.Init(udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, udsIdleTimeout, "")
 	if err != nil {
 		logging.Errorf("Error Initialising UDS: %v", err)
 	}
@@ -85,7 +85,7 @@ func Fuzz(data []byte) int {
 
 func reader(udsPath string, data []byte) {
 	uds := uds.NewHandler()
-	err := uds.Init(udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, udsIdleTimeout)
+	err := uds.Init(udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, udsIdleTimeout, "")
 	if err != nil {
 		logging.Errorf("Error Initialising UDS: %v", err)
 	}

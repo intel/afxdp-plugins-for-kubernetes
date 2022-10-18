@@ -18,6 +18,7 @@ package uds
 import (
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
 	logging "github.com/sirupsen/logrus"
 	"net"
 	"os"
@@ -32,7 +33,7 @@ The interface exists for testing purposes, allowing unit tests to run without ma
 on a real socket.
 */
 type Handler interface {
-	Init(socketPath string, protocol string, msgBufSize int, ctlBufSize int, timeout time.Duration) error
+	Init(socketPath string, protocol string, msgBufSize int, ctlBufSize int, timeout time.Duration, uid string) error
 	Listen() (CleanupFunc, error)
 	Dial() (CleanupFunc, error)
 	Read() (string, int, error)
@@ -52,6 +53,7 @@ type handler struct {
 	ctlBufSize int
 	timeout    time.Duration
 	protocol   string
+	uid        string
 }
 
 /*
@@ -72,7 +74,7 @@ Init initialises the UDS Handler.
 A CleanupFunc function is returned. This function should be deferred by the calling code
 to ensure proper socket cleanup.
 */
-func (h *handler) Init(socketPath string, protocol string, msgBufSize int, ctlBufSize int, timeout time.Duration) error {
+func (h *handler) Init(socketPath string, protocol string, msgBufSize int, ctlBufSize int, timeout time.Duration, uid string) error {
 	var err error
 
 	h.socketPath = socketPath
@@ -80,6 +82,7 @@ func (h *handler) Init(socketPath string, protocol string, msgBufSize int, ctlBu
 	h.msgBufSize = msgBufSize
 	h.ctlBufSize = ctlBufSize
 	h.timeout = timeout
+	h.uid = uid
 
 	// resolve UDS address
 	h.addr, err = net.ResolveUnixAddr(h.protocol, h.socketPath)
@@ -104,6 +107,18 @@ func (h *handler) Listen() (CleanupFunc, error) {
 	if err != nil {
 		logging.Errorf("Error creating Unix listener for %s: %v", h.socketPath, err)
 		return func() { h.cleanup() }, err
+	}
+
+	//ACL Permissions
+	if h.uid != "0" {
+		logging.Infof("Giving permissions to UID %s", h.uid)
+		err = host.GivePermissions(h.socketPath, h.uid, "rwx")
+		if err != nil {
+			logging.Errorf("Error giving permissions to socket file path: %v", err)
+			return func() { h.cleanup() }, err
+		} else {
+			logging.Infof("User %s has access to %s", h.uid, h.socketPath)
+		}
 	}
 
 	if h.timeout > 0 {

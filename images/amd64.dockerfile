@@ -11,13 +11,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM amd64/alpine:3.14 as bpf
-RUN apk --no-cache -U add libbpf=0.4.0-r0
+FROM amd64/alpine:3.16 as bpf
+RUN apk --no-cache -U add iproute2-rdma~=5.17 acl~=2.3 \
+      && apk --no-cache -U add libbpf~=0.5 --repository=http://dl-cdn.alpinelinux.org/alpine/v3.15/community
 
 FROM bpf as builder
 COPY . /usr/src/afxdp_k8s_plugins
 WORKDIR /usr/src/afxdp_k8s_plugins
-RUN apk add --no-cache go=1.16.15-r0 make=4.3-r0 libbsd-dev=0.11.3-r0 libbpf-dev=0.4.0-r0 \
+RUN apk add --no-cache go~=1.18 make~=4.3 libbsd-dev~=0.11 \
+      && apk add --no-cache libbpf-dev~=0.5 --repository=https://dl-cdn.alpinelinux.org/alpine/v3.15/community \
       && make builddp
 
 FROM bpf

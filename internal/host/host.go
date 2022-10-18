@@ -19,6 +19,7 @@ import (
 	"errors"
 	logging "github.com/sirupsen/logrus"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -34,6 +35,7 @@ type Handler interface {
 	HasEthtool() (bool, string, error)
 	HasLibbpf() (bool, []string, error)
 	HasDevlink() (bool, string, error)
+	Hostname() (string, error)
 }
 
 /*
@@ -186,4 +188,69 @@ func (r *handler) HasDevlink() (bool, string, error) {
 
 	version := strings.Split(string(output), "\n")[0]
 	return true, version, nil
+}
+
+/*
+Hostname is a wrapper function for unit testing that calls os.Hostname.
+*/
+func (r *handler) Hostname() (string, error) {
+	return os.Hostname()
+}
+
+/*
+GivePermissions will give read/write permissions on a file to a specified user id.
+*/
+func GivePermissions(filepath, uid, permissions string) error {
+	app := "setfacl"
+
+	if uid == "" {
+		return errors.New("UID not specified.")
+	}
+
+	appPath, err := exec.LookPath(app)
+	if err != nil {
+		if errors.Is(err, exec.ErrNotFound) {
+			return errors.New("Access Control Lists not supported.")
+		}
+		logging.Errorf("Error checking if Access Control Lists are supported: %v", err)
+		return err
+	}
+	if appPath == "" {
+		return errors.New("Access Control Lists not supported.")
+	}
+
+	if _, err := os.Stat(filepath); err != nil {
+		return errors.New(filepath + " does not exist.")
+	}
+	argument := "user:" + uid + ":" + permissions
+	//give access to path to specified uid
+	_, err = exec.Command("setfacl", "-m", argument, filepath).Output()
+	if err != nil {
+		logging.Warnf("Error setting ACL permissions of %s to %s: %v", filepath, argument, err)
+		return err
+	}
+	//two cases when verifying user permissions
+	//1. user does not exist - check for uid in path
+	//2. user exists - check for username in /etc/passwd from uid
+	output, err := exec.Command("getfacl", filepath).Output()
+	if err != nil {
+		logging.Warnf("Error verifying ACL permissions of %s regarding %s: %v", filepath, uid, err)
+		return err
+	}
+	//case 1 skips the if statement block, case 2 enters the if statement block
+	if !(strings.Contains(string(output), argument)) {
+		logging.Infof("UID %s not found. Searching for username", uid)
+		out, err := exec.Command("grep", uid, "/etc/passwd").Output()
+		if err != nil || len(string(out)) < 1 {
+			logging.Warnf("Error verifying ACL permissions of %s: %v", filepath, err)
+			return err
+		}
+		username := strings.Split(string(out), ":")[0]
+		if !strings.Contains(string(output), username) {
+			logging.Warnf("Error verifying ACL permissions of %s: %v", filepath, err)
+			return err
+		}
+	}
+	logging.Infof("Socket access granted to UID %s", uid)
+	return nil
 }

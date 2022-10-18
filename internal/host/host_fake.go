@@ -20,12 +20,19 @@ FakeHandler interface extends the Handler interface to provide additional testin
 */
 type FakeHandler interface {
 	Handler
+	SetKernalVersion(version string)
+	SetAllowsUnprivilegedBpf(allowed bool)
 }
 
 /*
 fakeHandler implements the FakeHandler interface.
 */
 type fakeHandler struct{}
+
+var (
+	kernalVersion        string
+	privilegedBpfAllowed bool
+)
 
 /*
 NewFakeHandler returns an implementation of the FakeHandler interface.
@@ -39,7 +46,11 @@ KernelVersion checks the host kernel version and returns it as a string.
 In this FakeHandler it returns a dummy version for testing purposes.
 */
 func (r *fakeHandler) KernelVersion() (string, error) {
-	return "5.4.1", nil
+	return kernalVersion, nil
+}
+
+func (r *fakeHandler) SetKernalVersion(version string) {
+	kernalVersion = version
 }
 
 /*
@@ -50,6 +61,8 @@ func (r *fakeHandler) HasEthtool() (bool, string, error) {
 	return true, "ethtool version 5.4", nil
 }
 
+//setter
+
 /*
 HasLibbpf checks if the host has libbpf installed and returns a boolean.
 In this FakeHandler it returns a dummy value.
@@ -58,12 +71,18 @@ func (r *fakeHandler) HasLibbpf() (bool, []string, error) {
 	return true, nil, nil
 }
 
+//set setter as SetHasLibBpf
+
 /*
 AllowsUnprivilegedBpf checks if the host allows unpriviliged bpf calls and
 returns a boolean. In this FakeHandler it returns a dummy value.
 */
 func (r *fakeHandler) AllowsUnprivilegedBpf() (bool, error) {
-	return true, nil
+	return privilegedBpfAllowed, nil
+}
+
+func (r *fakeHandler) SetAllowsUnprivilegedBpf(allowed bool) {
+	privilegedBpfAllowed = allowed
 }
 
 /*
@@ -73,3 +92,12 @@ In this FakeHandler it returns a dummy value.
 func (r *fakeHandler) HasDevlink() (bool, string, error) {
 	return true, "devlink utility, iproute2-ss200127", nil
 }
+
+/*
+Hostname is a wrapper function for unit testing that calls os.Hostname.
+*/
+func (r *fakeHandler) Hostname() (string, error) {
+	return "k8sNode1", nil
+}
+
+//set setter for setDevLink

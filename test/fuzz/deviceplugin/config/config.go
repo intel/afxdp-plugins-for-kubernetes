@@ -17,6 +17,7 @@ package deviceplugin
 
 import (
 	dp "github.com/intel/afxdp-plugins-for-kubernetes/internal/deviceplugin"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	"io/ioutil"
 	"os"
@@ -32,9 +33,9 @@ var firstRun bool = true
 /*
 Fuzz sends fuzzed data into the GetConfig function
 The input data is considered:
- - uninteresting if is caught by an existing error
- - interesting if it does not result in an error, input priority increases for subsequent fuzzing
- - discard if it will not unmarshall, so we don't just end up testing the json.Unmarshall function
+  - uninteresting if is caught by an existing error
+  - interesting if it does not result in an error, input priority increases for subsequent fuzzing
+  - discard if it will not unmarshall, so we don't just end up testing the json.Unmarshall function
 */
 func Fuzz(data []byte) int {
 	if firstRun {
@@ -60,7 +61,7 @@ func Fuzz(data []byte) int {
 		panic(1)
 	}
 
-	_, err = dp.GetConfig(tmpfile.Name(), networking.NewHandler())
+	_, err = dp.GetPoolConfigs(tmpfile.Name(), networking.NewHandler(), host.NewHandler())
 	if err != nil {
 		return 0
 	}

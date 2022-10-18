@@ -18,28 +18,23 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/deviceplugin"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/logformats"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	logging "github.com/sirupsen/logrus"
 	"io"
-	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"os"
 	"os/signal"
-	"strconv"
-	"strings"
 	"syscall"
 )
 
-const (
-	exitNormal        = 0
-	exitConfigError   = 1
-	exitLogError      = 2
-	exitHostError     = 3
-	exitPoolError     = 4
-	defaultConfigFile = "./config.json"
-	devicePrefix      = "cndp"
+var (
+	hostHandler = host.NewHandler()
+	netHandler  = networking.NewHandler()
+	deviceFile  = constants.DeviceFile.Directory + constants.DeviceFile.Name
 )
 
 type devicePlugin struct {
@@ -48,69 +43,70 @@ type devicePlugin struct {
 
 func main() {
 	var configFile string
-	flag.StringVar(&configFile, "config", defaultConfigFile, "Location of the device plugin configuration file")
+	flag.StringVar(&configFile, "config", constants.Plugins.DevicePlugin.DefaultConfigFile, "Location of the device plugin configuration file")
 	flag.Parse()
 	logging.SetReportCaller(true)
 	logging.SetFormatter(logformats.Default)
 
-	// config
-	cfg, err := deviceplugin.GetConfig(configFile, networking.NewHandler())
+	// overall config
+	cfg, err := deviceplugin.GetPluginConfig(configFile)
 	if err != nil {
 		logging.Errorf("Error getting device plugin config: %v", err)
-		exit(exitConfigError)
+		exit(constants.Plugins.DevicePlugin.ExitConfigError)
 	}
 
 	// logging
 	if err := configureLogging(cfg); err != nil {
 		logging.Errorf("Error configuring logging: %v", err)
-		exit(exitLogError)
+		exit(constants.Plugins.DevicePlugin.ExitLogError)
+	}
+
+	//device file
+	exists, err := tools.FilePathExists(deviceFile)
+	if err != nil {
+		logging.Errorf("Error checking device file path: %v", err)
+	}
+	if exists {
+		if err = os.Remove(deviceFile); err != nil {
+			logging.Errorf("Error deleting device file: %v", err)
+		}
 	}
 
 	logging.Infof("Starting AF_XDP Device Plugin")
-	logging.Infof("Device Plugin mode: %s", cfg.Mode)
 
-	// requirements
+	// host requirements
 	logging.Infof("Checking if host meets requriements")
-	hostMeetsRequirements, err := checkHost(host.NewHandler(), cfg)
+	hostMeetsRequirements, err := checkHost(hostHandler)
 	if err != nil {
 		logging.Errorf("Error checking host: %v", err)
-		exit(exitHostError)
+		exit(constants.Plugins.DevicePlugin.ExitHostError)
 	}
 	if !hostMeetsRequirements {
 		logging.Infof("Host does not meet requriements")
-		exit(exitNormal)
+		exit(constants.Plugins.DevicePlugin.ExitNormal)
 	}
 	logging.Infof("Host meets requriements")
 
-	// pools
-	logging.Infof("Building device pools")
-	if err := cfg.BuildPools(); err != nil {
-		logging.Warningf("Error building device pools: %v", err)
-		exit(exitPoolError)
+	// pool configs
+	logging.Infof("Getting device pools")
+	poolConfigs, err := deviceplugin.GetPoolConfigs(configFile, netHandler, hostHandler)
+	if err != nil {
+		logging.Warningf("Error getting device pools: %v", err)
+		exit(constants.Plugins.DevicePlugin.ExitPoolError)
 	}
 
 	dp := devicePlugin{
 		pools: make(map[string]deviceplugin.PoolManager),
 	}
 
-	for _, poolConfig := range cfg.Pools {
-		pm := deviceplugin.PoolManager{
-			Name:          poolConfig.Name,
-			Mode:          cfg.Mode,
-			Devices:       make(map[string]*pluginapi.Device),
-			DpAPISocket:   pluginapi.DevicePluginPath + devicePrefix + "-" + poolConfig.Name + ".sock",
-			DpAPIEndpoint: devicePrefix + "-" + poolConfig.Name + ".sock",
-			UpdateSignal:  make(chan bool),
-			Timeout:       cfg.UdsTimeout,
-			DevicePrefix:  devicePrefix,
-			CndpFuzzTest:  cfg.CndpFuzzing,
-		}
+	for _, poolConfig := range poolConfigs {
+		poolManager := deviceplugin.NewPoolManager(poolConfig)
 
-		if err := pm.Init(poolConfig); err != nil {
-			logging.Errorf("Error initializing pool %v: %v", pm.Name, err)
+		if err := poolManager.Init(poolConfig); err != nil {
+			logging.Errorf("Error initializing pool %v: %v", poolManager.Name, err)
+			continue
 		}
-
-		dp.pools[poolConfig.Name] = pm
+		dp.pools[poolConfig.Name] = poolManager
 	}
 
 	sigs := make(chan os.Signal, 1)
@@ -123,17 +119,28 @@ func main() {
 			logging.Errorf("Termination error: %v", err)
 		}
 	}
+
 }
 
-func configureLogging(cfg deviceplugin.Config) error {
-	err := os.MkdirAll(cfg.LogDir, cfg.LogDirPermission)
-	if err != nil {
-		logging.Errorf("Error setting log directory: %v", err)
-	}
+func configureLogging(cfg deviceplugin.PluginConfig) error {
+	var (
+		logDir      = constants.Logging.Directory
+		logDirPerm  = os.FileMode(constants.Logging.DirectoryPermissions)
+		logFile     = cfg.LogFile
+		logFilePerm = os.FileMode(constants.Logging.FilePermissions)
+		logLevel    = cfg.LogLevel
+	)
 
-	if cfg.LogFile != "" {
-		logging.Infof("Setting log file: %s", cfg.LogFile)
-		fp, err := os.OpenFile(cfg.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, cfg.LogFilePermission)
+	if logFile != "" {
+		logging.Infof("Setting log directory: %s", logDir)
+		err := os.MkdirAll(logDir, logDirPerm)
+		if err != nil {
+			logging.Errorf("Error setting log directory: %v", err)
+			return err
+		}
+
+		logging.Infof("Setting log file: %s", logFile)
+		fp, err := os.OpenFile(logDir+logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, logFilePerm)
 		if err != nil {
 			logging.Errorf("Error setting log file: %v", err)
 			return err
@@ -141,16 +148,16 @@ func configureLogging(cfg deviceplugin.Config) error {
 		logging.SetOutput(io.MultiWriter(fp, os.Stdout))
 	}
 
-	if cfg.LogLevel != "" {
-		logging.Infof("Setting log level: %s", cfg.LogLevel)
-		level, err := logging.ParseLevel(cfg.LogLevel)
+	if logLevel != "" {
+		logging.Infof("Setting log level: %s", logLevel)
+		level, err := logging.ParseLevel(logLevel)
 		if err != nil {
 			logging.Errorf("Error setting log level: %v", err)
 			return err
 		}
 		logging.SetLevel(level)
 
-		if cfg.LogLevel == "debug" {
+		if logLevel == "debug" {
 			logging.Infof("Switching to debug log format")
 			logging.SetFormatter(logformats.Debug)
 		}
@@ -159,7 +166,7 @@ func configureLogging(cfg deviceplugin.Config) error {
 	return nil
 }
 
-func checkHost(host host.Handler, cfg deviceplugin.Config) (bool, error) {
+func checkHost(host host.Handler) (bool, error) {
 	// kernel
 	logging.Debugf("Checking kernel version")
 	linuxVersion, err := host.KernelVersion()
@@ -169,14 +176,14 @@ func checkHost(host host.Handler, cfg deviceplugin.Config) (bool, error) {
 
 	}
 
-	linuxInt, err := intVersion(linuxVersion)
+	linuxInt, err := tools.KernelVersionInt(linuxVersion)
 	if err != nil {
 		err := fmt.Errorf("Error converting actual kernel version to int: %v", err)
 		return false, err
 
 	}
 
-	minLinuxInt, err := intVersion(cfg.MinLinuxVersion)
+	minLinuxInt, err := tools.KernelVersionInt(constants.Afxdp.MinumumKernel)
 	if err != nil {
 		err := fmt.Errorf("Error converting minimum kernel version to int: %v", err)
 		return false, err
@@ -184,7 +191,7 @@ func checkHost(host host.Handler, cfg deviceplugin.Config) (bool, error) {
 	}
 
 	if linuxInt < minLinuxInt {
-		logging.Warningf("Kernel version %v is below minimum requirement %v", linuxVersion, cfg.MinLinuxVersion)
+		logging.Warningf("Kernel version %v is below minimum requirement %v", linuxVersion, constants.Afxdp.MinumumKernel)
 		return false, nil
 	}
 	logging.Debugf("Kernel version: %v meets minimum requirements", linuxVersion)
@@ -206,41 +213,7 @@ func checkHost(host host.Handler, cfg deviceplugin.Config) (bool, error) {
 		return false, nil
 	}
 
-	// unprivileged bpf
-	logging.Debugf("Checking if host allows unprivileged BPF operations")
-	unprivBpfAllowed, err := host.AllowsUnprivilegedBpf()
-	if err != nil {
-		logging.Errorf("Error checking if host allows unprivileged BPF operations: %v", err)
-		return false, err
-	}
-	if unprivBpfAllowed {
-		logging.Debugf("Unprivileged BPF is allowed")
-	} else {
-		logging.Warningf("Unprivileged BPF is disabled")
-		if cfg.RequireUnprivilegedBpf {
-			logging.Warningf("Unprivileged BPF is required")
-			return false, nil
-		}
-	}
-
 	return true, nil
-}
-
-func intVersion(version string) (int64, error) { // example "5.4.0-89-generic"
-	stripped := strings.Split(version, "-")[0] // "5.4.0"
-	split := strings.Split(stripped, ".")      // [5 4 0]
-
-	padded := ""
-	for _, val := range split { // 000500040000
-		padded += fmt.Sprintf("%04s", val)
-	}
-
-	value, err := strconv.ParseInt(padded, 10, 64) // 500040000
-	if err != nil {
-		return -1, err
-	}
-
-	return value, nil
 }
 
 func exit(code int) {

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package cndp
+package udsserver
 
 import (
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
@@ -57,8 +57,8 @@ const (
 )
 
 /*
-Server is the interface defining the CNDP Unix domain socket server.
-Implementations of this interface are the main type of this CNDP package.
+Server is the interface defining the Unix domain socket server.
+Implementations of this interface are the main type of this UDSServer package.
 */
 type Server interface {
 	AddDevice(dev string, fd int)
@@ -67,12 +67,12 @@ type Server interface {
 
 /*
 ServerFactory is the interface defining a factory that creates and returns Servers.
-Each device plugin poolManager will have its own ServerFactory and each time a CNDP
-container is created the factory will create a Server to serve the associated Unix
-domain socket.
+Each device plugin poolManager will have its own ServerFactory and each time a
+UDSServer container is created the factory will create a Server to serve the
+associated Unix domain socket.
 */
 type ServerFactory interface {
-	CreateServer(deviceType string, timeout int, cndpFuzz bool) (Server, string, error)
+	CreateServer(deviceType, user string, timeout int, udsFuzz bool) (Server, string, error)
 }
 
 /*
@@ -87,6 +87,7 @@ type server struct {
 	bpf            bpf.Handler
 	podRes         resourcesapi.Handler
 	udsIdleTimeout time.Duration
+	uid            string
 }
 
 /*
@@ -107,11 +108,11 @@ func NewServerFactory() ServerFactory {
 CreateServer creates, initialises, and returns an implementation of the Server interface.
 It also returns the filepath of the UDS being served.
 */
-func (f *serverFactory) CreateServer(deviceType string, timeout int, cndpFuzzTest bool) (Server, string, error) {
+func (f *serverFactory) CreateServer(deviceType, user string, timeout int, udsFuzz bool) (Server, string, error) {
 	var udsHandler uds.Handler
 
-	if cndpFuzzTest {
-		logging.Warningf("CNDP Fuzzing enabled: Please see fuzzing logs")
+	if udsFuzz {
+		logging.Warningf("UDS Server Fuzzing enabled: Please see fuzzing logs")
 		udsHandler = uds.NewFuzzHandler()
 	} else {
 		udsHandler = uds.NewHandler()
@@ -123,6 +124,7 @@ func (f *serverFactory) CreateServer(deviceType string, timeout int, cndpFuzzTes
 		logging.Errorf("Error generating socket file path: %v", err)
 		return &server{}, "", err
 	}
+
 	timeoutSeconds := time.Duration(timeout) * time.Second
 
 	server := &server{
@@ -134,6 +136,7 @@ func (f *serverFactory) CreateServer(deviceType string, timeout int, cndpFuzzTes
 		bpf:            bpf.NewHandler(),
 		podRes:         resourcesapi.NewHandler(),
 		udsIdleTimeout: timeoutSeconds,
+		uid:            user,
 	}
 
 	return server, udsPath, nil
@@ -157,13 +160,13 @@ func (s *server) AddDevice(dev string, fd int) {
 /*
 start is a private method and the main loop of the Server.
 It listens for and serves a single connection. Across this connection it validates the pod hostname
-and serves XSK file descriptors to the CNDP app within the pod.
+and serves XSK file descriptors to the UDS Server app within the pod.
 */
 func (s *server) start() {
 	logging.Debugf("Initialising Unix domain socket: " + s.udsPath)
 
 	// init
-	if err := s.uds.Init(s.udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, s.udsIdleTimeout); err != nil {
+	if err := s.uds.Init(s.udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, s.udsIdleTimeout, s.uid); err != nil {
 		logging.Errorf("Error Initialising UDS: %v", err)
 		return
 	}

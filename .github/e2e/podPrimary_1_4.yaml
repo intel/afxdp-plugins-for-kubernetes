@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  generateName: afxdp-e2e-
+  "labels": {
+    "app" : "afxdp-e2e"
+  }
+  annotations:
+    k8s.v1.cni.cncf.io/networks: afxdp-e2e-primary
+spec:
+  securityContext:
+    runAsUser: 1500
+  containers:
+  - name: afxdp1
+    image: afxdp-e2e-test:latest
+    imagePullPolicy: Never
+    command: ["/bin/sh", "-c"]
+    args: ["udsTest &> /tmp/udsTest.txt; tail -f /dev/null"]
+    resources:
+      requests:
+        afxdp/e2ePrimary: '1'
+      limits:
+        afxdp/e2ePrimary: '1'
+  restartPolicy: Never

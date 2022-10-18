@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package cndp
+package udsserver
 
 /*
 fakeServer is a fake implementation the Server interface.
@@ -37,7 +37,7 @@ CreateServer creates, initialises, and returns an implementation of the Server i
 In this fakeServerFactory it returnss an empty fakeServer implementation and a hardcoded
 fake UDS filepath.
 */
-func (f *fakeServerFactory) CreateServer(deviceType string, timeout int, cndpFuzzTest bool) (Server, string, error) {
+func (f *fakeServerFactory) CreateServer(deviceType, user string, timeout int, udsFuzz bool) (Server, string, error) {
 	return &fakeServer{}, "/tmp/fake-socket.sock", nil
 }
 

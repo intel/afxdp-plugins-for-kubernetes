@@ -47,17 +47,15 @@ func TestGetConfig(t *testing.T) {
 	}{
 		{
 			name:      "load good config 1",
-			config:    `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"afxdp","mode":"cndp","Queues":"4"}`,
-			expConfig: &NetConfig{NetConf: netConf, Device: "dev1", Mode: "cndp", Queues: "4"},
+			config:    `{"cniVersion":"0.3.0","deviceID":"dev1","name":"test-network","pciBusID":"","type":"afxdp","mode":"cdq","Queues":"4"}`,
+			expConfig: &NetConfig{NetConf: netConf, Device: "dev1", Mode: "cdq", Queues: "4"},
 		},
-
 		{
 			name:      "load no config",
 			config:    `{ }`,
 			expConfig: nil,
 			expErr:    errors.New("validate(): no device specified"),
 		},
-
 		{
 			name:      "load bad config 1 - no JSON Format",
 			config:    ``,
@@ -94,6 +92,12 @@ func TestGetConfig(t *testing.T) {
 			config:    `{"cniVersion":"0.3.0",%"deviceID":"dev_1","name":"test-network",%"pciBusID":"","type":"afxdp"}}`,
 			expConfig: nil,
 			expErr:    errors.New("loadConf(): failed to load network configuration: invalid character '%' looking for beginning of object key string"),
+		},
+		{
+			name:      "load good config 7 - bad device name",
+			config:    `{"cniVersion":"0.3.0","deviceID":"dev1^","name":"test-network","pciBusID":"","type":"afxdp","mode":"primary","Queues":"4"}`,
+			expConfig: nil,
+			expErr:    errors.New("loadConf(): Config validation error: deviceID: device names must only contain letters, numbers and selected symbols"),
 		},
 	}
 
@@ -159,7 +163,6 @@ func TestCmdAdd(t *testing.T) {
 			netNS:      "B@dN%eTNS",
 			expError:   "cmdAdd(): failed to open container netns \"B@dN%eTNS\": failed to Statfs \"B@dN%eTNS\": no such file or directory",
 		},
-
 	}
 
 	for _, tc := range testCases {
@@ -212,8 +215,7 @@ func TestCmdDel(t *testing.T) {
 	for _, tc := range testCases {
 
 		t.Run(tc.name, func(t *testing.T) {
-
-			bpfHanfler = bpf.NewFakeHandler()
+			bpfHandler = bpf.NewFakeHandler()
 			args.StdinData = []byte(tc.netConfStr)
 			args.Netns = tc.netNS
 			err := CmdDel(args)
@@ -224,7 +226,6 @@ func TestCmdDel(t *testing.T) {
 				require.Error(t, err, "Unexpected error")
 				assert.Contains(t, err.Error(), tc.expError, "Unexpected error")
 			}
-
 		})
 	}
 }

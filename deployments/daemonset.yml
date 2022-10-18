@@ -6,17 +6,23 @@ metadata:
 data:
   config.json: |
     {
-        "mode": "cndp",
-        "logLevel": "debug",
-        "logFile": "/var/log/afxdp-k8s-plugins/cndp-dp.log",
-        "pools" : [
-            {
-                "name" : "intel",
-                "drivers" : ["i40e"]
-            }
-        ]
+       "logLevel":"debug",
+       "logFile":"afxdp-dp.log",
+       "pools":[
+          {
+             "name":"myPool",
+             "mode":"primary",
+             "drivers":[
+                {
+                   "name":"i40e"
+                },
+                {
+                   "name":"ice"
+                }
+             ]
+          }
+       ]
     }
-
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -52,7 +58,7 @@ spec:
           effect: NoSchedule
       serviceAccountName: afxdp-device-plugin
       containers:
-        - name: kube-cndp
+        - name: kube-afxdp
           image: afxdp-device-plugin:latest
           imagePullPolicy: IfNotPresent
           securityContext:

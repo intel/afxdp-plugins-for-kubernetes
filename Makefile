@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-excluded_from_utests = "/test/e2e|/test/fuzz|/cmd/cni|/internal/bpf|/internal/logformats|internal/host|/internal/networking"
+excluded_from_utests = "/test/e2e|/test/fuzz"
 
 .PHONY: all e2e
 
@@ -110,11 +110,6 @@ e2efulldaemon: image
 	@echo
 
 static:
-	@echo "******      Go Lint      ******"
-	@echo
-	golint -set_exit_status ./...
-	@echo
-	@echo
 	@echo "******   GolangCI-Lint   ******"
 	@echo
 	golangci-lint run

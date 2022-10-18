@@ -15,10 +15,6 @@
 
 package networking
 
-import (
-	"net"
-)
-
 /*
 FakeHandler interface extends the Handler interface to provide additional testing methods.
 */
@@ -35,7 +31,7 @@ type fakeHandler struct{}
 /*
 interfaceList holds a map of drivers and net.Interface objects, representing fake netdev objects.
 */
-var interfaceList map[string][]net.Interface
+var interfaceList map[string]*Device
 
 /*
 NewFakeHandler returns an implementation of the FakeHandler interface.
@@ -45,56 +41,37 @@ func NewFakeHandler() FakeHandler {
 }
 
 /*
-GetHostDevices returns a list of fake net.Interface, representing the devices on the host.
+GetHostDevices returns a map of devices on the host
 */
-func (r *fakeHandler) GetHostDevices() ([]net.Interface, error) {
-	var returnList []net.Interface
+func (r *fakeHandler) GetHostDevices() (map[string]*Device, error) {
 
-	for _, interfaceNames := range interfaceList {
-		returnList = append(returnList, interfaceNames...)
-	}
-
-	return returnList, nil
+	return interfaceList, nil
 }
 
 /*
 SetHostDevices is a function used to dynamically setup mock devices and drivers
 */
 func (r *fakeHandler) SetHostDevices(interfaceMap map[string][]string) {
-	interfaceList = make(map[string][]net.Interface)
+	interfaceList = make(map[string]*Device)
 
 	for driver, interfaceNames := range interfaceMap {
 		for _, name := range interfaceNames {
-			netDev := net.Interface{
-				Index:        1,              // positive integer that starts at one, zero is never used
-				MTU:          1,              // maximum transmission unit
-				Name:         name,           // e.g., "en0", "lo0", "eth0.100"
-				HardwareAddr: []byte("1234"), // IEEE MAC-48, EUI-48 and EUI-64 form
-				Flags:        net.FlagUp,     // e.g., FlagUp, FlagLoopback, FlagMulticast
-			}
-			interfaceList[driver] = append(interfaceList[driver], netDev)
+			netDev, _ := newPrimaryDevice(name, driver, "1234", "1234", r)
+			interfaceList[name] = netDev
 		}
 	}
 }
 
 /*
-GetDriverName takes a netdave name and returns the driver type.
+GetDeviceDriver takes a device name and returns the driver type.
 In this fakeHandler it returns the driver of the fake netdev.
 */
 func (r *fakeHandler) GetDeviceDriver(interfaceName string) (string, error) {
-	for driver, devices := range interfaceList {
-		for _, device := range devices {
-			if device.Name == interfaceName {
-				return driver, nil
-			}
-		}
-	}
-
-	return "defaultDriver", nil
+	return interfaceList[interfaceName].Driver()
 }
 
 /*
-GetDevicePci takes a netdave name and returns the pci address.
+GetDevicePci takes a device name and returns the pci address.
 In this fakeHandler it returns a dummy pci address.
 */
 func (r *fakeHandler) GetDevicePci(interfaceName string) (string, error) {
@@ -102,11 +79,11 @@ func (r *fakeHandler) GetDevicePci(interfaceName string) (string, error) {
 }
 
 /*
-GetAddresses takes a net.Interface and returns its IP addresses.
+IPAddresses takes a netdev name and returns its IP addresses
 In this fakeHandler it returns the IP of the fake netdev.
 */
-func (r *fakeHandler) GetAddresses(interfaceName net.Interface) ([]net.Addr, error) {
-	var addrs []net.Addr
+func (r *fakeHandler) GetIPAddresses(interfaceName string) ([]string, error) {
+	var addrs []string
 	return addrs, nil
 }
 
@@ -132,4 +109,111 @@ In this fake handler it does nothing.
 */
 func (r *fakeHandler) SetDefaultQueueSize(interfaceName string) error {
 	return nil
+}
+
+/*
+GetMacAddress takes a device name and returns the MAC-address.
+This function uses fake handler, its purpose is for unit-testing only
+*/
+func (r *fakeHandler) GetMacAddress(device string) (string, error) {
+	return "", nil
+}
+
+/*
+NetDevExists takes a device name and verifies if device exists on host.
+This function uses fake handler, its purpose is for unit-testing
+*/
+func (r *fakeHandler) NetDevExists(device string) (bool, error) {
+	return true, nil
+}
+
+/*
+CreateCdqSubfunction takes the PCI address of a port and a subfunction number
+It creates that subfunction on top of that port and activates it
+In this fake handler it does nothing
+*/
+func (r *fakeHandler) CreateCdqSubfunction(parentPci string, sfnum string) error {
+	return nil
+}
+
+/*
+DeleteCdqSubfunction takes the port index of a subfunction, deactivates and deletes it
+In this fake handler it does nothing
+*/
+func (r *fakeHandler) DeleteCdqSubfunction(portIndex string) error {
+	return nil
+}
+
+/*
+IsCdqSubfunction takes a netdev name and returns true if is a CDQ subfunction
+In this fake handler it currently always returns true
+*/
+func (r *fakeHandler) IsCdqSubfunction(name string) (bool, error) {
+	return true, nil
+}
+
+/*
+GetCdqPortIndex takes a netdev name and returns the port index (pci/sfnum)
+Note this function only works on physical devices and CDQ subfunctions
+Other netdevs will return a "device not found by devlink" error
+In this fake handler it currently returns an empty string
+*/
+func (r *fakeHandler) GetCdqPortIndex(netdev string) (string, error) {
+	return "", nil
+}
+
+/*
+NumAvailableCdqSubfunctions takes the PCI of a physical port and returns how
+many unused CDQ subfunctions are available
+In this fake handler it currently returns 0
+*/
+func (r *fakeHandler) NumAvailableCdqSubfunctions(interfaceName string) (int, error) {
+	return 0, nil
+}
+
+/*
+SetEthtool applies ethtool filters on the physical device during cmdAdd().
+Ethtool filters are set via the DP config.json file. This function uses fake handler,
+its purpose is for unit-testing only.
+*/
+func (r *fakeHandler) SetEthtool(ethtoolCmd []string, interfaceName string, ipResult string) error {
+	return nil
+}
+
+/*
+DeleteEthtool sets the default queue size ethtool filter.
+It also removes perfect-flow ethtool filter entries during cmdDel()
+This function uses fake handler, its purpose is for unit-testing
+*/
+func (r *fakeHandler) DeleteEthtool(interfaceName string) error {
+	return nil
+}
+
+/*
+GetDeviceFromFile extracts device map fields from the device file (device.json).
+It creates and populates a new instance of the device map with the device file field values
+and returns the device object.This function uses fake handler, its purpose is for unit-testing
+*/
+func (r *fakeHandler) GetDeviceFromFile(deviceName string, filepath string) (*Device, error) {
+	return &Device{name: "fakeDevice", netHandler: r}, nil
+}
+
+/*
+WriteDeviceFile creates and writes the device map fields to file, enabling the
+CNI to read device information.This function uses fake handler, its purpose is for unit-testing
+*/
+func (r *fakeHandler) WriteDeviceFile(device *Device, filepath string) error {
+	return nil
+}
+
+func (r *fakeHandler) GetDeviceByMAC(mac string) (string, error) {
+	return "", nil
+}
+
+func (r *fakeHandler) GetDeviceByPCI(pci string) (string, error) {
+	return "", nil
+}
+
+func (r *fakeHandler) IsPhysicalPort(name string) (bool, error) {
+	return false, nil
 }

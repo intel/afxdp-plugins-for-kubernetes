@@ -1,0 +1,11 @@
+# Adding this config file to work around a false positive reported by GolangCI-Lint
+# It is incorrectly flagging missing types in reference to embedded structs
+# Our CNI NetConfig embeds types.NetConf from github.com/containernetworking/cni/pkg/types
+# The fields of the embedded struct - IPAM, CNIVersion, DNS, etc. are being flagged as undefined
+# I think this is our issue: https://github.com/golangci/golangci-lint/issues/826
+# We can remove this config file if fixed in a future version of GolangCI-Lint
+
+issues:
+  exclude-rules:
+    - path: internal/cni/cni.go
+      text: "NetConfig has no field or method"

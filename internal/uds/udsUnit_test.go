@@ -71,6 +71,7 @@ func TestInit(t *testing.T) {
 		ctlBufSize int
 		timeout    time.Duration
 		expErr     error
+		uid        string
 	}{
 		{
 			testName:   "socket does not exist",
@@ -80,12 +81,13 @@ func TestInit(t *testing.T) {
 			ctlBufSize: 4,
 			timeout:    20,
 			expErr:     errors.New("unknown network /file/does/not/exist.sock"),
+			uid:        "4192",
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 
-			err := myUDSHandler.Init(tc.socketPath, tc.protocol, tc.msgBufSize, tc.ctlBufSize, tc.timeout)
+			err := myUDSHandler.Init(tc.socketPath, tc.protocol, tc.msgBufSize, tc.ctlBufSize, tc.timeout, tc.uid)
 
 			if err != nil {
 				require.Error(t, tc.expErr, err, "Error was expected")

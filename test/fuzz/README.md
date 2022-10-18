@@ -7,9 +7,9 @@ There are two fuzzing packages used to conduct the four fuzz tests which are as 
 | CNI | Network Config | go-fuzz |
 | Device Plugin | GetConfig | go-fuzz |
 | Device Plugin | UDS | go-fuzz |
-| Device Plugin | CNDP | google/gofuzz |
+| Device Plugin | AF-XDP | google/gofuzz |
 
-Note: the following information is regarding the go-fuzz testes. As CNDP fuzz test uses google/gofuzz package a different procedure applies, please see [CNDP Fuzz Test](#cndp-fuzz-test)
+Note: the following information is regarding the go-fuzz testes. As AF-XDP fuzz test uses google/gofuzz package a different procedure applies, please see [AF-XDP Fuzz Test](#af-xdp-fuzz-test)
 
 To start fuzz testing, proceed to the function/package you wish to test and  run `./fuzz.sh`. `Ctrl + C` will stop the test from running.
 
@@ -93,18 +93,18 @@ Output columns as described in the go-fuzz [documentation](https://github.com/dv
 2021/10/11 15:29:26 workers: 88, corpus: 791 (2m5s ago), crashers: 0, restarts: 1/9926, execs: 153329901 (309745/sec), cover: 1484, uptime: 8m15s
 ```
 
-## CNDP Fuzz Test
+## AF-XDP Fuzz Test
 
-For CNDP fuzz testing, [google/goFuzz](https://github.com/google/gofuzz) package is utilised.
+For AFXDP fuzz testing, [google/goFuzz](https://github.com/google/gofuzz) package is utilised.
 
-To start the CNDP fuzz test:
+To start the AFXDP fuzz test:
 - CNI and Device Plugin binaries must be created, from the root of the directory run `make build`.
-- Navigate to the [/deviceplugin/cndp](./deviceplugin/cndp) directory, open `config.json` file and set `cndpFuzz` field as `true`, see example below:
+- Navigate to the [/deviceplugin/afxdp](./deviceplugin/afxdp) directory, open `config.json` file and set `afxdpFuzz` field as `true`, see example below:
 ```
 {
 	"logLevel": "debug",
-	"mode": "cndp",
-	"cndpFuzz": true,
+	"mode": "primary",
+	"udsFuzz": true,
 	"pools" : [
 		{
 			"name" : "fuzz",
@@ -122,4 +122,4 @@ The `fuzz.sh` script will:
 - Deploy test pod `afxdp-fuzz-pod`.
 - Execute the fuzzHandler in `internal/uds/uds_fuzz.go`.
 - The fuzzHandler will call the imported google/gofuzz package.
-- Execute generated fuzzed data to the function under-test in the CNDP application.
+- Execute generated fuzzed data to the function under-test in the AF-XDP application.

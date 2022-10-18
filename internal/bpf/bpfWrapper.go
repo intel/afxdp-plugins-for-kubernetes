@@ -93,31 +93,36 @@ func (r *handler) Cleanbpf(ifname string) error {
 	return nil
 }
 
-//Debugf is exported to C, so C code can write logs to the Golang logging package
+// Debugf is exported to C, so C code can write logs to the Golang logging package
+//
 //export Debugf
 func Debugf(msg *C.char) {
 	logging.Debugf(C.GoString(msg))
 }
 
-//Infof is exported to C, so C code can write logs to the Golang logging package
+// Infof is exported to C, so C code can write logs to the Golang logging package
+//
 //export Infof
 func Infof(msg *C.char) {
 	logging.Infof(C.GoString(msg))
 }
 
-//Warningf is exported to C, so C code can write logs to the Golang logging package
+// Warningf is exported to C, so C code can write logs to the Golang logging package
+//
 //export Warningf
 func Warningf(msg *C.char) {
 	logging.Warningf(C.GoString(msg))
 }
 
-//Errorf is exported to C, so C code can write logs to the Golang logging package
+// Errorf is exported to C, so C code can write logs to the Golang logging package
+//
 //export Errorf
 func Errorf(msg *C.char) {
 	logging.Errorf(C.GoString(msg))
 }
 
-//Panicf is exported to C, so C code can write logs to the Golang logging package
+// Panicf is exported to C, so C code can write logs to the Golang logging package
+//
 //export Panicf
 func Panicf(msg *C.char) {
 	logging.Panicf(C.GoString(msg))

@@ -18,16 +18,41 @@ package deviceplugin
 import (
 	"context"
 	"encoding/json"
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
-	"github.com/intel/afxdp-plugins-for-kubernetes/internal/cndp"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/udsserver"
 	"github.com/stretchr/testify/assert"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 	"testing"
 )
 
 func TestAllocate(t *testing.T) {
-	pm := &PoolManager{Mode: "cndp", Timeout: 30}
-	pm.ServerFactory = cndp.NewFakeServerFactory()
+	netHandler := networking.NewFakeHandler()
+
+	config := PoolConfig{
+		Name: "myPool",
+		Mode: "primary",
+		Devices: map[string]*networking.Device{
+			"dev_1": networking.CreateTestDevice("dev_1", "primary", "ice", "0000:81:00.1", "68:05:ca:2d:e9:01", netHandler),
+			"dev_2": networking.CreateTestDevice("dev_2", "primary", "ice", "0000:81:00.2", "68:05:ca:2d:e9:02", netHandler),
+			"dev_3": networking.CreateTestDevice("dev_3", "primary", "ice", "0000:81:00.3", "68:05:ca:2d:e9:03", netHandler),
+			"dev_4": networking.CreateTestDevice("dev_4", "primary", "ice", "0000:81:00.4", "68:05:ca:2d:e9:04", netHandler),
+			"dev_5": networking.CreateTestDevice("dev_5", "primary", "ice", "0000:81:00.5", "68:05:ca:2d:e9:05", netHandler),
+			"dev_6": networking.CreateTestDevice("dev_6", "primary", "ice", "0000:81:00.6", "68:05:ca:2d:e9:06", netHandler),
+			"dev_7": networking.CreateTestDevice("dev_7", "primary", "ice", "0000:81:00.7", "68:05:ca:2d:e9:07", netHandler),
+			"dev_8": networking.CreateTestDevice("dev_8", "primary", "ice", "0000:81:00.8", "68:05:ca:2d:e9:08", netHandler),
+			"dev_9": networking.CreateTestDevice("dev_9", "primary", "ice", "0000:81:00.9", "68:05:ca:2d:e9:09", netHandler),
+		},
+		UdsServerDisable:        false,
+		UdsTimeout:              0,
+		UdsFuzz:                 false,
+		RequiresUnprivilegedBpf: false,
+		UID:                     1500,
+	}
+
+	pm := NewPoolManager(config)
+	pm.ServerFactory = udsserver.NewFakeServerFactory()
 	pm.BpfHandler = bpf.NewFakeHandler()
 
 	testCases := []struct {
@@ -42,10 +67,10 @@ func TestAllocate(t *testing.T) {
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
 				{
-					Envs: map[string]string{"CNDP_DEVICES": "dev_1"},
+					Envs: map[string]string{constants.Devices.EnvVarList: "dev_1"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: "/tmp/cndp.sock",
+							ContainerPath: constants.Uds.PodPath,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -63,10 +88,10 @@ func TestAllocate(t *testing.T) {
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
 				{
-					Envs: map[string]string{"CNDP_DEVICES": "dev_1 dev_2 dev_3"},
+					Envs: map[string]string{constants.Devices.EnvVarList: "dev_1 dev_2 dev_3"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: "/tmp/cndp.sock",
+							ContainerPath: constants.Uds.PodPath,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -85,10 +110,10 @@ func TestAllocate(t *testing.T) {
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
 				{
-					Envs: map[string]string{"CNDP_DEVICES": "dev_1"},
+					Envs: map[string]string{constants.Devices.EnvVarList: "dev_1"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: "/tmp/cndp.sock",
+							ContainerPath: constants.Uds.PodPath,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -97,10 +122,10 @@ func TestAllocate(t *testing.T) {
 					Annotations: map[string]string{},
 				},
 				{
-					Envs: map[string]string{"CNDP_DEVICES": "dev_2"},
+					Envs: map[string]string{constants.Devices.EnvVarList: "dev_2"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: "/tmp/cndp.sock",
+							ContainerPath: constants.Uds.PodPath,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -119,10 +144,10 @@ func TestAllocate(t *testing.T) {
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
 				{
-					Envs: map[string]string{"CNDP_DEVICES": "dev_1 dev_2 dev_3"},
+					Envs: map[string]string{constants.Devices.EnvVarList: "dev_1 dev_2 dev_3"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: "/tmp/cndp.sock",
+							ContainerPath: constants.Uds.PodPath,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -131,10 +156,10 @@ func TestAllocate(t *testing.T) {
 					Annotations: map[string]string{},
 				},
 				{
-					Envs: map[string]string{"CNDP_DEVICES": "dev_4 dev_5 dev_6"},
+					Envs: map[string]string{constants.Devices.EnvVarList: "dev_4 dev_5 dev_6"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: "/tmp/cndp.sock",
+							ContainerPath: constants.Uds.PodPath,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -152,10 +177,10 @@ func TestAllocate(t *testing.T) {
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
 				{
-					Envs: map[string]string{"CNDP_DEVICES": ""},
+					Envs: map[string]string{constants.Devices.EnvVarList: ""},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: "/tmp/cndp.sock",
+							ContainerPath: constants.Uds.PodPath,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},

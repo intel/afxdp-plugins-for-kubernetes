@@ -1,13 +1,21 @@
 {
-	"mode": "cndp",
-	"logLevel": "debug",
-	"logFile": "/var/log/afxdp-k8s-plugins/cndp-dp-e2e.log",
-	"timeout": 30,
-	"cndpFuzz": false,
-	"pools" : [
-		{
-			"name" : "e2e",
-			"drivers" : ["i40e"]
-		}
-	]
+   "logLevel":"debug",
+   "logFile":"afxdp-dp-e2e.log",
+   "pools":[
+      {
+         "name":"e2e",
+         "mode":"primary",
+         "timeout":30,
+         "uid":1500,
+         "ethtoolCmds" : ["-X -device- equal 5 start 3","--config-ntuple -device- flow-type udp4 dst-ip -ip- action"],
+         "drivers":[
+            {
+               "name":"i40e"
+            },
+            {
+               "name":"ice"
+            }
+         ]
+      }
+   ]
 }

@@ -17,7 +17,6 @@ package deviceplugin
 
 import (
 	"errors"
-	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
@@ -26,315 +25,1171 @@ import (
 	"testing"
 )
 
-func TestGetConfig(t *testing.T) {
+func TestReadConfigFile(t *testing.T) {
 	testCases := []struct {
-		name         string
-		configFile   string
-		expGetCfgErr error
-		expBldPlsErr error
-		expcfg       Config
-		hostNetDev   map[string][]string
+		name       string
+		configFile string
+		expErr     error
+		//		expcfg     Config
+		hostNetDev map[string][]string
 	}{
+		/*********************** Device Validation ***********************/
 		{
-			name: "get config : one pool two manually set devices",
+			name: "device name must only use certain characters 1",
 			configFile: `{
-							"mode": "cndp",
-							"timeout": 30,
-							"logLevel": "debug",
-							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
-							"pools": [{
-								"name": "pool1",
-								"devices": ["dev1", "dev2"]
-							}]
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"name":"dev~2"
+										}
+									]
+								}
+							]
 						}`,
-			hostNetDev: map[string][]string{
-				"i40e": []string{"dev1", "dev2", "dev3", "dev4"},
-			},
-			expcfg: Config{
-				Pools: []*PoolConfig{
-					{
-						Name:    "pool1",
-						Devices: []string{"dev1", "dev2"},
-					},
-				},
-				Mode:                   "cndp",
-				UdsTimeout:             30,
-				RequireUnprivilegedBpf: false,
-				LogDir:                 "/var/log/afxdp-k8s-plugins/",
-				LogDirPermission:       0x1e4,
-				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
-				LogFilePermission:      0x1a4,
-				LogLevel:               "debug",
-				MinLinuxVersion:        "4.18.0",
-			},
-			expGetCfgErr: nil,
-			expBldPlsErr: nil,
+			expErr: errors.New(deviceValidNameError),
 		},
 		{
-			name: "get config : one pool two manually set devices, the rest in pool 2",
+			name: "device name must only use certain characters 2",
 			configFile: `{
-							"mode": "cndp",
-							"timeout": 30,
-							"logLevel": "debug",
-							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
-							"pools": [{
-								"name": "pool1",
-								"devices": ["dev1", "dev2"]
-							},
-							{
-								"name": "pool2",
-								"drivers": ["i40e"]
-							}]
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"name":"dev 2"
+										}
+									]
+								}
+							]
 						}`,
-			hostNetDev: map[string][]string{
-				"i40e": []string{"dev1", "dev2", "dev3", "dev4"},
-			},
-			expcfg: Config{
-				Pools: []*PoolConfig{
-					{
-						Name:    "pool1",
-						Devices: []string{"dev1", "dev2"},
-					},
-					{
-						Name:    "pool2",
-						Devices: []string{"dev3", "dev4"},
-						Drivers: []string{"i40e"},
-					},
-				},
-				Mode:                   "cndp",
-				UdsTimeout:             30,
-				RequireUnprivilegedBpf: false,
-				LogDir:                 "/var/log/afxdp-k8s-plugins/",
-				LogDirPermission:       0x1e4,
-				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
-				LogFilePermission:      0x1a4,
-				LogLevel:               "debug",
-				MinLinuxVersion:        "4.18.0",
-			},
-			expGetCfgErr: nil,
-			expBldPlsErr: nil,
+			expErr: errors.New(deviceValidNameError),
 		},
 		{
-			name: "get config : mix of devices and drivers",
+			name: "device name must not be too long",
 			configFile: `{
-							"mode": "cndp",
-							"timeout": 30,
-							"logLevel": "debug",
-							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
-							"pools": [{
-								"name": "pool1",
-								"devices": ["dev5", "dev6"],
-								"drivers": ["i40e"]
-							},
-							{
-								"name": "pool2",
-								"drivers": ["E810"]
-							}]
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"name":"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+										}
+									]
+								}
+							]
 						}`,
-			hostNetDev: map[string][]string{
-				"i40e": []string{"dev1", "dev2", "dev3", "dev4"},
-				"E810": []string{"dev5", "dev6", "dev7", "dev8"},
-			},
-			expcfg: Config{
-				Pools: []*PoolConfig{
-					{
-						Name:    "pool1",
-						Devices: []string{"dev5", "dev6", "dev1", "dev2", "dev3", "dev4"},
-						Drivers: []string{"i40e"},
-					},
-					{
-						Name:    "pool2",
-						Devices: []string{"dev7", "dev8"},
-						Drivers: []string{"E810"},
-					},
-				},
-				Mode:                   "cndp",
-				UdsTimeout:             30,
-				RequireUnprivilegedBpf: false,
-				LogDir:                 "/var/log/afxdp-k8s-plugins/",
-				LogDirPermission:       0x1e4,
-				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
-				LogFilePermission:      0x1a4,
-				LogLevel:               "debug",
-				MinLinuxVersion:        "4.18.0",
-			},
-			expGetCfgErr: nil,
-			expBldPlsErr: nil,
+			expErr: errors.New(deviceNameLengthError),
 		},
 		{
-			name: "get config : one_pool three_devices",
+			name: "device mac must be valid 1",
 			configFile: `{
-							"mode": "cndp",
-							"timeout": 30,
-							"logLevel": "debug",
-							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
-							"pools": [{
-								"name": "pool1",
-								"devices": ["dev1", "dev2","dev3"]
-							}]
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"mac":"dev2"
+										}
+									]
+								}
+							]
 						}`,
-			hostNetDev: map[string][]string{
-				"i40e": []string{"dev1", "dev2", "dev3", "dev4"},
-			},
-			expcfg: Config{
-				Pools: []*PoolConfig{
-					{
-						Name:    "pool1",
-						Devices: []string{"dev1", "dev2", "dev3"},
-					},
-				},
-				Mode:                   "cndp",
-				UdsTimeout:             30,
-				RequireUnprivilegedBpf: false,
-				LogDir:                 "/var/log/afxdp-k8s-plugins/",
-				LogDirPermission:       0x1e4,
-				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
-				LogFilePermission:      0x1a4,
-				LogLevel:               "debug",
-				MinLinuxVersion:        "4.18.0",
-			},
-			expGetCfgErr: nil,
-			expBldPlsErr: nil,
+			expErr: errors.New(deviceValidMacError),
 		},
 		{
-			name: "get config : two_pools four_devices",
+			name: "device mac must be valid 2",
 			configFile: `{
-								"mode": "cndp",
-								"timeout": 30,
-								"logLevel": "debug",
-								"logFile": "/var/log/afxdp-k8s-plugins/file.log",
-								"pools": [{
-									"name": "pool1",
-									"drivers": ["i40e"]
-								}, {
-									"name": "pool2",
-									"drivers": ["E810"]
-								}]
-							}`,
-			hostNetDev: map[string][]string{
-				"i40e": []string{"dev1", "dev2"},
-				"E810": []string{"dev3", "dev4"},
-			},
-			expcfg: Config{
-				Pools: []*PoolConfig{
-					{
-						Name:    "pool1",
-						Devices: []string{"dev1", "dev2"},
-						Drivers: []string{"i40e"},
-					},
-					{
-						Name:    "pool2",
-						Devices: []string{"dev3", "dev4"},
-						Drivers: []string{"E810"},
-					},
-				},
-				Mode:                   "cndp",
-				UdsTimeout:             30,
-				RequireUnprivilegedBpf: false,
-				LogDir:                 "/var/log/afxdp-k8s-plugins/",
-				LogDirPermission:       0x1e4,
-				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
-				LogFilePermission:      0x1a4,
-				LogLevel:               "debug",
-				MinLinuxVersion:        "4.18.0",
-			},
-			expGetCfgErr: nil,
-			expBldPlsErr: nil,
-		},
-		{
-			name: "get config : two_pools six_devices",
-			configFile: `{
-							"mode": "cndp",
-							"timeout": 30,	
-							"logLevel": "debug",
-							"logFile": "/var/log/afxdp-k8s-plugins/file.log",
-							"pools": [{
-								"name": "pool1",
-								"drivers": ["i40e"]
-							}, {
-								"name": "pool2",
-								"drivers": ["E810"]
-							}]
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"mac":"98:03:9b:6a:b4"
+										}
+									]
+								}
+							]
 						}`,
-			hostNetDev: map[string][]string{
-				"i40e": []string{"dev1", "dev2", "dev3"},
-				"E810": []string{"dev4", "dev5", "dev6"},
-			},
-			expcfg: Config{
-				Pools: []*PoolConfig{
-					{
-						Name:    "pool1",
-						Devices: []string{"dev1", "dev2", "dev3"},
-						Drivers: []string{"i40e"},
-					},
-					{
-						Name:    "pool2",
-						Devices: []string{"dev4", "dev5", "dev6"},
-						Drivers: []string{"E810"},
-					},
-				},
-				Mode:                   "cndp",
-				UdsTimeout:             30,
-				RequireUnprivilegedBpf: false,
-				LogDir:                 "/var/log/afxdp-k8s-plugins/",
-				LogDirPermission:       0x1e4,
-				LogFile:                "/var/log/afxdp-k8s-plugins/file.log",
-				LogFilePermission:      0x1a4,
-				LogLevel:               "debug",
-				MinLinuxVersion:        "4.18.0",
-			},
-			expGetCfgErr: nil,
-			expBldPlsErr: nil,
+			expErr: errors.New(deviceValidMacError),
 		},
-
 		{
-			name:         "load bad config : device field missing",
-			configFile:   `{"mode": "cndp","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log","pools":[{"name":"pool1",:["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
-			expGetCfgErr: errors.New("invalid character ':' looking for beginning of object key string"),
-			expBldPlsErr: nil,
-			expcfg:       Config{LogDir: "/var/log/afxdp-k8s-plugins/", LogDirPermission: 0x1e4, LogFilePermission: 0x1a4, MinLinuxVersion: "4.18.0"},
+			name: "device mac must be valid 3",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"mac":"98:03:9b:6a:b4:ez"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceValidMacError),
 		},
-
 		{
-			name:         "load bad config : invalid JSON",
-			configFile:   `{"mode": "cndp","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log","pools":[{"name":" "["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
-			expGetCfgErr: errors.New("invalid character '[' after object key:value pair"),
-			expBldPlsErr: nil,
-			expcfg:       Config{LogDir: "/var/log/afxdp-k8s-plugins/", LogDirPermission: 0x1e4, LogFilePermission: 0x1a4, MinLinuxVersion: "4.18.0"},
+			name: "device pci must be valid 1",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"pci":"0000:81:00"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceValidPciError),
 		},
-
 		{
-			name:         "load bad config : no pools",
-			configFile:   `{"mode": "cndp","timeout": 30,"logLevel": "debug","logFile": "/tmp/file.log", :[{"name: ["dev1","dev2","dev3"],"drivers":["i40e"]}]}`,
-			expGetCfgErr: errors.New("invalid character ':' looking for beginning of object key string"),
-			expBldPlsErr: nil,
-			expcfg:       Config{LogDir: "/var/log/afxdp-k8s-plugins/", LogDirPermission: 0x1e4, LogFilePermission: 0x1a4, MinLinuxVersion: "4.18.0"},
+			name: "device pci must be valid 2",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"pci":"0000:81:00.z"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceValidPciError),
 		},
-
 		{
-			name:         "load bad config : empty pool ",
-			configFile:   ` `,
-			expGetCfgErr: errors.New("unexpected end of JSON input"),
-			expBldPlsErr: nil,
-			expcfg:       Config{LogDir: "/var/log/afxdp-k8s-plugins/", LogDirPermission: 0x1e4, LogFilePermission: 0x1a4, MinLinuxVersion: "4.18.0"},
+			name: "device must have ID 1",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceMustHaveIdError),
 		},
-
 		{
-			name:         "load bad config : invalid character ",
-			configFile:   "?",
-			expGetCfgErr: errors.New("invalid character '?' looking for beginning of value"),
-			expBldPlsErr: nil,
-			expcfg:       Config{LogDir: "/var/log/afxdp-k8s-plugins/", LogDirPermission: 0x1e4, LogFilePermission: 0x1a4, MinLinuxVersion: "4.18.0"},
+			name: "device must have ID 2",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"name":""
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceMustHaveIdError),
+		},
+		{
+			name: "device must have ID 3",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"mac":""
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceMustHaveIdError),
+		},
+		{
+			name: "device must have ID 4",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"pci":""
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceMustHaveIdError),
+		},
+		{
+			name: "device must only have one ID 1",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"name":"dev2",
+											"mac":"98:03:9b:6a:b4:ef"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceOnlyOneIdError),
+		},
+		{
+			name: "device must only have one ID 2",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"name":"dev2",
+											"pci":"0000:81:00.1"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceOnlyOneIdError),
+		},
+		{
+			name: "device must only have one ID 3",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"mac":"98:03:9b:6a:b4:ef",
+											"name":"dev2"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceOnlyOneIdError),
+		},
+		{
+			name: "device must only have one ID 4",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"mac":"98:03:9b:6a:b4:ef",
+											"pci":"0000:81:00.1"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceOnlyOneIdError),
+		},
+		{
+			name: "device must only have one ID 5",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"pci":"0000:81:00.1",
+											"name":"dev2"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceOnlyOneIdError),
+		},
+		{
+			name: "device must only have one ID 6",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"pci":"0000:81:00.1",
+											"mac":"98:03:9b:6a:b4:ef"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceOnlyOneIdError),
+		},
+		{
+			name: "device must only have one ID 7",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"name":"dev2",
+											"mac":"98:03:9b:6a:b4:ef",
+											"pci":"0000:81:00.1"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceOnlyOneIdError),
+		},
+		{
+			name: "secondary devices must not be below below min",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"name":"dev2",
+											"secondary":-10
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceSecondaryError),
+		},
+		{
+			name: "secondary devices must not be above max",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"name":"dev2",
+											"secondary":9999
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceSecondaryError),
+		},
+		/*********************** Driver Validation ***********************/
+		{
+			name: "driver name must only use certain characters 1",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"drivers":[
+										{
+											"name":"i40e"
+										},
+										{
+											"name":"ice$"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(driverValidError),
+		},
+		{
+			name: "driver name must only use certain characters 2",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"drivers":[
+										{
+											"name":"i40e"
+										},
+										{
+											"name":"ice driver"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(driverValidError),
+		},
+		{
+			name: "driver name must not be too long",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"drivers":[
+										{
+											"name":"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(driverNameLengthError),
+		},
+		{
+			name: "driver must have a name 1",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"drivers":[
+										{
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(driverMustHaveIdError),
+		},
+		{
+			name: "driver must have a name 2",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"drivers":[
+										{
+											"name":""
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(driverMustHaveIdError),
+		},
+		{
+			name: "number of primary devices must not be below min",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"drivers":[
+										{
+											"name":"ice",
+											"primary":-5
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(driverPrimaryError),
+		},
+		{
+			name: "number of primary devices must not be above max",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"drivers":[
+										{
+											"name":"ice",
+											"primary":105
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(driverPrimaryError),
+		},
+		{
+			name: "number of secondary devices must not be below min",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"drivers":[
+										{
+											"name":"ice",
+											"secondary":-10
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceSecondaryError),
+		},
+		{
+			name: "number of secondary devices must not be above max",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"drivers":[
+										{
+											"name":"ice",
+											"secondary":9999
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceSecondaryError),
+		},
+		{
+			name: "exclude devices must havs id",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"drivers":[
+										{
+											"name":"ice",
+											"excludeDevices":[
+												{}
+											]
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceMustHaveIdError),
+		},
+		{
+			name: "exclude devices must use only one form of id",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"drivers":[
+										{
+											"name":"ice",
+											"excludeDevices":[
+												{
+													"name":"dev1"
+												},
+												{
+													"pci":"0000:81:00.1",
+													"mac":"98:03:9b:6a:b4:ef"
+												}
+											]
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceOnlyOneIdError),
+		},
+		/*********************** Node Validation ***********************/
+		{
+			name: "node must use a valid hostname 1",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"nodes":[
+										{
+											"hostname":"k8_node1"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(nodeValidHostError),
+		},
+		{
+			name: "node must use a valid hostname 2",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"nodes":[
+										{
+											"hostname":"k8s node1"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(nodeValidHostError),
+		},
+		{
+			name: "node hostname must not be too long",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"nodes":[
+										{
+											"hostname":"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(nodeHostLengthError),
+		},
+		{
+			name: "node must have a hostname 1",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"nodes":[
+										{}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(nodeMustHaveIdError),
+		},
+		{
+			name: "node must have a hostname 2",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"nodes":[
+										{
+											"hostname":""
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(nodeMustHaveIdError),
+		},
+		{
+			name: "node must have devices or drivers",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"nodes":[
+										{
+											"hostname":"k8s-node1"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(nodeMustHaveDevsError),
+		},
+		{
+			name: "node devices must have id",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"nodes":[
+										{
+											"hostname":"k8s-node1",
+											"devices":[
+												{}
+											]
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceMustHaveIdError),
+		},
+		{
+			name: "node devices must use only one form of id",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"nodes":[
+										{
+											"hostname":"k8s-node1",
+											"devices":[
+												{
+													"name":"dev1",
+													"mac":"98:03:9b:6a:b4:ef"
+												}
+											]
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceOnlyOneIdError),
+		},
+		/*********************** Pool Validation ***********************/
+		{
+			name: "pool must have a name 1",
+			configFile: `{
+							"pools":[
+								{
+									"mode":"cdq",
+									"nodes":[
+										{
+											"hostname":"k8s-node1",
+											"devices":[
+												{
+													"name":"dev1"
+												}
+											]
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(poolNameRequiredError),
+		},
+		{
+			name: "pool must have a name 2",
+			configFile: `{
+							"pools":[
+								{
+									"name":"",
+									"mode":"cdq",
+									"nodes":[
+										{
+											"hostname":"k8s-node1",
+											"devices":[
+												{
+													"name":"dev1"
+												}
+											]
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(poolNameRequiredError),
+		},
+		{
+			name: "pool name must only contain letters and numbers",
+			configFile: `{
+							"pools":[
+								{
+									"name":"test-pool-1",
+									"mode":"cdq",
+									"nodes":[
+										{
+											"hostname":"k8s-node1",
+											"devices":[
+												{
+													"name":"dev1"
+												}
+											]
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(poolValidlNameError),
+		},
+		{
+			name: "pool name must not be longer than max",
+			configFile: `{
+							"pools":[
+								{
+									"name":"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
+									"mode":"cdq",
+									"nodes":[
+										{
+											"hostname":"k8s-node1",
+											"devices":[
+												{
+													"name":"dev1"
+												}
+											]
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(poolNameLengthError),
+		},
+		{
+			name: "pool must have a mode 1",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"nodes":[
+										{
+											"hostname":"k8s-node1",
+											"devices":[
+												{
+													"name":"dev1"
+												}
+											]
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(poolModeRequiredError),
+		},
+		{
+			name: "pool must have a mode 2",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"",
+									"nodes":[
+										{
+											"hostname":"k8s-node1",
+											"devices":[
+												{
+													"name":"dev1"
+												}
+											]
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(poolModeRequiredError),
+		},
+		{
+			name: "pool must use a valid mode",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"invalidMode",
+									"nodes":[
+										{
+											"hostname":"k8s-node1",
+											"devices":[
+												{
+													"name":"dev1"
+												}
+											]
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(poolModeMustBeError),
+		},
+		{
+			name: "pool must contain devices, drivers or nodes",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq"
+								}
+							]
+						}`,
+			expErr: errors.New(poolMustHaveDevsError),
+		},
+		{
+			name: "pool devices must have id",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"hostname":"k8s-node1",
+									"devices":[
+										{}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceMustHaveIdError),
+		},
+		{
+			name: "pool drivers must have id",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"hostname":"k8s-node1",
+									"drivers":[
+										{}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(driverMustHaveIdError),
+		},
+		{
+			name: "pool node devices must have id",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"nodes":[
+										{
+											"hostname":"k8s-node1",
+											"devices":[
+												{}
+											]
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(deviceMustHaveIdError),
+		},
+		{
+			name: "pool node drivers must have id",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"nodes":[
+										{
+											"hostname":"k8s-node1",
+											"drivers":[
+												{}
+											]
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(driverMustHaveIdError),
+		},
+		{
+			name: "uds timeout must not be below min 1",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"udsTimeout":20,
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"name":"dev2"
+										}
+									],
+									"drivers":[
+										{
+											"name":"ice"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(poolUdsTimeoutError),
+		},
+		{
+			name: "uds timeout must not be below min 2",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"udsTimeout":-40,
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"name":"dev2"
+										}
+									],
+									"drivers":[
+										{
+											"name":"ice"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(poolUdsTimeoutError),
+		},
+		{
+			name: "uds timeout must not be above max",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"udsTimeout":999,
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"name":"dev2"
+										}
+									],
+									"drivers":[
+										{
+											"name":"ice"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(poolUdsTimeoutError),
+		},
+		{
+			name: "ethtool cannot be empty",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"ethtoolCmds" : ["-X -device- equal 5 start 3", ""],
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"name":"dev2"
+										}
+									],
+									"drivers":[
+										{
+											"name":"ice"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(poolEthtoolNotEmpty),
+		},
+		{
+			name: "ethtool cannot be empty",
+			configFile: `{
+							"pools":[
+								{
+									"name":"testPool",
+									"mode":"cdq",
+									"ethtoolCmds" : ["-X -device- equal 5 start 3","--config-ntuple _device_ flow-type udp4 dst-ip -ip- action"],
+									"devices":[
+										{
+											"name":"dev1"
+										},
+										{
+											"name":"dev2"
+										}
+									],
+									"drivers":[
+										{
+											"name":"ice"
+										}
+									]
+								}
+							]
+						}`,
+			expErr: errors.New(poolEthtoolCharacters),
 		},
 	}
-	for _, tc := range testCases {
 
+	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			assignedInfs = nil //clear assignedInfs at beginning of each run
-			fakeNetHandler := networking.NewFakeHandler()
-			fakeNetHandler.SetHostDevices(tc.hostNetDev)
+			cfgFile = nil
 			content := []byte(tc.configFile)
-			dir, dirErr := ioutil.TempDir("/tmp", "test-cndp-")
+			dir, dirErr := ioutil.TempDir("/tmp", "test-afxdp-")
 			require.NoError(t, dirErr, "Can't create temporary directory")
 			testDir := filepath.Join(dir, "tmpfile")
 			err := ioutil.WriteFile(testDir, content, 0666)
@@ -342,23 +1197,13 @@ func TestGetConfig(t *testing.T) {
 
 			defer os.RemoveAll(dir)
 
-			cfg, err := GetConfig(testDir, fakeNetHandler)
+			err = readConfigFile(testDir)
 			if err == nil {
-				assert.Equal(t, tc.expGetCfgErr, err, "Error was expected")
+				assert.Equal(t, tc.expErr, err, "Error was expected")
 			} else {
-				require.Error(t, tc.expGetCfgErr, "Unexpected error returned")
-				assert.Contains(t, err.Error(), tc.expGetCfgErr.Error(), "Unexpected error returned")
+				require.Error(t, tc.expErr, "Unexpected error returned")
+				assert.Contains(t, err.Error(), tc.expErr.Error(), "Unexpected error returned")
 			}
-
-			err = cfg.BuildPools()
-			if err == nil {
-				assert.Equal(t, tc.expBldPlsErr, err, "Error was expected")
-			} else {
-				require.Error(t, tc.expBldPlsErr, "Unexpected error returned")
-				assert.Contains(t, err.Error(), tc.expBldPlsErr.Error(), "Unexpected error returned")
-			}
-
-			assert.Equal(t, tc.expcfg, cfg, "Error was expected: configs do not match")
 		})
 	}
 }

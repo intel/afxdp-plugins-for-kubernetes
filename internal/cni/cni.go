@@ -24,24 +24,21 @@ import (
 	"github.com/containernetworking/plugins/pkg/ipam"
 	"github.com/containernetworking/plugins/pkg/ns"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
-	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/logformats"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	logging "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
 	"os"
 	"regexp"
 	"runtime"
+	"strings"
 )
 
-var (
-	logLevels  = []string{"debug", "info", "warning", "error"} // acceptable log levels
-	modes      = []string{"cndp"}                              // acceptable modes
-	logDir     = "/var/log/afxdp-k8s-plugins/"                 // acceptable log directory
-	bpfHanfler = bpf.NewHandler()
-)
+var bpfHandler = bpf.NewHandler()
 
 /*
 NetConfig holds the config passed via stdin
@@ -63,36 +60,37 @@ func init() {
 Validate validates the contents of the Config struct
 */
 func (n NetConfig) Validate() error {
-	var iLogLevels []interface{} = make([]interface{}, len(logLevels))
-	var iModes []interface{} = make([]interface{}, len(modes))
+	var (
+		allowedLogLevels               = constants.Logging.Levels
+		allowedModes                   = constants.Plugins.Modes
+		logLevels        []interface{} = make([]interface{}, len(allowedLogLevels))
+		modes            []interface{} = make([]interface{}, len(allowedModes))
+	)
 
-	for i, logLevel := range logLevels {
-		iLogLevels[i] = logLevel
+	for i, logLevel := range allowedLogLevels {
+		logLevels[i] = logLevel
 	}
-
-	for i, mode := range modes {
-		iModes[i] = mode
+	for i, mode := range allowedModes {
+		modes[i] = mode
 	}
 
 	return validation.ValidateStruct(&n,
 		validation.Field(
 			&n.Device,
 			validation.Required.Error("validate(): no device specified"),
-			is.Alphanumeric.Error("validate(): device names can only contain letters and numbers"),
+			validation.Match(regexp.MustCompile(constants.Devices.ValidNameRegex)).Error("device names must only contain letters, numbers and selected symbols"),
 		),
 		validation.Field(
 			&n.LogFile,
-			validation.Match(regexp.MustCompile("^/$|^(/[a-zA-Z0-9._-]+)+$")).Error("must be a valid filepath"),
-			validation.Match(regexp.MustCompile("^"+logDir)).Error("validate(): must in directory "+logDir),
+			validation.Match(regexp.MustCompile(constants.Logging.ValidFileRegex)).Error("must be a valid filename"),
 		),
 		validation.Field(
 			&n.LogLevel,
-			validation.In(iLogLevels...).Error("validate(): must be "+fmt.Sprintf("%v", iLogLevels)),
+			validation.In(logLevels...).Error("validate(): must be "+fmt.Sprintf("%v", logLevels)),
 		),
 		validation.Field(
 			&n.Mode,
-			//validation.Required.Error("validate(): Mode is required"), // TODO make required once more modes available
-			validation.In(iModes...).Error("validate(): must be "+fmt.Sprintf("%v", iModes)),
+			validation.In(modes...).Error("validate(): must be "+fmt.Sprintf("%v", modes)),
 		),
 	)
 }
@@ -111,7 +109,7 @@ func loadConf(bytes []byte) (*NetConfig, error) {
 	}
 
 	if n.LogFile != "" {
-		fp, err := os.OpenFile(n.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		fp, err := os.OpenFile(constants.Logging.Directory+n.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, os.FileMode(constants.Logging.FilePermissions))
 		if err != nil {
 			return nil, fmt.Errorf("loadConf(): cannot open logfile %s: %w", n.LogFile, err)
 		}
@@ -138,11 +136,13 @@ func loadConf(bytes []byte) (*NetConfig, error) {
 }
 
 /*
-CmdAdd is called by kublet during pod create
+CmdAdd is called by kubelet during pod create
 */
 func CmdAdd(args *skel.CmdArgs) error {
-	netHandler := networking.NewHandler()
 	host := host.NewHandler()
+	var result *current.Result
+	var deviceDetails *networking.Device
+	netHandler := networking.NewHandler()
 
 	cfg, err := loadConf(args.StdinData)
 	if err != nil {
@@ -172,26 +172,67 @@ func CmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 
-	if cfg.Queues != "" {
-		logging.Debugf("cmdAdd(): checking host for Ethtool")
-		ethInstalled, version, err := host.HasEthtool()
+	logging.Infof("cmdAdd(): getting default network namespace")
+	defaultNs, err := ns.GetCurrentNS()
+	if err != nil {
+		err = fmt.Errorf("cmdDel(): failed to open default netns %q: %w", args.Netns, err)
+		logging.Errorf(err.Error())
+
+		return err
+	}
+	defer defaultNs.Close()
+
+	logging.Infof("cmdAdd(): checking if IPAM is required")
+	if cfg.IPAM.Type != "" {
+		result, err = getIPAM(args, cfg, device, defaultNs)
 		if err != nil {
-			logging.Errorf("cmdAdd(): error checking if Ethtool is present on host: %v", err)
+			err = fmt.Errorf("cmdAdd(): error configuring IPAM on device %q: %w", device.Attrs().Name, err)
+			logging.Errorf(err.Error())
+
 			return err
 		}
+	}
 
-		if ethInstalled {
-			logging.Debugf("cmdAdd(): Ethtool found on host:")
-			logging.Debugf("\t" + version)
+	if cfg.Mode == "primary" {
+		deviceFile, err := tools.FilePathExists(constants.DeviceFile.Directory + constants.DeviceFile.Name)
+		if err != nil {
+			logging.Errorf("cmdAdd(): Failed to locate deviceFile: %v", err)
+		}
 
-			logging.Infof("cmdAdd(): setting queue size %s for device %s ", cfg.Queues, device.Attrs().Name)
-			if err := netHandler.SetQueueSize(device.Attrs().Name, cfg.Queues); err != nil {
-				err = fmt.Errorf("cmdAdd(): failed to set queue size: %w", err)
-				logging.Errorf(err.Error())
+		if deviceFile {
+			deviceDetails, err = netHandler.GetDeviceFromFile(cfg.Device, constants.DeviceFile.Directory+constants.DeviceFile.Name)
+			if err != nil {
+				logging.Errorf("cmdAdd():- Failed to extract device map values: %v", err)
 				return err
 			}
-		} else {
-			logging.Warningf("cmdAdd(): Ethtool not found on host, queues will not be set")
+
+			ethInstalled, version, err := host.HasEthtool()
+			if err != nil {
+				logging.Warningf("cmdAdd(): failed to discover ethtool on host: %v", err)
+			}
+
+			if ethInstalled {
+				logging.Debugf("cmdAdd(): ethtool found on host")
+				logging.Debugf("\t" + version)
+				if deviceDetails != nil {
+					if deviceDetails.GetEthtoolFilters() != nil {
+							logging.Infof("cmdAdd(): applying ethtool filters on device: %s", cfg.Device)
+							ethtoolCommand := deviceDetails.GetEthtoolFilters()
+							iPAddr, err := extractIP(result)
+							if err != nil {
+								logging.Errorf("cmdAdd(): Error extracting IP from result interface %v", err)
+								return err
+							}
+							err = netHandler.SetEthtool(ethtoolCommand, cfg.Device, iPAddr)
+							if err != nil {
+								logging.Errorf("cmdAdd(): unable to executed ethtool filter: %v", err)
+								return err
+							}
+						} else {
+						logging.Debugf("cmdAdd(): ethtool filters have not been specified")
+					}
+				}
+			}
 		}
 	}
 
@@ -219,27 +260,29 @@ func CmdAdd(args *skel.CmdArgs) error {
 		return err
 	}
 
-	logging.Infof("cmdAdd(): checking if IPAM is required")
 	if cfg.IPAM.Type != "" {
-		result, err := configureIPAM(args, cfg, device, containerNs)
+		result, err = setIPAM(cfg, result, device, containerNs)
 		if err != nil {
-			err = fmt.Errorf("cmdAdd(): error configuring IPAM on device %q: %w", device.Attrs().Name, err)
+			err = fmt.Errorf("cmdAdd(): error configuring IPAM on device netns %q: %w", device.Attrs().Name, err)
 			logging.Errorf(err.Error())
 
 			return err
 		}
-		return types.PrintResult(result, cfg.CNIVersion)
 	}
 
-	return printLink(device, cfg.CNIVersion, containerNs)
+	if result == nil {
+		return printLink(device, cfg.CNIVersion, containerNs)
+	}
+
+	return types.PrintResult(result, cfg.CNIVersion)
 }
 
 /*
 CmdDel is called by kublet during pod delete
 */
 func CmdDel(args *skel.CmdArgs) error {
-	netHandler := networking.NewHandler()
 	host := host.NewHandler()
+	netHandler := networking.NewHandler()
 
 	cfg, err := loadConf(args.StdinData)
 	if err != nil {
@@ -294,30 +337,6 @@ func CmdDel(args *skel.CmdArgs) error {
 		return err
 	}
 
-	if cfg.Queues != "" {
-		logging.Debugf("cmdDel(): checking host for Ethtool")
-		ethInstalled, version, err := host.HasEthtool()
-		if err != nil {
-			logging.Errorf("cmdDel(): error checking if Ethtool is present on host: %v", err)
-			return err
-		}
-
-		if ethInstalled {
-			logging.Debugf("cmdDel(): Ethtool found on host:")
-			logging.Debugf("\t" + version)
-
-			logging.Infof("cmdDel(): setting queue size to default for device %s", cfg.Device)
-			if err := netHandler.SetDefaultQueueSize(cfg.Device); err != nil {
-				err = fmt.Errorf("cmdDel(): failed to set queue size to default: %w", err)
-				logging.Errorf(err.Error())
-
-				return err
-			}
-		} else {
-			logging.Warningf("cmdDel(): Ethtool not found on host, queues will not be set to default")
-		}
-	}
-
 	logging.Infof("cmdDel(): cleaning IPAM config on device")
 	if cfg.IPAM.Type != "" {
 		if err := ipam.ExecDel(cfg.IPAM.Type, args.StdinData); err != nil {
@@ -326,11 +345,48 @@ func CmdDel(args *skel.CmdArgs) error {
 	}
 
 	logging.Infof("cmdDel(): removing BPF program from device")
-	if err := bpfHanfler.Cleanbpf(cfg.Device); err != nil {
+	if err := bpfHandler.Cleanbpf(cfg.Device); err != nil {
 		err = fmt.Errorf("cmdDel(): error removing BPF program from device: %w", err)
 		logging.Errorf(err.Error())
 
 		return err
+	}
+
+	if cfg.Mode == "primary" {
+		logging.Debugf("cmdDel: checking host for Ethtool")
+		ethInstalled, _, err := host.HasEthtool()
+		if err != nil {
+			logging.Errorf("cmdDel(): error checking if Ethtool is present on host: %v", err)
+			return err
+		}
+		if ethInstalled {
+			logging.Infof("cmdDel(): Removing ethtool filters on device: %s", cfg.Device)
+			err := netHandler.DeleteEthtool(cfg.Device)
+			if err != nil {
+				logging.Warningf("cmdDel(): failed to remove ethtool filter: %v", err)
+			}
+		}
+	}
+
+	if cfg.Mode == "cdq" {
+		isSf, err := netHandler.IsCdqSubfunction(cfg.Device)
+		if err != nil {
+			logging.Errorf("cmdDel(): error determining if %s is a CDQ subfunction: %v", cfg.Device, err)
+			isSf = false
+		}
+		if isSf {
+			logging.Debugf("cmdDel(): deleting subfunction %s", cfg.Device)
+			portIndex, err := netHandler.GetCdqPortIndex(cfg.Device)
+			if err != nil {
+				logging.Errorf("cmdDel(): error getting port index of device %s: %v", cfg.Device, err)
+			} else {
+				if err := netHandler.DeleteCdqSubfunction(portIndex); err != nil {
+					logging.Errorf("cmdDel(): error deleting CDQ subfunction %s: %v", cfg.Device, err)
+				} else {
+					logging.Infof("cmdDel(): subfunction %s deleted", cfg.Device)
+				}
+			}
+		}
 	}
 
 	return nil
@@ -350,7 +406,7 @@ func printLink(dev netlink.Link, cniVersion string, containerNs ns.NetNS) error 
 	return types.PrintResult(&result, cniVersion)
 }
 
-func configureIPAM(args *skel.CmdArgs, cfg *NetConfig, device netlink.Link, netns ns.NetNS) (*current.Result, error) {
+func getIPAM(args *skel.CmdArgs, cfg *NetConfig, device netlink.Link, netns ns.NetNS) (*current.Result, error) {
 	var result *current.Result
 
 	logging.Infof("configureIPAM(): running IPAM plugin: " + cfg.IPAM.Type)
@@ -398,7 +454,11 @@ func configureIPAM(args *skel.CmdArgs, cfg *NetConfig, device netlink.Link, netn
 		ipc.Interface = current.Int(0)
 	}
 
-	logging.Infof("configureIPAM(): executing within container netns")
+	return result, nil
+}
+
+func setIPAM(cfg *NetConfig, result *current.Result, device netlink.Link, netns ns.NetNS) (*current.Result, error) {
+	logging.Infof("configureIPAM(): executing within host netns")
 	if err := netns.Do(func(_ ns.NetNS) error {
 
 		logging.Infof("configureIPAM(): setting device IP")
@@ -424,4 +484,20 @@ CmdCheck is currently unused
 */
 func CmdCheck(args *skel.CmdArgs) error {
 	return nil
+}
+
+/*
+extractIP extracts the IP address from the Result interface
+and returns the IP as type string
+*/
+func extractIP(result *current.Result) (string, error) {
+	resultIP := fmt.Sprintf("%s", result.IPs)
+	if len(resultIP) != 0 {
+		ip := strings.Split(resultIP, " ")[1]
+		ip = strings.Split(ip, "IP:")[1]
+		return ip, nil
+	}
+	err := fmt.Errorf("extractIP(): ip is an empty string")
+
+	return resultIP, err
 }
