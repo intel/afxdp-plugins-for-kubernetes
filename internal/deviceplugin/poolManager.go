@@ -82,15 +82,15 @@ func (pm *PoolManager) Init(config PoolConfig) error {
 	pm.BpfHandler = bpf.NewHandler()
 	pm.NetHandler = networking.NewHandler()
 
+        if err := pm.startGRPC(); err != nil {
+                return err
+        }
+        logging.Infof("Pool "+pm.DevicePrefix+"/%s started serving", pm.Name)
+
 	if err := pm.registerWithKubelet(); err != nil {
 		return err
 	}
 	logging.Infof("Pool "+pm.DevicePrefix+"/%s registered with Kubelet", pm.Name)
-
-	if err := pm.startGRPC(); err != nil {
-		return err
-	}
-	logging.Infof("Pool "+pm.DevicePrefix+"/%s started serving", pm.Name)
 
 	if len(pm.Devices) > 0 {
 		pm.UpdateSignal <- true
