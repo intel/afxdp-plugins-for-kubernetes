@@ -6,7 +6,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Checkout
-        uses: "actions/checkout@v2"
+        uses: "actions/checkout@v3"
       - name: Static Analysis
         run: make static
 
@@ -14,7 +14,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Checkout
-        uses: "actions/checkout@v2"
+        uses: "actions/checkout@v3"
       - name: Build
         run: make build
 
@@ -22,7 +22,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Checkout
-        uses: "actions/checkout@v2"
+        uses: "actions/checkout@v3"
       - name: Unit Tests
         run: make test
 
@@ -31,7 +31,7 @@ jobs:
     environment: AF_XDP CI
     steps:
       - name: Checkout
-        uses: "actions/checkout@v2"
+        uses: "actions/checkout@v3"
       - name: Delete previous logs
         run: |
           for i in $(kubectl get nodes | awk '{print $1}' | awk '{if (NR!=1) {print}}')
