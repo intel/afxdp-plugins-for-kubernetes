@@ -19,14 +19,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
-	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
-	logging "github.com/sirupsen/logrus"
-	"github.com/vishvananda/netlink"
 	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
+
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
+	"github.com/intel/afxdp-plugins-for-kubernetes/pkg/subfunctions"
+	logging "github.com/sirupsen/logrus"
+	"github.com/vishvananda/netlink"
 )
 
 var (
@@ -53,11 +55,11 @@ type Handler interface {
 	NetDevExists(device string) (bool, error)
 	GetDeviceFromFile(deviceName string, filepath string) (*Device, error)
 	WriteDeviceFile(device *Device, filepath string) error
-	CreateCdqSubfunction(parentPci string, sfnum string) error                   // see cdq.go
-	DeleteCdqSubfunction(portIndex string) error                                 // see cdq.go
-	IsCdqSubfunction(name string) (bool, error)                                  // see cdq.go
-	NumAvailableCdqSubfunctions(interfaceName string) (int, error)               // see cdq.go
-	GetCdqPortIndex(netdev string) (string, error)                               // see cdq.go
+	CreateCdqSubfunction(parentPci string, sfnum string) error                   // see subfunction package
+	DeleteCdqSubfunction(portIndex string) error                                 // see subfunction package
+	IsCdqSubfunction(name string) (bool, error)                                  // see subfunction package
+	NumAvailableCdqSubfunctions(interfaceName string) (int, error)               // see subfunction package
+	GetCdqPortIndex(netdev string) (string, error)                               // see subfucntions package
 	SetEthtool(ethtoolCmd []string, interfaceName string, ipResult string) error // see ethtool.go
 	DeleteEthtool(interfaceName string) error                                    // see ethtool.go
 	IsPhysicalPort(name string) (bool, error)
@@ -345,6 +347,46 @@ func (r *handler) IsPhysicalPort(name string) (bool, error) {
 	} else {
 		return false, nil
 	}
+}
+
+/*
+Wrapper for Subfunctions API calls
+*/
+func (r *handler) CreateCdqSubfunction(parentPci string, sfnum string) error {
+	err := subfunctions.CreateCdqSubfunction(parentPci, sfnum)
+	return err
+}
+
+/*
+Wrapper for Subfunctions API calls
+*/
+func (r *handler) DeleteCdqSubfunction(portIndex string) error {
+	err := subfunctions.DeleteCdqSubfunction(portIndex)
+	return err
+}
+
+/*
+Wrapper for Subfunctions API calls
+*/
+func (r *handler) IsCdqSubfunction(name string) (bool, error) {
+	result, err := subfunctions.IsCdqSubfunction(name)
+	return result, err
+}
+
+/*
+Wrapper for Subfunctions API calls
+*/
+func (r *handler) NumAvailableCdqSubfunctions(interfaceName string) (int, error) {
+	result, err := subfunctions.NumAvailableCdqSubfunctions(interfaceName)
+	return result, err
+}
+
+/*
+Wrapper for Subfunctions API calls
+*/
+func (r *handler) GetCdqPortIndex(netdev string) (string, error) {
+	result, err := subfunctions.GetCdqPortIndex(netdev)
+	return result, err
 }
 
 /*
