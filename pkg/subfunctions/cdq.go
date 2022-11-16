@@ -13,21 +13,22 @@
  * limitations under the License.
  */
 
-package networking
+package subfunctions
 
 import (
 	"fmt"
-	logging "github.com/sirupsen/logrus"
 	"os/exec"
 	"strconv"
 	"strings"
+
+	logging "github.com/sirupsen/logrus"
 )
 
 /*
 CreateCdqSubfunction takes the PCI address of a port and a subfunction number
 It creates that subfunction on top of that port and activates it
 */
-func (r *handler) CreateCdqSubfunction(parentPci string, sfnum string) error {
+func CreateCdqSubfunction(parentPci string, sfnum string) error {
 	app := "devlink"
 	args := []string{"port", "add", "pci/" + parentPci, "flavour", "pcisf", "pfnum", "0", "sfnum", sfnum}
 
@@ -52,7 +53,7 @@ func (r *handler) CreateCdqSubfunction(parentPci string, sfnum string) error {
 /*
 DeleteCdqSubfunction takes the port index of a subfunction, deactivates and deletes it
 */
-func (r *handler) DeleteCdqSubfunction(portIndex string) error {
+func DeleteCdqSubfunction(portIndex string) error {
 	app := "devlink"
 	args := []string{"port", "function", "set", "pci/" + portIndex, "state", "inactive"}
 
@@ -76,8 +77,8 @@ func (r *handler) DeleteCdqSubfunction(portIndex string) error {
 /*
 IsCdqSubfunction takes a netdev name and returns true if is a CDQ subfunction.
 */
-func (r *handler) IsCdqSubfunction(name string) (bool, error) {
-	portIndex, err := r.GetCdqPortIndex(name)
+func IsCdqSubfunction(name string) (bool, error) {
+	portIndex, err := GetCdqPortIndex(name)
 	if err != nil {
 		return false, err
 	}
@@ -96,7 +97,7 @@ GetCdqPortIndex takes a netdev name and returns the port index (pci/sfnum)
 Note this function only works on physical devices and CDQ subfunctions
 Other netdevs will return a "device not found by devlink" error
 */
-func (r *handler) GetCdqPortIndex(netdev string) (string, error) {
+func GetCdqPortIndex(netdev string) (string, error) {
 	devlinkList := "devlink port list | grep " + `"\b` + netdev + `\b"`
 
 	devList, err := exec.Command("sh", "-c", devlinkList).CombinedOutput()
@@ -125,7 +126,7 @@ func (r *handler) GetCdqPortIndex(netdev string) (string, error) {
 NumAvailableCdqSubfunctions takes the PCI of a physical port and returns how
 many unused CDQ subfunctions are available
 */
-func (r *handler) NumAvailableCdqSubfunctions(pci string) (int, error) {
+func NumAvailableCdqSubfunctions(pci string) (int, error) {
 	app := "devlink"
 	args := []string{"resource", "show", "pci/" + pci}
 

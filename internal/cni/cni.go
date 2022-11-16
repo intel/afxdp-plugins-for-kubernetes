@@ -216,19 +216,19 @@ func CmdAdd(args *skel.CmdArgs) error {
 				logging.Debugf("\t" + version)
 				if deviceDetails != nil {
 					if deviceDetails.GetEthtoolFilters() != nil {
-							logging.Infof("cmdAdd(): applying ethtool filters on device: %s", cfg.Device)
-							ethtoolCommand := deviceDetails.GetEthtoolFilters()
-							iPAddr, err := extractIP(result)
-							if err != nil {
-								logging.Errorf("cmdAdd(): Error extracting IP from result interface %v", err)
-								return err
-							}
-							err = netHandler.SetEthtool(ethtoolCommand, cfg.Device, iPAddr)
-							if err != nil {
-								logging.Errorf("cmdAdd(): unable to executed ethtool filter: %v", err)
-								return err
-							}
-						} else {
+						logging.Infof("cmdAdd(): applying ethtool filters on device: %s", cfg.Device)
+						ethtoolCommand := deviceDetails.GetEthtoolFilters()
+						iPAddr, err := extractIP(result)
+						if err != nil {
+							logging.Errorf("cmdAdd(): Error extracting IP from result interface %v", err)
+							return err
+						}
+						err = netHandler.SetEthtool(ethtoolCommand, cfg.Device, iPAddr)
+						if err != nil {
+							logging.Errorf("cmdAdd(): unable to executed ethtool filter: %v", err)
+							return err
+						}
+					} else {
 						logging.Debugf("cmdAdd(): ethtool filters have not been specified")
 					}
 				}
