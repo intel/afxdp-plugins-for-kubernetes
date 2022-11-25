@@ -144,7 +144,8 @@ static: static-ci
 	@echo
 	@echo "******       Trivy       ******"
 	@echo
-	trivy image afxdp-device-plugin; trivy fs .
+	trivy image afxdp-device-plugin --no-progress --format json
+	trivy fs . --no-progress --format json
 	@echo
 	@echo
 
