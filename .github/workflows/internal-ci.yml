@@ -69,6 +69,13 @@ jobs:
             ssh $i "cat /var/log/afxdp-k8s-plugins/afxdp-dp-e2e.log" || true
             echo -e "\n\n\n\n\n\n\n"
           done
+      - name: Trivy logs
+        if: always()
+        run: |
+          echo "**********************************************************************************************************************************************************"
+          echo "Trivy Kubernetes logs"
+          echo "**********************************************************************************************************************************************************"
+          trivy kubernetes cluster --report all
       - name: UDS Directory
         if: always()
         run: |
