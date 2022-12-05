@@ -50,7 +50,7 @@ const (
 	poolNameRequiredError = "Pool must have a name"
 	poolNameLengthError   = "Pool name must be between 1 and 20 characters"
 	poolMustHaveDevsError = "Pool must contain devices, drivers or nodes"
-	poolUdsTimeoutError   = "UDS socket timeout must be between 30 and 300 seconds"
+	poolUdsTimeoutError   = "UDS socket timeout must be -1, 0, or between 30 and 300 seconds"
 	poolModeRequiredError = "Plugin must have a mode"
 	poolModeMustBeError   = "Plugin mode must be one of "
 	poolEthtoolNotEmpty   = "Ethtool commands cannot be empty"
@@ -216,7 +216,7 @@ func (c configFile_Pool) Validate() error {
 		validation.Field(
 			&c.UdsTimeout,
 			validation.When(
-				c.UdsTimeout != 0,
+				c.UdsTimeout != -1 && c.UdsTimeout != 0,
 				validation.Min(constants.Uds.MinTimeout).Error(poolUdsTimeoutError),
 				validation.Max(constants.Uds.MaxTimeout).Error(poolUdsTimeoutError),
 			),

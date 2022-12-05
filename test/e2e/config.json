@@ -5,7 +5,7 @@
       {
          "name":"e2e",
          "mode":"primary",
-         "timeout":30,
+         "UdsTimeout":30,
          "uid":1500,
          "ethtoolCmds" : ["-X -device- equal 5 start 3","--config-ntuple -device- flow-type udp4 dst-ip -ip- action"],
          "drivers":[
