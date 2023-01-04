@@ -12,6 +12,8 @@
 # limitations under the License.
 
 excluded_from_utests = "/test/e2e|/test/fuzz"
+bpf_lib = $$(pkg-config --modversion libxdp --silence-errors)
+bpf_flag = "-lxdp"
 
 .PHONY: all e2e
 
@@ -32,7 +34,10 @@ format:
 buildc:
 	@echo "******     Build BPF     ******"
 	@echo
-	gcc ./internal/bpf/bpfWrapper.c -lbpf -c -o ./internal/bpf/bpfWrapper.o
+    ifeq ($(bpf_lib),)
+    bpf_flag := "-lbpf"
+    endif
+	gcc ./internal/bpf/bpfWrapper.c $(bpf_flag) -c -o ./internal/bpf/bpfWrapper.o
 	ar rs ./internal/bpf/libwrapper.a ./internal/bpf/bpfWrapper.o  &> /dev/null
 	@echo
 	@echo

@@ -283,9 +283,9 @@ run_ci_pods() {
 			for (( j=1; j<=containers; j++ ))
 			do
 				echo "***** Env vars Container $j *****"
-				kubectl exec -i "$pod" --container afxdp$j -- env
+				kubectl exec -i "$pod" --container afxdp"$j" -- env
 				echo "***** UDS Test Container $j *****"
-				kubectl exec -i "$pod" --container afxdp$j -- cat /tmp/udsTest.txt
+				kubectl exec -i "$pod" --container afxdp"$j" -- cat /tmp/udsTest.txt
 				echo
 			done
 		done
