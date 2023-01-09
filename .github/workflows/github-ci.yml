@@ -14,12 +14,10 @@ jobs:
 #          verbose: true
 #          recursive: true
   
- hadolint:
-    name: Hadolint
+ super-linter:
+    name: Super-Linter
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - run: wget -q https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -O hadolint; chmod +x hadolint ; find . -type f \( -name "*dockerfile*" \) -print0 | xargs --max-args=1 --null ./hadolint ;
-
-
-
+    - uses: actions/checkout@v2
+    - name: Super-Linter
+      uses: github/super-linter@2.1.0
