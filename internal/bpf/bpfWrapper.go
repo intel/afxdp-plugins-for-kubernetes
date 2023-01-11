@@ -15,6 +15,7 @@
 
 package bpf
 
+//#include <bpf/bpf.h>
 //#include <bpf/libbpf.h>
 //#include <bpf/xsk.h>
 //#include <bpf/xsk.h>
@@ -60,7 +61,7 @@ func (r *handler) LoadBpfSendXskMap(ifname string) (int, error) {
 	fd := int(C.Load_bpf_send_xsk_map(C.CString(ifname)))
 
 	if fd <= 0 {
-		return fd, errors.New("Error loading BPF program onto interface")
+		return fd, errors.New("error loading BPF program onto interface")
 	}
 
 	return fd, nil
@@ -73,7 +74,7 @@ func (r *handler) ConfigureBusyPoll(fd int, busyTimeout int, busyBudget int) err
 	ret := C.Configure_busy_poll(C.int(fd), C.int(busyTimeout), C.int(busyBudget))
 
 	if ret != 0 {
-		return errors.New("Error configuring busy poll on interface")
+		return errors.New("error configuring busy poll on interface")
 	}
 
 	return nil
@@ -86,7 +87,7 @@ func (r *handler) Cleanbpf(ifname string) error {
 	ret := C.Clean_bpf(C.CString(ifname))
 
 	if ret != 0 {
-		return errors.New("Error removing BPF program from interface")
+		return errors.New("error removing BPF program from interface")
 	}
 
 	return nil

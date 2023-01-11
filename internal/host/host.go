@@ -204,19 +204,19 @@ func GivePermissions(filepath, uid, permissions string) error {
 	app := "setfacl"
 
 	if uid == "" {
-		return errors.New("UID not specified.")
+		return errors.New("UID not specified")
 	}
 
 	appPath, err := exec.LookPath(app)
 	if err != nil {
 		if errors.Is(err, exec.ErrNotFound) {
-			return errors.New("Access Control Lists not supported.")
+			return errors.New("access Control Lists not supported")
 		}
 		logging.Errorf("Error checking if Access Control Lists are supported: %v", err)
 		return err
 	}
 	if appPath == "" {
-		return errors.New("Access Control Lists not supported.")
+		return errors.New("access Control Lists not supported")
 	}
 
 	if _, err := os.Stat(filepath); err != nil {

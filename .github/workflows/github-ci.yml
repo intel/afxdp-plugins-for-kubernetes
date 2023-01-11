@@ -57,5 +57,5 @@ jobs:
         go-version: 1.17
 
     - name: unit-tests
-      run: go list ./... | grep -v "/test" | grep -v "/internal/resourcesapi"
+      run: go test ./...
 
