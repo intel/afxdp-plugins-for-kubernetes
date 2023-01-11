@@ -1,8 +1,12 @@
-name: Linter
+name: Workflow-CI
 
 on: [push, pull_request]
 
 jobs:
+
+# Super-linter consists of several lint tools
+# lint tools are assigned to the pipeline via the env field
+# For more information, please see https://github.com/github/super-linter
   super-linter:
     runs-on: ubuntu-latest
     steps: 
@@ -19,34 +23,42 @@ jobs:
           VALIDATE_CLANG_FORMAT: true
           VALIDATE_JSON: true
 
-  go-static-tools:
-    runs-on: ubuntu-latest    
-    steps: 
+# Build stage executes binary builds for CNI and device-plugin
+  build:
+    runs-on: ubuntu-latest
+    steps:
     - uses: actions/checkout@v3
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
         go-version: 1.17
 
-    - name: Verify dependencies
-      run: go mod verify
+    - name: Install dependencies
+      run:  sudo apt-get update && sudo apt install libbpf-dev
+
+    - name: Run build
+      run: make build
+
+# go-static-tools scans code base and packages using go-vet, go mod verify and staticcheck
+  go-static-tools:
+    runs-on: ubuntu-latest    
+    steps: 
+    - uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.17
 
     - name: Install dependencies
-      run:  sudo apt-get update && sudo apt install build-essential && sudo apt install libbpf-dev
-
-    - name: Build test
-      run: go build -v ./...
-
-    - name: Go-vet test
-      run: go vet ./... 
+      run:  sudo apt-get update && sudo apt install libbpf-dev
 
     - name: Install staticcheck
       run: go install honnef.co/go/tools/cmd/staticcheck@latest
 
-    - name: Run staticcheck
-      run: staticcheck ./...
+    - name: run static analysis
+      run: make static-ci
 
-
+# unit-test stage
   unit-tests:
     runs-on: ubuntu-latest
     steps:
@@ -56,6 +68,8 @@ jobs:
       with:
         go-version: 1.17
 
-    - name: unit-tests
-      run: go test ./...
+    - name: Install dependencies
+      run:  sudo apt-get update && sudo apt install libbpf-dev
 
+    - name: unit-tests
+      run: make test
