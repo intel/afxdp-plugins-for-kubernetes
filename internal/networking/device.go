@@ -128,15 +128,15 @@ ActivateCdqSubfunction converts our device object in code into an actual CDQ sub
 */
 func (d *Device) ActivateCdqSubfunction() error {
 	if d.IsPrimary() {
-		return fmt.Errorf("Cannot activate CDQ subfunction %s. This is a primary device $s", d.name)
+		return fmt.Errorf("cannot activate CDQ subfunction %s. This is a primary device $s", d.name)
 	}
 
 	if !tools.ArrayContains(constants.Drivers.Cdq, d.driver) {
-		return fmt.Errorf("Cannot activate CDQ subfunction %s. Driver %s is not CDQ compatible", d.name, d.driver)
+		return fmt.Errorf("cannot activate CDQ subfunction %s. Driver %s is not CDQ compatible", d.name, d.driver)
 	}
 
 	if d.mode != "cdq" {
-		return fmt.Errorf("Cannot activate CDQ subfunction %s. Device is not in CDQ mode $s", d.name)
+		return fmt.Errorf("cannot activate CDQ subfunction %s. Device is not in CDQ mode $s", d.name)
 	}
 
 	exists, err := d.netHandler.NetDevExists(d.name)
@@ -152,14 +152,14 @@ func (d *Device) ActivateCdqSubfunction() error {
 
 	pci, err := d.primary.Pci()
 	if err != nil {
-		return fmt.Errorf("Error getting primary device PCI while activating subfunction %s", d.name)
+		return fmt.Errorf("error getting primary device PCI while activating subfunction %s", d.name)
 	}
 
 	sfNum := strings.Split(d.name, "sf")[1]
 
 	err = d.netHandler.CreateCdqSubfunction(pci, sfNum)
 	if err != nil {
-		return fmt.Errorf("Error creating CDQ subfunction %s: %v", d.name, err)
+		return fmt.Errorf("error creating CDQ subfunction %s: %v", d.name, err)
 	}
 
 	return nil

@@ -171,21 +171,21 @@ func checkHost(host host.Handler) (bool, error) {
 	logging.Debugf("Checking kernel version")
 	linuxVersion, err := host.KernelVersion()
 	if err != nil {
-		err := fmt.Errorf("Error checking kernel version: %v", err)
+		err := fmt.Errorf("error checking kernel version: %v", err)
 		return false, err
 
 	}
 
 	linuxInt, err := tools.KernelVersionInt(linuxVersion)
 	if err != nil {
-		err := fmt.Errorf("Error converting actual kernel version to int: %v", err)
+		err := fmt.Errorf("error converting actual kernel version to int: %v", err)
 		return false, err
 
 	}
 
 	minLinuxInt, err := tools.KernelVersionInt(constants.Afxdp.MinumumKernel)
 	if err != nil {
-		err := fmt.Errorf("Error converting minimum kernel version to int: %v", err)
+		err := fmt.Errorf("error converting minimum kernel version to int: %v", err)
 		return false, err
 
 	}
@@ -200,7 +200,7 @@ func checkHost(host host.Handler) (bool, error) {
 	logging.Debugf("Checking host for Libbpf")
 	bpfInstalled, libs, err := host.HasLibbpf()
 	if err != nil {
-		err := fmt.Errorf("Libbpf not found on host")
+		err := fmt.Errorf("libbpf not found on host")
 		return false, err
 	}
 	if bpfInstalled {
