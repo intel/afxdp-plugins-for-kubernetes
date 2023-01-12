@@ -180,7 +180,7 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 			logging.Debugf("Device: %s", pretty)
 
 			if device.Mode() != pm.Mode {
-				err := fmt.Errorf("Pool mode %s does not match device mode %s", pm.Mode, device.Mode())
+				err := fmt.Errorf("pool mode %s does not match device mode %s", pm.Mode, device.Mode())
 				logging.Errorf("%v", err)
 				return &response, err
 			}
@@ -194,7 +194,7 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 					return &response, err
 				}
 			default:
-				err := fmt.Errorf("Unsupported pool mode: %s", pm.Mode)
+				err := fmt.Errorf("unsupported pool mode: %s", pm.Mode)
 				logging.Errorf("%v", err)
 				return &response, err
 			}
@@ -275,7 +275,7 @@ func (pm *PoolManager) registerWithKubelet() error {
 			return (&net.Dialer{}).DialContext(ctx, "unix", addr)
 		}))
 	if err != nil {
-		return fmt.Errorf("Error connecting to Kubelet: %w", err)
+		return fmt.Errorf("error connecting to Kubelet: %w", err)
 	}
 	defer conn.Close()
 
@@ -289,7 +289,7 @@ func (pm *PoolManager) registerWithKubelet() error {
 
 	_, err = client.Register(context.Background(), reqt)
 	if err != nil {
-		return fmt.Errorf("Error registering with Kubelet: %w", err)
+		return fmt.Errorf("error registering with Kubelet: %w", err)
 	}
 
 	return nil
