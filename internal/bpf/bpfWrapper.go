@@ -15,7 +15,6 @@
 
 package bpf
 
-//#include <bpf/bpf.h>
 //#include <bpf/libbpf.h>
 //#include <bpf/xsk.h>
 //#include <bpf/xsk.h>

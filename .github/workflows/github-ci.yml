@@ -1,4 +1,4 @@
-name: Workflow-CI
+name: Linter
 
 on: [push, pull_request]
 
