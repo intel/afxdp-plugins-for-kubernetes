@@ -39,9 +39,9 @@ The following prerequisites are required to build and deploy the plugins:
 	- [Download and install](https://golang.org/doc/install).
 - **Libxdp / Libbpf**
 	- To load and unload the XDP program onto the network device.
-   - Libxdp or libbpf is required. Libxdp is preferred over libbpf.
-   - Libxdp installation must be recognised by pkg-config.
-   - Install libxdp [from source](https://github.com/xdp-project/xdp-tools/tree/master/lib/libxdp).
+	- Libbpf is required. Libxdp is required for libbpf versions > `0.7`.
+	- Libxdp installation must be recognised by pkg-config.
+	- Install libxdp [from source](https://github.com/xdp-project/xdp-tools/tree/master/lib/libxdp).
 	- Install libbpf on Ubuntu 20.10+: `apt install libbpf-dev`
 	- Older libbpf versions: [Install from source](https://github.com/libbpf/libbpf#build).
 - **GCC Compiler**
