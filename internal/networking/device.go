@@ -157,7 +157,7 @@ func (d *Device) ActivateCdqSubfunction() error {
 
 	sfNum := strings.Split(d.name, "sf")[1]
 
-	err = d.netHandler.CreateCdqSubfunction(pci, sfNum)
+	err = d.netHandler.CreateCdqSubfunction(d.primary.name, pci, sfNum)
 	if err != nil {
 		return fmt.Errorf("Error creating CDQ subfunction %s: %v", d.name, err)
 	}

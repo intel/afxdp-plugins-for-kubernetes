@@ -376,7 +376,7 @@ func CmdDel(args *skel.CmdArgs) error {
 		}
 		if isSf {
 			logging.Debugf("cmdDel(): deleting subfunction %s", cfg.Device)
-			portIndex, err := netHandler.GetCdqPortIndex(cfg.Device)
+			_, portIndex, err := netHandler.GetCdqPortInfo(cfg.Device)
 			if err != nil {
 				logging.Errorf("cmdDel(): error getting port index of device %s: %v", cfg.Device, err)
 			} else {

@@ -128,11 +128,11 @@ func (r *fakeHandler) NetDevExists(device string) (bool, error) {
 }
 
 /*
-CreateCdqSubfunction takes the PCI address of a port and a subfunction number
+CreateCdqSubfunction takes the device name, PCI address of a port and a subfunction number
 It creates that subfunction on top of that port and activates it
 In this fake handler it does nothing
 */
-func (r *fakeHandler) CreateCdqSubfunction(parentPci string, sfnum string) error {
+func (r *fakeHandler) CreateCdqSubfunction(device string, parentPci string, sfnum string) error {
 	return nil
 }
 
@@ -153,13 +153,13 @@ func (r *fakeHandler) IsCdqSubfunction(name string) (bool, error) {
 }
 
 /*
-GetCdqPortIndex takes a netdev name and returns the port index (pci/sfnum)
+GetCdqPortInfo takes a netdev name and returns the port number and index (pci/sfnum)
 Note this function only works on physical devices and CDQ subfunctions
 Other netdevs will return a "device not found by devlink" error
 In this fake handler it currently returns an empty string
 */
-func (r *fakeHandler) GetCdqPortIndex(netdev string) (string, error) {
-	return "", nil
+func (r *fakeHandler) GetCdqPortInfo(netdev string) (string, string, error) {
+	return "", "", nil
 }
 
 /*

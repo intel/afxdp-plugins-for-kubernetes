@@ -25,12 +25,19 @@ import (
 )
 
 /*
-CreateCdqSubfunction takes the PCI address of a port and a subfunction number
+CreateCdqSubfunction takes the device name, PCI address of a port and a subfunction number
 It creates that subfunction on top of that port and activates it
 */
-func CreateCdqSubfunction(parentPci string, sfnum string) error {
+func CreateCdqSubfunction(device string, parentPci string, sfnum string) error {
 	app := "devlink"
-	args := []string{"port", "add", "pci/" + parentPci, "flavour", "pcisf", "pfnum", "0", "sfnum", sfnum}
+
+	pfNumber, _, err := GetCdqPortInfo(device)
+	if err != nil {
+		logging.Errorf("Error abstracting port number for primary device %s: %v", device, err)
+		return err
+	}
+
+	args := []string{"port", "add", "pci/" + parentPci, "flavour", "pcisf", "pfnum", pfNumber, "sfnum", sfnum}
 
 	output, err := exec.Command(app, args...).Output()
 	if err != nil {
@@ -78,7 +85,7 @@ func DeleteCdqSubfunction(portIndex string) error {
 IsCdqSubfunction takes a netdev name and returns true if is a CDQ subfunction.
 */
 func IsCdqSubfunction(name string) (bool, error) {
-	portIndex, err := GetCdqPortIndex(name)
+	_, portIndex, err := GetCdqPortInfo(name)
 	if err != nil {
 		return false, err
 	}
@@ -93,33 +100,37 @@ func IsCdqSubfunction(name string) (bool, error) {
 }
 
 /*
-GetCdqPortIndex takes a netdev name and returns the port index (pci/sfnum)
+GetCdqPortInfo takes a netdev name and returns the port number and index (pci/sfnum)
 Note this function only works on physical devices and CDQ subfunctions
 Other netdevs will return a "device not found by devlink" error
 */
-func GetCdqPortIndex(netdev string) (string, error) {
+func GetCdqPortInfo(netdev string) (string, string, error) {
 	devlinkList := "devlink port list | grep " + `"\b` + netdev + `\b"`
 
 	devList, err := exec.Command("sh", "-c", devlinkList).CombinedOutput()
 	if err != nil {
 		if strings.Contains(err.Error(), "exit status 1") {
-			return "", fmt.Errorf("device %s not found by devlink (1)", netdev)
+			return "", "", fmt.Errorf("device %s not found by devlink (1)", netdev)
 		}
-		return "", err
+		return "", "", err
 	}
 
 	if devList != nil {
-		portIndex := strings.Fields(string(devList))[0]
+		// retrieve port number
+		portSplit := strings.Split(string(devList), "port")[1]
+		portNumber := strings.TrimSpace(strings.Split(portSplit, "splittable")[0])
 
+		// retrieve port address index
+		portIndex := strings.Fields(string(devList))[0]
 		pciSplit := strings.Split(portIndex, "pci/")
 		portIndexAddress := pciSplit[1]
-
 		lastInd := strings.LastIndex(portIndexAddress, ":")
 		portAddrIndex := portIndexAddress[:lastInd]
-		return portAddrIndex, nil
+
+		return portNumber, portAddrIndex, nil
 	}
 
-	return "", fmt.Errorf("device %s not found by devlink (2)", netdev)
+	return "","", fmt.Errorf("device %s not found by devlink (2)", netdev)
 }
 
 /*
