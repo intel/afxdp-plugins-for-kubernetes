@@ -114,15 +114,27 @@ e2efulldaemon: image
 	@echo
 	@echo
 
-static:
-	@echo "******   GolangCI-Lint   ******"
+static-ci: 
+	@echo "******   Verify dependencies   ******"
 	@echo
-	golangci-lint run
+	go mod verify
+	@echo
+	@echo
+	@echo "******   Run staticcheck   ******"
+	@echo
+	staticcheck ./...
 	@echo
 	@echo
 	@echo "******      Go Vet       ******"
 	@echo
 	for pkg in $$(go list github.com/intel/afxdp-plugins-for-kubernetes/...); do echo $$pkg && go vet $$pkg; done
+	@echo
+	@echo
+
+static: static-ci
+	@echo "******   GolangCI-Lint   ******"
+	@echo
+	golangci-lint run
 	@echo
 	@echo
 	@echo "******     Hadolint      ******"

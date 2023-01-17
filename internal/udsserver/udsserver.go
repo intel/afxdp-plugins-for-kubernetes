@@ -125,7 +125,7 @@ func (f *serverFactory) CreateServer(deviceType, user string, timeout int, udsFu
 		return &server{}, "", err
 	}
 
-	timeoutSeconds := time.Duration(timeout) * time.Second
+	timeoutUds := time.Duration(timeout) * time.Second
 
 	server := &server{
 		podName:        "unvalidated",
@@ -135,7 +135,7 @@ func (f *serverFactory) CreateServer(deviceType, user string, timeout int, udsFu
 		uds:            udsHandler,
 		bpf:            bpf.NewHandler(),
 		podRes:         resourcesapi.NewHandler(),
-		udsIdleTimeout: timeoutSeconds,
+		udsIdleTimeout: timeoutUds,
 		uid:            user,
 	}
 
