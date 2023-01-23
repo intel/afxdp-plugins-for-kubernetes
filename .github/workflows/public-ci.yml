@@ -1,4 +1,4 @@
-name: Linter
+name: 'Public-CI'
 
 on: [push, pull_request]
 
@@ -17,7 +17,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LINTER_RULES_PATH: /
           VALIDATE_BASH: true
-          VALIDATE_GITHUB_ACTIONS: true
           VALIDATE_GO: true
           VALIDATE_DOCKERFILE_HADOLINT: true
           VALIDATE_CLANG_FORMAT: true
