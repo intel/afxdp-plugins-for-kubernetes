@@ -140,6 +140,14 @@ static: static-ci
 	@echo "******    Shellcheck     ******"
 	@echo
 	for file in $$(find . -iname "*.sh"); do echo $$file && shellcheck $$file; done
+	@echo
+	@echo
+	@echo "******       Trivy       ******"
+	@echo
+	trivy image afxdp-device-plugin --no-progress --format json
+	trivy fs . --no-progress --format json
+	@echo
+	@echo
 
 cloc: format
 	@echo "******    Update CLOC    ******"
