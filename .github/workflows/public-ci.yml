@@ -33,7 +33,9 @@ jobs:
         go-version: 1.17
 
     - name: Install dependencies
-      run:  sudo apt-get update && sudo apt install libbpf-dev
+      run: sudo apt-get update &&
+         sudo apt install xdp-tools && \
+         sudo apt install bpftool
 
     - name: Run build
       run: make build
@@ -49,7 +51,16 @@ jobs:
         go-version: 1.17
 
     - name: Install dependencies
-      run:  sudo apt-get update && sudo apt install libbpf-dev
+      run: sudo apt-get update && sudo apt install clang  && \
+         sudo apt install llvm && \
+         sudo apt install gcc && \
+         sudo apt install libbpf && \
+         sudo apt install libbpf-devel && \
+         sudo apt install libxdp
+         sudo apt install libxdp-devel && \
+         sudo apt install xdp-tools && \
+         sudo apt install bpftool 
+
 
     - name: Install staticcheck
       run: go install honnef.co/go/tools/cmd/staticcheck@latest
@@ -68,7 +79,15 @@ jobs:
         go-version: 1.17
 
     - name: Install dependencies
-      run:  sudo apt-get update && sudo apt install libbpf-dev
+      run: sudo apt-get update && sudo apt install clang  && \
+         sudo apt install llvm && \
+         sudo apt install gcc && \
+         sudo apt install libbpf && \
+         sudo apt install libbpf-devel && \
+         sudo apt install libxdp
+         sudo apt install libxdp-devel && \
+         sudo apt install xdp-tools && \
+         sudo apt install bpftool
 
     - name: unit-tests
       run: make test

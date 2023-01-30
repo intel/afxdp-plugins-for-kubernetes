@@ -32,7 +32,7 @@ format:
 buildc:
 	@echo "******     Build BPF     ******"
 	@echo
-	gcc ./internal/bpf/bpfWrapper.c -lbpf -c -o ./internal/bpf/bpfWrapper.o
+	gcc ./internal/bpf/bpfWrapper.c -lxdp -c -o ./internal/bpf/bpfWrapper.o
 	ar rs ./internal/bpf/libwrapper.a ./internal/bpf/bpfWrapper.o  &> /dev/null
 	@echo
 	@echo

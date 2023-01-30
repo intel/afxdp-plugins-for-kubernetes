@@ -15,12 +15,10 @@
 
 package bpf
 
-//#include <bpf/libbpf.h>
-//#include <bpf/xsk.h>
-//#include <bpf/xsk.h>
-//#include <stdlib.h>
+//#include <xdp/xsk.h>
+//#include <xdp/libxdp.h>
 //#cgo CFLAGS: -I.
-//#cgo LDFLAGS: -L. -lbpf
+//#cgo LDFLAGS: -L. -lxdp
 //#include "bpfWrapper.h"
 //#include "log.h"
 import "C"
@@ -126,3 +124,4 @@ func Errorf(msg *C.char) {
 func Panicf(msg *C.char) {
 	logging.Panicf(C.GoString(msg))
 }
+
