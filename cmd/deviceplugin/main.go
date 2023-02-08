@@ -75,17 +75,17 @@ func main() {
 	logging.Infof("Starting AF_XDP Device Plugin")
 
 	// host requirements
-	logging.Infof("Checking if host meets requriements")
+	logging.Infof("Checking if host meets requirements")
 	hostMeetsRequirements, err := checkHost(hostHandler)
 	if err != nil {
 		logging.Errorf("Error checking host: %v", err)
 		exit(constants.Plugins.DevicePlugin.ExitHostError)
 	}
 	if !hostMeetsRequirements {
-		logging.Infof("Host does not meet requriements")
+		logging.Infof("Host does not meet requirements")
 		exit(constants.Plugins.DevicePlugin.ExitNormal)
 	}
-	logging.Infof("Host meets requriements")
+	logging.Infof("Host meets requirements")
 
 	// pool configs
 	logging.Infof("Getting device pools")

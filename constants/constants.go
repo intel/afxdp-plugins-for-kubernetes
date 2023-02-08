@@ -23,7 +23,7 @@ var (
 	devicePluginExitNormal        = 0                          // device plugin normal exit code
 	devicePluginExitConfigError   = 1                          // device plugin config error exit code, problem with the provided config
 	devicePluginExitLogError      = 2                          // device plugin logging error exit code, error creating log file, bad log level, etc.
-	devicePluginExitHostError     = 3                          // device plugin host check exit code, error occurred checking some atribute of the host
+	devicePluginExitHostError     = 3                          // device plugin host check exit code, error occurred checking some attribute of the host
 	devicePluginExitPoolError     = 4                          // device plugin device pool exit code, error occurred while building a device pool
 
 	/* Logging */

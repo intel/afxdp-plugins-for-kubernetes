@@ -817,7 +817,7 @@ func TestStart(t *testing.T) {
 			},
 		},
 		{
-			//Send varient of the accepted /connect request
+			//Send variant of the accepted /connect request
 			testName:         "Bad connect request (1)",
 			fakePodName:      "podA",
 			fakePodNamespace: "default",
@@ -835,7 +835,7 @@ func TestStart(t *testing.T) {
 			},
 		},
 		{
-			//Send varient of the accepted /connect request
+			//Send variant of the accepted /connect request
 			testName:         "Bad connect request (2)",
 			fakePodName:      "podA",
 			fakePodNamespace: "default",
@@ -853,7 +853,7 @@ func TestStart(t *testing.T) {
 			},
 		},
 		{
-			//Send varient of the accepted /connect request
+			//Send variant of the accepted /connect request
 			testName:         "Bad connect request (3)",
 			fakePodName:      "podA",
 			fakePodNamespace: "default",
@@ -871,7 +871,7 @@ func TestStart(t *testing.T) {
 			},
 		},
 		{
-			//Send varient of the accepted /connect request
+			//Send variant of the accepted /connect request
 			testName:         "Bad connect request (4)",
 			fakePodName:      "podA",
 			fakePodNamespace: "default",
@@ -907,7 +907,7 @@ func TestStart(t *testing.T) {
 			},
 		},
 		{
-			//Send varient of the accepted /connect request
+			//Send variant of the accepted /connect request
 			testName:         "Bad connect request (6)",
 			fakePodName:      "podA",
 			fakePodNamespace: "default",
