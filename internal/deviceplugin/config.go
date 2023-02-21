@@ -22,7 +22,6 @@ import (
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	logging "github.com/sirupsen/logrus"
-	"github.com/vishvananda/netlink"
 	"io/ioutil"
 )
 
@@ -333,24 +332,15 @@ func validateDevice(device *networking.Device, driver *configFile_Driver, pool *
 			logging.Debugf("%s is an excluded device for %s driver", device.Name(), driver.Name)
 			return false
 		}
+
+		ip, err := device.Ips()
+		if err != nil {
+			logging.Errorf("error obtaining IP address list for device %s: %v", device.Name(), err)
+		}
 		//check if device has an excluded ip address if relevant
-		if driver.ExcludeAddressed {
-			dev, err := netlink.LinkByName(device.Name())
-			if err != nil {
-				logging.Debugf("Unable to link device %s for %s driver", device.Name(), driver.Name)
-				return false
-			}
-			addresses, err := netlink.AddrList(dev, 0)
-			if err != nil {
-				logging.Debugf("Unable to list addresses of %s driver", driver.Name)
-				return false
-			}
-			if len(addresses) > 0 {
-				if addresses[0].IPNet.IP[0] != 0 {
-					logging.Debugf("IPs on %s driver are excluded; Device %s has IP %s.", driver.Name, device.Name(), addresses[0].IPNet.IP)
-					return false
-				}
-			}
+		if driver.ExcludeAddressed && ip != nil {
+			logging.Debugf("IPs on %s driver are excluded; Device %s has IP %s", driver.Name, device.Name(), ip)
+			return false
 		}
 	}
 
