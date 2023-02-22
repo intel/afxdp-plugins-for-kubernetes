@@ -45,11 +45,12 @@ NetConfig holds the config passed via stdin
 */
 type NetConfig struct {
 	types.NetConf
-	Device   string `json:"deviceID"`
-	Mode     string `json:"mode"`
-	Queues   string `json:"queues,omitempty"`
-	LogFile  string `json:"logFile,omitempty"`
-	LogLevel string `json:"logLevel,omitempty"`
+	Device        string `json:"deviceID"`
+	Mode          string `json:"mode"`
+	SkipUnloadBpf bool   `json:"skipUnloadBpf,omitempty"`
+	Queues        string `json:"queues,omitempty"`
+	LogFile       string `json:"logFile,omitempty"`
+	LogLevel      string `json:"logLevel,omitempty"`
 }
 
 func init() {
@@ -344,12 +345,14 @@ func CmdDel(args *skel.CmdArgs) error {
 		}
 	}
 
-	logging.Infof("cmdDel(): removing BPF program from device")
-	if err := bpfHandler.Cleanbpf(cfg.Device); err != nil {
-		err = fmt.Errorf("cmdDel(): error removing BPF program from device: %w", err)
-		logging.Errorf(err.Error())
+	if !cfg.SkipUnloadBpf {
+		logging.Infof("cmdDel(): removing BPF program from device")
+		if err := bpfHandler.Cleanbpf(cfg.Device); err != nil {
+			err = fmt.Errorf("cmdDel(): error removing BPF program from device: %w", err)
+			logging.Errorf(err.Error())
 
-		return err
+			return err
+		}
 	}
 
 	if cfg.Mode == "primary" {
