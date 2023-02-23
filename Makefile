@@ -1,15 +1,20 @@
 # Copyright(c) 2022 Intel Corporation.
+# Copyright(c) Red Hat Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+.PHONY: help
+help: ## Display this help.
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 excluded_from_utests = "/test/e2e|/test/fuzz"
 
@@ -60,6 +65,8 @@ docker:
 	@echo
 	@echo
 
+##@ General Deployment - assumes K8s environment is already setup
+
 podman:
 	@echo "******   Podman Image    ******"
 	@echo
@@ -75,14 +82,14 @@ image:
 	 $(MAKE) docker; \
 	fi
 
-undeploy:
+undeploy: ## Undeploy the Deamonset
 	@echo "******  Stop Daemonset   ******"
 	@echo
 	kubectl delete -f ./deployments/daemonset.yml --ignore-not-found=true
 	@echo
 	@echo
 
-deploy: image undeploy
+deploy: image undeploy ## Deploy the Deamonset and CNI
 	@echo "****** Deploy Daemonset  ******"
 	@echo
 	kubectl create -f ./deployments/daemonset.yml
@@ -147,7 +154,7 @@ static-ci:
 	@echo
 
 # static: consists of static analysis tools required for internal CI repository workflows and locally
-# run tests. static includes static-ci test module. 
+# run tests. static includes static-ci test module.
 static: static-ci
 	@echo "******   GolangCI-Lint   ******"
 	@echo
@@ -188,3 +195,37 @@ clean:
 	rm -f ./internal/bpf/libwrapper.a
 	@echo
 	@echo
+
+.PHONY: setup-flannel
+setup-flannel: ## Setup flannel
+	kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+
+.PHONY: setup-multus
+setup-multus: ## Setup multus
+	kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/master/deployments/multus-daemonset.yml
+
+.PHONY: del-kind
+del-kind: ## Remove a kind cluster callled af-xdp-deployment
+	kind delete cluster --name af-xdp-deployment
+
+.PHONY: setup-kind
+setup-kind: del-kind ## Setup a kind cluster called af-xdp-deployment
+	kind create cluster --config hack/kind-config.yaml --name af-xdp-deployment
+
+.PHONY: label-kind-nodes
+label-kind-nodes: ## label the kind worker nodes with cndp="true"
+	kubectl label node af-xdp-deployment-worker cndp="true"
+	kubectl label node af-xdp-deployment-worker2 cndp="true"
+
+.PHONY: kind-deploy
+kind-deploy: image undeploy ## Deploy the Deamonset and CNI
+	@echo "****** Deploy Daemonset  ******"
+	@echo
+	kind load --name af-xdp-deployment docker-image afxdp-device-plugin
+	kubectl create -f ./deployments/daemonset.yml
+	@echo
+	@echo
+
+.PHONY: run-on-kind
+run-on-kind: del-kind setup-kind label-kind-nodes setup-multus kind-deploy ## Setup a kind cluster and deploy the device plugin
+	@echo "******       Kind Setup complete       ******"
