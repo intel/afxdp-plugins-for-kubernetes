@@ -204,6 +204,8 @@ setup-flannel: ## Setup flannel
 setup-multus: ## Setup multus
 	kubectl apply -f https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/master/deployments/multus-daemonset.yml
 
+##@ Kind Deployment - sets up a kind cluster and deploys the plugin and CNI
+
 .PHONY: del-kind
 del-kind: ## Remove a kind cluster callled af-xdp-deployment
 	kind delete cluster --name af-xdp-deployment
@@ -218,7 +220,7 @@ label-kind-nodes: ## label the kind worker nodes with cndp="true"
 	kubectl label node af-xdp-deployment-worker2 cndp="true"
 
 .PHONY: kind-deploy
-kind-deploy: image undeploy ## Deploy the Deamonset and CNI
+kind-deploy: image undeploy ## Deploy the Deamonset and CNI in Kind
 	@echo "****** Deploy Daemonset  ******"
 	@echo
 	kind load --name af-xdp-deployment docker-image afxdp-device-plugin
