@@ -14,7 +14,7 @@
 FROM golang:1.20 as cnibuilder
 COPY . /usr/src/afxdp_k8s_plugins
 WORKDIR /usr/src/afxdp_k8s_plugins
-RUN apt-get update && apt-get -y install libbpf-dev=1:0.3-2 \
+RUN apt-get update && apt-get -y install --no-install-recommends libbpf-dev=1:0.3-2 \
       && make buildcni
 
 FROM golang:1.20-alpine as dpbuilder
