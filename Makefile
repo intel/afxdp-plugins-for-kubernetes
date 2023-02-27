@@ -53,12 +53,27 @@ buildcni: buildc
 
 build: builddp buildcni
 
-image: buildcni
-	@echo "******   Docker Image    ******"
+docker:
+	@echo "******   Docker Image    ******"
 	@echo
 	docker build -t afxdp-device-plugin -f images/amd64.dockerfile .
 	@echo
+	@echo 
+
+podman:
+	@echo "******   Podman Image    ******"
 	@echo
+	podman build -t afxdp-device-plugin -f images/amd64.dockerfile .
+	@echo
+	@echo
+
+image:
+	if $(MAKE) podman; then \
+	 echo "Podman build succeeded"; \
+	else \
+	 echo "Podman build failed, trying docker.."; \
+	 $(MAKE) docker; \
+	fi
 
 undeploy:
 	@echo "******  Stop Daemonset   ******"

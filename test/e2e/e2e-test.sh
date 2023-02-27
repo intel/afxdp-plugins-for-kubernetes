@@ -23,6 +23,21 @@ daemonset=false
 soak=false
 ci_run=false
 pids=( )
+container_tool=""
+
+
+detect_container_engine() {
+        echo "*****************************************************"
+        echo "*          Checking Container Engine                *"
+        echo "*****************************************************"
+	if podman -v; then \
+	  container_tool="podman"; \
+	else \
+	  container_tool="docker"; \
+	fi
+
+	echo "$container_tool recognised as container engine"
+}
 
 cleanup() {
 	echo
@@ -39,7 +54,7 @@ cleanup() {
 	echo "Delete Network Attachment Definition"
 	kubectl delete --ignore-not-found=true -f $workdir/nad.yaml
 	echo "Delete Docker Image"
-	docker 2>/dev/null rmi afxdp-e2e-test || true
+	$container_tool 2>/dev/null rmi afxdp-e2e-test || true
 	echo "Stop Device Plugin on host (if running)"
 	if [ ${#pids[@]} -eq 0 ]; then
 		echo "No Device Plugin PID found on host"
@@ -64,7 +79,7 @@ build() {
 	echo "***** Test App *****"
 	go build -tags netgo -o udsTest ./udsTest.go
 	echo "***** Docker Image *****"
-	docker build -t afxdp-e2e-test -f Dockerfile .
+	$container_tool build -t afxdp-e2e-test -f Dockerfile .
 }
 
 run() {
@@ -76,8 +91,8 @@ run() {
 		if [ "$ci_run" = true ]; then
 			echo "*****   Pushing image to registry    *****"
 			echo
-			docker tag afxdp-device-plugin "$DOCKER_REG"/test/afxdp-device-plugin-e2e:latest
-			docker push "$DOCKER_REG"/test/afxdp-device-plugin-e2e:latest
+			$container_tool tag afxdp-device-plugin "$DOCKER_REG"/test/afxdp-device-plugin-e2e:latest
+			$container_tool push "$DOCKER_REG"/test/afxdp-device-plugin-e2e:latest
 			echo "***** Deploying Device Plugin as daemonset *****"
 			echo
 			echo "Note that device plugin logs will not be printed to screen on a daemonset run"
@@ -378,6 +393,7 @@ then
 	done
 fi
 
+detect_container_engine
 cleanup
 build
 run

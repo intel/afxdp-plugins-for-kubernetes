@@ -11,19 +11,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM amd64/alpine:3.16 as bpf
-RUN apk --no-cache -U add iproute2-rdma~=5.17 acl~=2.3 \
-      && apk --no-cache -U add libbpf~=0.5 --repository=http://dl-cdn.alpinelinux.org/alpine/v3.15/community
-
-FROM bpf as builder
+FROM golang:1.20 as cnibuilder
 COPY . /usr/src/afxdp_k8s_plugins
 WORKDIR /usr/src/afxdp_k8s_plugins
-RUN apk add --no-cache go~=1.18 make~=4.3 libbsd-dev~=0.11 \
+RUN apt-get update && apt-get -y install --no-install-recommends libbpf-dev=1:0.3-2 \
+      && make buildcni
+
+FROM golang:1.20-alpine as dpbuilder
+COPY . /usr/src/afxdp_k8s_plugins
+WORKDIR /usr/src/afxdp_k8s_plugins
+RUN apk add --no-cache build-base~=0.5 libbsd-dev~=0.11 \
       && apk add --no-cache libbpf-dev~=0.5 --repository=https://dl-cdn.alpinelinux.org/alpine/v3.15/community \
       && make builddp
 
-FROM bpf
-COPY --from=builder /usr/src/afxdp_k8s_plugins/bin/afxdp /afxdp/afxdp
-COPY --from=builder /usr/src/afxdp_k8s_plugins/bin/afxdp-dp /afxdp/afxdp-dp
-COPY --from=builder /usr/src/afxdp_k8s_plugins/images/entrypoint.sh /afxdp/entrypoint.sh
+FROM amd64/alpine:3.17
+RUN apk --no-cache -U add iproute2-rdma~=6.0 acl~=2.3 \
+      && apk --no-cache -U add libbpf~=0.5 --repository=http://dl-cdn.alpinelinux.org/alpine/v3.15/community
+COPY --from=cnibuilder /usr/src/afxdp_k8s_plugins/bin/afxdp /afxdp/afxdp
+COPY --from=dpbuilder /usr/src/afxdp_k8s_plugins/bin/afxdp-dp /afxdp/afxdp-dp
+COPY --from=dpbuilder /usr/src/afxdp_k8s_plugins/images/entrypoint.sh /afxdp/entrypoint.sh
 ENTRYPOINT ["/afxdp/entrypoint.sh"]
