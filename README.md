@@ -74,6 +74,16 @@ The following static analysis, linting and formatting tools are not required for
 - **[CLOC](https://github.com/AlDanial/cloc)**
 	- Count Lines Of Code, counts lines of code in many programming languages.
 	- Install on Ubuntu: `apt install cloc`
+- **[Trivy](https://github.com/aquasecurity/trivy)**
+	- A comprehensive and versatile security scanner.
+	- [Install on Ubuntu](https://aquasecurity.github.io/trivy/v0.38/getting-started/installation/):
+	```
+	sudo apt-get install wget apt-transport-https gnupg lsb-release
+	wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+	echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | 					sudo tee -a /etc/apt/sources.list.d/trivy.list
+	sudo apt-get update
+	sudo apt-get install trivy
+	```
 
 ## Build and Deploy
 
