@@ -12,7 +12,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.7.0
 	github.com/vishvananda/netlink v1.1.1-0.20210330154013-f5de75959ad5
-	golang.org/x/net v0.0.0-20220927171203-f486391704dc
+	golang.org/x/net v0.7.0
 	google.golang.org/grpc v1.49.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/apimachinery v0.25.2
