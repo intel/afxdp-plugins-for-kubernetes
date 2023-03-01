@@ -8,7 +8,7 @@ spec:
   config: '{
       "cniVersion": "0.3.0",
       "type": "afxdp",
-      "mode": "cdq",
+      "mode": "primary",
       "logFile": "afxdp-cni-e2e.log",
       "logLevel": "debug",
       "ipam": {
