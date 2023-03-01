@@ -149,12 +149,12 @@ static:
 	@echo
 	@echo "******     Hadolint      ******"
 	@echo
-	for file in $$(find . -type f -iname "*dockerfile*"); do echo $$file && docker run --rm -i hadolint/hadolint < $$file; done
+	for file in $$(find . -type f -iname "*dockerfile*" -not -path "./.git/*"); do echo $$file && docker run --rm -i hadolint/hadolint < $$file; done
 	@echo
 	@echo
 	@echo "******    Shellcheck     ******"
 	@echo
-	for file in $$(find . -iname "*.sh"); do echo $$file && shellcheck $$file; done
+	for file in $$(find . -iname "*.sh" -not -path "./.git/*"); do echo $$file && shellcheck $$file; done
 	@echo
 	@echo
 	@echo "******       Trivy       ******"
