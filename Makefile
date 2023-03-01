@@ -58,7 +58,7 @@ docker:
 	@echo
 	docker build -t afxdp-device-plugin -f images/amd64.dockerfile .
 	@echo
-	@echo 
+	@echo
 
 podman:
 	@echo "******   Podman Image    ******"
@@ -124,7 +124,7 @@ e2efulldaemon: image
 	@echo
 	@echo
 
-static-ci: 
+static-ci: static
 	@echo "******   Verify dependencies   ******"
 	@echo
 	go mod verify
@@ -141,7 +141,7 @@ static-ci:
 	@echo
 	@echo
 
-static: static-ci
+static:
 	@echo "******   GolangCI-Lint   ******"
 	@echo
 	golangci-lint run
