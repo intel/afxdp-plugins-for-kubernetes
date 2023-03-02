@@ -152,12 +152,17 @@ func (d *Device) ActivateCdqSubfunction() error {
 
 	pci, err := d.primary.Pci()
 	if err != nil {
-		return fmt.Errorf("error getting primary device PCI while activating subfunction %s", d.name)
+		return fmt.Errorf("error getting primary device PCI while activating subfunction %s: %v", d.name, err)
+	}
+
+	pfnum, err := d.netHandler.GetCdqPfnum(d.primary.name)
+	if err != nil {
+		return fmt.Errorf("error getting primary device pfnum while activating subfunction %s: %v", d.name, err)
 	}
 
 	sfNum := strings.Split(d.name, "sf")[1]
 
-	err = d.netHandler.CreateCdqSubfunction(pci, sfNum)
+	err = d.netHandler.CreateCdqSubfunction(pci, pfnum, sfNum)
 	if err != nil {
 		return fmt.Errorf("error creating CDQ subfunction %s: %v", d.name, err)
 	}

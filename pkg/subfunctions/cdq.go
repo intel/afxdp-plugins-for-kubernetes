@@ -28,9 +28,9 @@ import (
 CreateCdqSubfunction takes the PCI address of a port and a subfunction number
 It creates that subfunction on top of that port and activates it
 */
-func CreateCdqSubfunction(parentPci string, sfnum string) error {
+func CreateCdqSubfunction(parentPci string, pfnum string, sfnum string) error {
 	app := "devlink"
-	args := []string{"port", "add", "pci/" + parentPci, "flavour", "pcisf", "pfnum", "0", "sfnum", sfnum}
+	args := []string{"port", "add", "pci/" + parentPci, "flavour", "pcisf", "pfnum", pfnum, "sfnum", sfnum}
 
 	output, err := exec.Command(app, args...).Output()
 	if err != nil {
@@ -117,6 +117,30 @@ func GetCdqPortIndex(netdev string) (string, error) {
 		lastInd := strings.LastIndex(portIndexAddress, ":")
 		portAddrIndex := portIndexAddress[:lastInd]
 		return portAddrIndex, nil
+	}
+
+	return "", fmt.Errorf("device %s not found by devlink (2)", netdev)
+}
+
+/*
+GetCdqPfnum takes a netdev name and returns the physical port number / pfnum
+Note this function only works on physical devices and CDQ subfunctions
+Other netdevs will return a "device not found by devlink" error
+*/
+func GetCdqPfnum(netdev string) (string, error) {
+	devlinkList := "devlink port list | grep " + `"\b` + netdev + `\b"`
+
+	devList, err := exec.Command("sh", "-c", devlinkList).CombinedOutput()
+	if err != nil {
+		if strings.Contains(err.Error(), "exit status 1") {
+			return "", fmt.Errorf("device %s not found by devlink (1)", netdev)
+		}
+		return "", err
+	}
+
+	if devList != nil {
+		pfNum := strings.Fields(string(devList))[8]
+		return pfNum, nil
 	}
 
 	return "", fmt.Errorf("device %s not found by devlink (2)", netdev)
