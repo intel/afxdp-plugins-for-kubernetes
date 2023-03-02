@@ -124,7 +124,12 @@ e2efulldaemon: image
 	@echo
 	@echo
 
-static-ci: static
+# static-ci: consists of static analysis tools required for the public CI
+# repository workflow /.github/workflows/public-ci.yml
+# Note: the public repository CI comprises of further static analysis tools via the
+# superlinter job: golangci-lint, hadolint, clang-format and shellcheck
+
+static-ci:
 	@echo "******   Verify dependencies   ******"
 	@echo
 	go mod verify
@@ -141,7 +146,9 @@ static-ci: static
 	@echo
 	@echo
 
-static:
+# static: consists of static analysis tools required for internal CI repository workflows and locally
+# run tests. static includes static-ci test module. 
+static: static-ci
 	@echo "******   GolangCI-Lint   ******"
 	@echo
 	golangci-lint run
