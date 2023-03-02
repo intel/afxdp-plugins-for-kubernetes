@@ -55,11 +55,12 @@ type Handler interface {
 	NetDevExists(device string) (bool, error)
 	GetDeviceFromFile(deviceName string, filepath string) (*Device, error)
 	WriteDeviceFile(device *Device, filepath string) error
-	CreateCdqSubfunction(parentPci string, sfnum string) error                   // see subfunction package
+	CreateCdqSubfunction(parentPci string, pfnum string, sfnum string) error     // see subfunction package
 	DeleteCdqSubfunction(portIndex string) error                                 // see subfunction package
 	IsCdqSubfunction(name string) (bool, error)                                  // see subfunction package
 	NumAvailableCdqSubfunctions(interfaceName string) (int, error)               // see subfunction package
 	GetCdqPortIndex(netdev string) (string, error)                               // see subfucntions package
+	GetCdqPfnum(netdev string) (string, error)                                   // see subfucntions package
 	SetEthtool(ethtoolCmd []string, interfaceName string, ipResult string) error // see ethtool.go
 	DeleteEthtool(interfaceName string) error                                    // see ethtool.go
 	IsPhysicalPort(name string) (bool, error)
@@ -352,8 +353,8 @@ func (r *handler) IsPhysicalPort(name string) (bool, error) {
 /*
 Wrapper for Subfunctions API calls
 */
-func (r *handler) CreateCdqSubfunction(parentPci string, sfnum string) error {
-	err := subfunctions.CreateCdqSubfunction(parentPci, sfnum)
+func (r *handler) CreateCdqSubfunction(parentPci string, pfnum string, sfnum string) error {
+	err := subfunctions.CreateCdqSubfunction(parentPci, pfnum, sfnum)
 	return err
 }
 
@@ -386,6 +387,14 @@ Wrapper for Subfunctions API calls
 */
 func (r *handler) GetCdqPortIndex(netdev string) (string, error) {
 	result, err := subfunctions.GetCdqPortIndex(netdev)
+	return result, err
+}
+
+/*
+Wrapper for Subfunctions API calls
+*/
+func (r *handler) GetCdqPfnum(netdev string) (string, error) {
+	result, err := subfunctions.GetCdqPfnum(netdev)
 	return result, err
 }
 
