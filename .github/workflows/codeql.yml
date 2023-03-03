@@ -6,6 +6,9 @@ on:
 
   pull_request:
     branches: [ main ]
+permissions:  # added using https://github.com/step-security/secure-repo
+  contents: read
+
 jobs:
   CodeQL-Build:
     # CodeQL runs on ubuntu-latest
