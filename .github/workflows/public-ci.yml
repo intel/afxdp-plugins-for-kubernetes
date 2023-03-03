@@ -2,12 +2,18 @@ name: 'Public-CI'
 
 on: [push, pull_request]
 
+permissions:  # added using https://github.com/step-security/secure-repo
+  contents: read
+
 jobs:
 
 # Super-linter consists of several lint tools
 # lint tools are assigned to the pipeline via the env field
 # For more information, please see https://github.com/github/super-linter
   super-linter:
+    permissions:
+      contents: read  # for actions/checkout to fetch code
+      statuses: write  # for github/super-linter to mark status of each linter run
     runs-on: ubuntu-latest
     steps: 
     - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
