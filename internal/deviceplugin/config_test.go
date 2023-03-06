@@ -30,7 +30,6 @@ func TestReadConfigFile(t *testing.T) {
 		name       string
 		configFile string
 		expErr     error
-		//		expcfg     Config
 		hostNetDev map[string][]string
 	}{
 		/*********************** Device Validation ***********************/
@@ -1206,4 +1205,41 @@ func TestReadConfigFile(t *testing.T) {
 			}
 		})
 	}
+}
+
+func FuzzReadConfigFile(f *testing.F) {
+	testCases := []string {
+		`{
+			"pools":[
+				{
+					"name":"testPool",
+					"mode":"cdq",
+					"devices":[
+						{
+							"name":"dev1"
+						},
+						{
+							"name":"dev2"
+						}
+					]
+				}
+			]
+		}`,
+	}
+    for _, tc := range testCases {
+        f.Add(tc)
+    }
+    f.Fuzz(func(t *testing.T, fileContents string) {
+		cfgFile = nil
+		content := []byte(fileContents)
+		dir, dirErr := ioutil.TempDir("/tmp", "test-afxdp-")
+		require.NoError(t, dirErr, "Can't create temporary directory")
+		testDir := filepath.Join(dir, "tmpfile")
+		err := ioutil.WriteFile(testDir, content, 0666)
+		require.NoError(t, err, "Can't create temporary file")
+
+		defer os.RemoveAll(dir)
+
+		readConfigFile(testDir)
+	})
 }
