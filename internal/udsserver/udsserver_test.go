@@ -889,7 +889,7 @@ func TestStart(t *testing.T) {
 			},
 		},
 		{
-			//Send varient of the accepted /connect request
+			//Send variant of the accepted /connect request
 			testName:         "Bad connect request (5)",
 			fakePodName:      "podA",
 			fakePodNamespace: "default",
