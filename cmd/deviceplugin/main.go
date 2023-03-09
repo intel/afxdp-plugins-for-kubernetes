@@ -61,6 +61,15 @@ func main() {
 		exit(constants.Plugins.DevicePlugin.ExitLogError)
 	}
 
+	// configure a set of veths and a bridge as a secondary kind network.
+	if cfg.ClusterType == "kind" {
+		if err := configureKindSecondaryNetwork(); err != nil {
+			logging.Errorf("Error configuring Kind Secondary Network: %v", err)
+			exit(constants.Plugins.DevicePlugin.ExitKindError)
+		}
+
+	}
+
 	//device file
 	exists, err := tools.FilePathExists(deviceFile)
 	if err != nil {
@@ -162,6 +171,41 @@ func configureLogging(cfg deviceplugin.PluginConfig) error {
 			logging.SetFormatter(logformats.Debug)
 		}
 	}
+
+	return nil
+}
+
+// On each Kind node
+// Create a bridge afxdp-kind-br
+// Create 4 vethpairs starting at veth6
+//  +===============+
+//  | afxdp-kind-br |
+//  |     +---------|         +---------+
+//  |     |  veth7  | <=====> |  veth6  |
+//  |     +---------|         +---------+
+//  |     +---------|         +---------+
+//  |     |  veth9  | <=====> |  veth8  |
+//  |     +---------|         +---------+
+//  |     +---------|         +---------+
+//  |     |  veth11 | <=====> |  veth10 |
+//  |     +---------|         +---------+
+//  |     +---------|         +---------+
+//  |     |  veth13 | <=====> |  veth12 |
+//  |     +---------|         +---------+
+//  +===============+
+// The "even" veth of the pair will be added to the device plugin resource pool.
+// and plumbed to the Pod.
+func configureKindSecondaryNetwork() error {
+	numVeths := 4
+	offset := 6
+
+	err := networking.CreateKindNetwork(numVeths, offset)
+	if err != nil {
+		logging.Errorf("Error Creating CreateKindNetwork %s", err.Error())
+		return err
+	}
+
+	logging.Infof("Created CreateKindNetwork")
 
 	return nil
 }

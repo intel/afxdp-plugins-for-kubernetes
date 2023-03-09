@@ -56,6 +56,8 @@ const (
 	poolEthtoolNotEmpty   = "Ethtool commands cannot be empty"
 	poolEthtoolCharacters = "Ethtool commands must be alphanumeric or contain only approved charaters"
 
+	ClusterTypeError = "Device Plugin should indicate if this is a kind cluster or not"
+
 	// logging errors
 	filenameValidError = "must be a valid .log or .txt filename"
 )
@@ -99,6 +101,7 @@ type configFile struct {
 	Pools    []*configFile_Pool `json:"Pools"`
 	LogFile  string             `json:"LogFile"`
 	LogLevel string             `json:"LogLevel"`
+	ClusterType string          `json:"clusterType"`
 }
 
 func (c configFile_Device) Validate() error {
@@ -238,9 +241,14 @@ func (c configFile_Pool) Validate() error {
 
 func (c configFile) Validate() error {
 	var iLogLevels []interface{} = make([]interface{}, len(constants.Logging.Levels))
+	var iClusterTypes []interface{} = make([]interface{}, len(constants.Plugins.ClusterTypes))
 
 	for i, logLevel := range constants.Logging.Levels {
 		iLogLevels[i] = logLevel
+	}
+
+	for i, clusterType := range constants.Plugins.ClusterTypes {
+		iClusterTypes[i] = clusterType
 	}
 
 	return validation.ValidateStruct(&c,
@@ -258,6 +266,10 @@ func (c configFile) Validate() error {
 		validation.Field(
 			&c.LogLevel,
 			validation.In(iLogLevels...).Error("must be "+fmt.Sprintf("%v", iLogLevels)),
+		),
+		validation.Field(
+			&c.ClusterType,
+			validation.In(iClusterTypes...).Error("must be "+fmt.Sprintf("%v", iClusterTypes)),
 		),
 	)
 }
