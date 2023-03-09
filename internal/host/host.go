@@ -254,3 +254,4 @@ func GivePermissions(filepath, uid, permissions string) error {
 	logging.Infof("Socket access granted to UID %s", uid)
 	return nil
 }
+

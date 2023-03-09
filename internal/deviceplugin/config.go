@@ -16,6 +16,8 @@
 package deviceplugin
 
 import (
+	"regexp"
+	"strconv"
 	"encoding/json"
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
@@ -39,6 +41,7 @@ Global configurations such as log levels are contained here.
 type PluginConfig struct {
 	LogFile  string
 	LogLevel string
+	ClusterType string
 }
 
 /*
@@ -76,6 +79,7 @@ func GetPluginConfig(configFile string) (PluginConfig, error) {
 	pluginConfig = PluginConfig{
 		LogFile:  cfgFile.LogFile,
 		LogLevel: cfgFile.LogLevel,
+		ClusterType : cfgFile.ClusterType,
 	}
 
 	return pluginConfig, nil
@@ -119,17 +123,39 @@ func GetPoolConfigs(configFile string, net networking.Handler, host host.Handler
 		return poolConfigs, err
 	}
 
+	kindSecondaryNetwork, err := networking.CheckKindNetworkExists()
+	if err != nil {
+		logging.Errorf("Error checking if host has Kind secondary network: %v", err)
+	}
 	for device := range hostDevices {
-		physical, err := network.IsPhysicalPort(device)
-		if err != nil {
-			logging.Errorf("Error determining if %s is a physical device: %v", device, err)
+		if device == "lo" || device == "afxdp-kind-br"{
 			delete(hostDevices, device)
 			continue
 		}
-		if !physical {
-			logging.Debugf("%s is not a physical device, removing from list of host devices", device)
-			delete(hostDevices, device)
-			continue
+		if kindSecondaryNetwork == false {
+			physical, err := network.IsPhysicalPort(device)
+			if err != nil {
+				logging.Errorf("Error determining if %s is a physical device: %v", device, err)
+				delete(hostDevices, device)
+				continue
+			}
+			if !physical {
+				logging.Debugf("%s is not a physical device, removing from list of host devices", device)
+				delete(hostDevices, device)
+				continue
+			}
+		} else {
+			re := regexp.MustCompile("[0-9]+")
+
+			vethNums := re.FindAllString(device, -1)
+			for _, n := range vethNums {
+				i, _ := strconv.Atoi(n)
+				if (i % 2) == 1 {
+					logging.Debugf("%s is an odd veth, removing from list of host devices", device)
+					delete(hostDevices, device)
+					continue
+				}
+			}
 		}
 		if tools.ArrayContainsPrefix(constants.Devices.Prohibited, device) {
 			logging.Debugf("%s a globally prohibited device, removing from list of host devices", device)
@@ -296,6 +322,8 @@ func getSecondaryDevices(pool *configFile_Pool) map[string]*networking.Device {
 				for _, sf := range sfs {
 					secondaryDevices[sf.Name()] = sf
 				}
+			case "kind":
+				//TODO
 			default:
 				logging.Errorf("Unsupported Mode: %s", pool.Mode)
 			}
