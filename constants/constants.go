@@ -25,6 +25,10 @@ var (
 	devicePluginExitLogError      = 2                          // device plugin logging error exit code, error creating log file, bad log level, etc.
 	devicePluginExitHostError     = 3                          // device plugin host check exit code, error occurred checking some attribute of the host
 	devicePluginExitPoolError     = 4                          // device plugin device pool exit code, error occurred while building a device pool
+	devicePluginExitKindError         = 5                          // device plugin Kind exit code, error occurred while creating a kind secondary network
+
+	/* Cluster Types */
+	clusterTypes =   []string{"kind", "physical"} // accepted kind cluster types
 
 	/* Logging */
 	logLevels          = []string{"debug", "info", "warning", "error"} // accepted log levels
@@ -44,7 +48,7 @@ var (
 	deviceSecondaryMax   = 64                                                       // maximum number of secondary devices that can be created on top of a primary device
 
 	/* Drivers */
-	driversZeroCopy      = []string{"i40e", "E810", "ice"} // drivers that support zero copy AF_XDP
+	driversZeroCopy      = []string{"i40e", "E810", "ice", "veth"} // drivers that support zero copy AF_XDP
 	driversCdq           = []string{"ice"}                 // drivers that support CDQ subfunctions
 	driverValidNameRegex = `^[a-zA-Z0-9_-]+$`              // regex to check if a string is a valid driver name
 	driverValidNameMin   = 1                               // minimum length of a driver name
@@ -142,12 +146,14 @@ type devicePlugin struct {
 	ExitLogError      int
 	ExitHostError     int
 	ExitPoolError     int
+	ExitKindError	  int
 }
 
 type plugins struct {
 	Modes        []string
 	Cni          cni
 	DevicePlugin devicePlugin
+	ClusterTypes  []string
 }
 
 type afxdp struct {
@@ -242,6 +248,7 @@ type ethtoolFilter struct {
 func init() {
 	Plugins = plugins{
 		Modes: pluginModes,
+		ClusterTypes: clusterTypes,
 		DevicePlugin: devicePlugin{
 			DefaultConfigFile: devicePluginDefaultConfigFile,
 			DevicePrefix:      devicePluginDevicePrefix,
@@ -250,6 +257,7 @@ func init() {
 			ExitLogError:      devicePluginExitLogError,
 			ExitHostError:     devicePluginExitHostError,
 			ExitPoolError:     devicePluginExitPoolError,
+			ExitKindError:     devicePluginExitKindError,
 		},
 	}
 

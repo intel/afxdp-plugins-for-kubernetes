@@ -6,23 +6,20 @@ metadata:
 data:
   config.json: |
     {
-       "clusterType":"physical",
+       "clusterType": "kind",
        "logLevel":"debug",
        "logFile":"afxdp-dp.log",
        "pools":[
           {
-             "name":"myPool",
-             "mode":"primary",
-             "drivers":[
-                {
-                   "name":"i40e"
-                },
-                {
-                   "name":"ice"
-                }
-             ]
+            "name":"myPool",
+            "mode":"primary",
+            "drivers":[
+              {
+                "name":"veth"
+              }
+            ]
           }
-       ]
+        ]
     }
 ---
 apiVersion: v1
