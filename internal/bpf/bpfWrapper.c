@@ -15,6 +15,7 @@
 
 #include <bpf/xsk.h> // for xsk_setup_xdp_prog, bpf_set_link_xdp_fd
 #include <net/if.h>  // for if_nametoindex
+#include <linux/if_link.h> // for XDP_FLAGS_DRV_MODE
 
 #include "bpfWrapper.h"
 #include "log.h"
@@ -164,5 +165,48 @@ int Clean_bpf(char *ifname) {
 	}
 
 	Log_Info("%s: removed xdp program from interface %s (%d)", __FUNCTION__, ifname, if_index);
+	return 0;
+}
+
+int Load_attach_bpf_xdp_pass(char *ifname)
+{
+	int prog_fd = -1, err, ifindex;
+	char *filename = "/afxdp/xdp_pass.o";
+	struct bpf_object *obj;
+	__u32 xdp_flags = XDP_FLAGS_UPDATE_IF_NOEXIST | XDP_FLAGS_DRV_MODE;
+
+	Log_Info("%s: disovering if_index for interface %s", __FUNCTION__, ifname);
+
+	ifindex = if_nametoindex(ifname);
+	if (!ifindex) {
+		Log_Error("%s: if_index not valid: %s", __FUNCTION__, ifname);
+		return -1;
+	} else {
+		Log_Info("%s: if_index for interface %s is %d", __FUNCTION__, ifname, ifindex);
+	}
+
+	Log_Info("%s: starting setup of xdp-pass program on "
+		 "interface %s (%d)",
+		 __FUNCTION__, ifname, ifindex);
+
+	/* Load the BPF program */
+	err = bpf_prog_load(filename, BPF_PROG_TYPE_XDP, &obj, &prog_fd);
+	if (err < 0) {
+		Log_Error("%s: Couldn't load BPF-OBJ file(%s)\n",
+			__FUNCTION__, filename);
+		return -1;
+	}
+
+	/* Attach the program to the interface at the xdp hook */
+	err = bpf_set_link_xdp_fd(ifindex, prog_fd, xdp_flags);
+	if (err < 0) {
+		Log_Error("%s: Couldn't attach the XDP PASS PROGRAM TO %s\n",
+			__FUNCTION__, ifname);
+		return -1;
+	}
+
+	Log_Info("%s: xdp-pass program loaded on %s (%d)",
+		 __FUNCTION__, ifname, ifindex);
+
 	return 0;
 }

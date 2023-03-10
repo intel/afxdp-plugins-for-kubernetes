@@ -39,6 +39,9 @@ buildc:
 	@echo
 	gcc ./internal/bpf/bpfWrapper.c -lbpf -c -o ./internal/bpf/bpfWrapper.o
 	ar rs ./internal/bpf/libwrapper.a ./internal/bpf/bpfWrapper.o  &> /dev/null
+	@echo "******     Build xdp_pass     ******"
+	make -C ./internal/bpf/xdp-pass/
+	@echo
 	@echo
 	@echo
 
