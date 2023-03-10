@@ -101,10 +101,11 @@ func Attach(b *netlink.Bridge, name string) error {
 	return netlink.LinkSetMaster(l, b)
 }
 
-func IPAddrAdd(b *netlink.Bridge, ip *net.IPNet) error {
-
-	var addr *netlink.Addr
-	addr.IPNet = ip
+func IPAddrAdd(b *netlink.Bridge, ip string) error {
+	addr, err := netlink.ParseAddr(ip)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse the ip address")
+	}
 
 	return netlink.AddrAdd(b, addr)
-}
+ }
