@@ -17,10 +17,11 @@ package networking
 
 import (
 	"strconv"
-	"net"
+//	"net"
 
 	"github.com/pkg/errors"
 	logging "github.com/sirupsen/logrus"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
 )
 
 var (
@@ -34,8 +35,11 @@ func CreateKindNetwork(numVeths, offset int) error {
 
 	kindNetworkExists, _ := CheckKindNetworkExists()
 	if kindNetworkExists == true {
-		logging.Infof("Bridge %s already exists skipping recreating it in case it's already in use", BridgeName)
-		return nil
+		logging.Infof("Bridge %s already exists deleting at as we don't know it's current state", BridgeName)
+		err := DeleteKindNetwork(numVeths, offset)
+		if err != nil {
+			return errors.Wrapf(err, "Error Creating bridge %s", err.Error())
+		}
 	}
 
 	b, err := NewBridge(BridgeName)
@@ -52,21 +56,32 @@ func CreateKindNetwork(numVeths, offset int) error {
 			return errors.Wrapf(err, "Error Creating veth pair %s <===> %s", vName, vPeer)
 		}
 
+		/* Attach one end of the veth pair to the bridge */
 		err = Attach(b, vPeer)
 		if err != nil {
 			return errors.Wrapf(err, "Error attaching veth %s peer %s to bridge %s", veth.Attrs().Name, b.Attrs().Name)
 		}
 		logging.Infof("Attached veth %s to bridge %s", veth.Attrs().Name, b.Attrs().Name)
+
+		/* Load the xdp-pass program on that peer */
+		bh := bpf.NewHandler()
+		err = bh.LoadAttachBpfXdpPass(vPeer)
+		if err != nil {
+			return errors.Wrapf(err, "Error loading xdp-pass Program on interface %s", vPeer)
+		}
+		logging.Infof("xdp-pass program loaded on: %s", vPeer)
 	}
 
-	//TODO configure Bridge IP addr
-	var ipNet *net.IPNet
-	ipNet.IP = net.ParseIP(bridgeIP)
+	// Configure Bridge IP addr
+	// var ipNet *net.IPNet
+	// ipNet.IP = net.ParseIP(bridgeIP)
 
-	err = IPAddrAdd(b, ipNet)
-	if err != nil {
-		return errors.Wrapf(err, "Setting the ip address for %s", b.Attrs().Name)
-	}
+	// err = IPAddrAdd(b, ipNet)
+	// if err != nil {
+	// 	return errors.Wrapf(err, "Setting the ip address for %s", b.Attrs().Name)
+	// }
+
+	// TODO SET BRIDGE to up state
 
 	return nil
 }
@@ -84,7 +99,11 @@ func DeleteKindNetwork(numVeths, offset int) error {
 
 	for i := offset; i < numVeths; i = i+2 {
 		vName := vEthNamePrefix + strconv.Itoa(i)
-		err := DelBridge(vName)
+		v, err := GetVethByName(vName)
+		if err != nil {
+			return errors.Wrapf(err, "failed to find veth %s", vName)
+		}
+		err = DeleteVeth(v)
 		if err != nil {
 			return errors.Wrapf(err, "Error Deleting veth %s", vName)
 		}

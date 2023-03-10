@@ -37,6 +37,15 @@ func (f *fakeHandler) LoadBpfSendXskMap(ifname string) (int, error) {
 }
 
 /*
+LoadAttachBpfXdpPass is the GoLang wrapper for the C function Load_attach_bpf_xdp_pass
+In this fakeHandler it does nothing.
+*/
+func (f *fakeHandler) LoadAttachBpfXdpPass(ifname string) error {
+	return nil
+}
+
+
+/*
 ConfigureBusyPoll is the GoLang wrapper for the C function Configure_busy_poll
 In this fakeHandler it does nothing.
 */
