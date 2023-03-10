@@ -84,8 +84,8 @@ func GetBridgeByName(n string) (*netlink.Bridge, error) {
 }
 
 func CheckBridgeExists(name string) (bool, error) {
-	_, err := netlink.LinkByName(name)
-	if err != nil {
+	b, err := netlink.LinkByName(name)
+	if err != nil || b == nil  {
 		return false, errors.Wrap(err, "failed to find bridge")
 	}
 

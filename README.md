@@ -1,4 +1,4 @@
-[![GitHub Super-Linter](https://github.com/intel/afxdp-plugins-for-kubernetes/actions/workflows/public-ci.yml/badge.svg?branch=main)](https://github.com/marketplace/actions/super-linter) ![CodeQL](https://github.com/intel/afxdp-plugins-for-kubernetes/actions/workflows/codeql.yml/badge.svg?branch=main)  [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/intel/afxdp-plugins-for-kubernetes/badge)](https://api.securityscorecards.dev/projects/github.com/intel/afxdp-plugins-for-kubernetes) [![Go Report Card](https://goreportcard.com/badge/github.com/intel/afxdp-plugins-for-kubernetes)](https://goreportcard.com/report/github.com/intel/afxdp-plugins-for-kubernetes) [![Go Reference](https://pkg.go.dev/badge/github.com/intel/afxdp-plugins-for-kubernetes.svg)](https://pkg.go.dev/github.com/intel/afxdp-plugins-for-kubernetes) 
+[![GitHub Super-Linter](https://github.com/intel/afxdp-plugins-for-kubernetes/actions/workflows/public-ci.yml/badge.svg?branch=main)](https://github.com/marketplace/actions/super-linter) ![CodeQL](https://github.com/intel/afxdp-plugins-for-kubernetes/actions/workflows/codeql.yml/badge.svg?branch=main)  [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/intel/afxdp-plugins-for-kubernetes/badge)](https://api.securityscorecards.dev/projects/github.com/intel/afxdp-plugins-for-kubernetes) [![Go Report Card](https://goreportcard.com/badge/github.com/intel/afxdp-plugins-for-kubernetes)](https://goreportcard.com/report/github.com/intel/afxdp-plugins-for-kubernetes) [![Go Reference](https://pkg.go.dev/badge/github.com/intel/afxdp-plugins-for-kubernetes.svg)](https://pkg.go.dev/github.com/intel/afxdp-plugins-for-kubernetes)
 
 # AF_XDP Plugins for Kubernetes
 
@@ -77,6 +77,9 @@ The following prerequisites are required to build and deploy the plugins from so
 - **Binutils**
 	- Used in archiving of C code object file.
 	- Install on Ubuntu: `apt install binutils`
+- **Clang**
+    - Compiling the xdp-pass prog
+- **gcc-multilib llvm package TODO**
 
 ### Development (Optional)
 The following static analysis, linting and formatting tools are not required for building and deploying, but are built into some of the Make targets and enforced by CI. It is recommended to have these installed on your development system.
@@ -136,7 +139,7 @@ The CNI and Device Plugin are now deployed.
 ## Device Plugin Config
 Under normal circumstances the device plugin config is set as part of a config map at the top of the [daemonset.yml](./deployments/daemonset.yml) file.
 
-The device plugin binary can also be run manually on the host for development and testing purposes. In these scenarios the device plugin will search for a `config.json` file in its current directory, or the device plugin can be pointed to a config file using the `-config` flag followed by a filepath. 
+The device plugin binary can also be run manually on the host for development and testing purposes. In these scenarios the device plugin will search for a `config.json` file in its current directory, or the device plugin can be pointed to a config file using the `-config` flag followed by a filepath.
 
 In both scenarios, daemonset deployment or manually running the binary, the structure of the config is identical JSON format.
 
@@ -280,7 +283,7 @@ However, there are also three node-specific configs included:
 	 - Two **devices**, `ens801f3` and `ens801f1`, will be added to `myPool` from `k8snode2`.
 
 	 - There is one driver configured under the **drivers** field, the driver is named `ice`. The **primary** setting of `1` means only one of the available ice devices will be added form `k8snode2` and the **excludedDevices** setting ensures this device will not be `ens801f2`.
-	
+
  - The third node with **hostname** `k8snode3` has no devices or drivers configured. Even if `k8snode3` has ice devices available, they will not be added to `myPool`.
 
 ```
@@ -356,7 +359,7 @@ UdsServerDisable is a Boolean configuration. If set to true, devices in this poo
 #### UdsTimeout
 UdsTimeout is an integer configuration. This value sets the amount of time, in seconds, that the UDS server will wait while there is no activity on the UDS. When this timeout limit is reached, the UDS server terminates and the UDS is deleted from the filesystem. This can be a useful setting, for example, in scenarios where large batches of pods are created together. Large batches of pods tend to take some time to spin up, so it might be beneficial to have the UDS server sit waiting a little longer for the pod to start. The maximum allowed value is 300 seconds (5 min). The minimum and default value is 30 seconds.
 
-#### RequiresUnprivilegedBpf 
+#### RequiresUnprivilegedBpf
 RequiresUnprivilegedBpf is a Boolean configuration. Linux systems can be configured with a sysctl setting called *unprivileged_bpf_disabled*. If *unprivileged_bpf_disabled* is set, it means eBPF operations cannot be performed by unprivileged users (or pods) on this host. If your use case requires unprivileged eBPF, this pool configuration should be set to true. When set to true, the pool will not take any devices from a node where unprivileged eBPF has been prohibited. This will mean that pods requesting devices from this pool will only be scheduled on nodes where unprivileged eBPF is allowed. The default value is false.
 
 #### Examples
@@ -411,7 +414,7 @@ The second pool:
 
 ### Logging
 A log file and log level can be configured for the device plugin.
-- The log file is set using the **logFile** field. This file will be placed under `/var/log/afxdp-k8s-plugins/`. 
+- The log file is set using the **logFile** field. This file will be placed under `/var/log/afxdp-k8s-plugins/`.
 - The log level is set using the **logLevel** field. Available options are:
 	- `error` - Only logs errors.
 	- `warning` - Logs errors and warnings.
@@ -441,7 +444,7 @@ The example below shows a config including log settings.
 ```
 
 ## CLOC
-Output from CLOC (count lines of code) - github.com/AlDanial/cloc 
+Output from CLOC (count lines of code) - github.com/AlDanial/cloc
 <!---clocstart--->
 ```
 -------------------------------------------------------------------------------
