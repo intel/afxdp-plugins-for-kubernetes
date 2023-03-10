@@ -17,6 +17,7 @@
 #define _WRAPPER_H_
 
 int Load_bpf_send_xsk_map(char *ifname);
+int Load_attach_bpf_xdp_pass(char *ifname);
 int Configure_busy_poll(int fd, int busy_timeout, int busy_budget);
 int Clean_bpf(char *ifname);
 
