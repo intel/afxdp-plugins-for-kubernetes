@@ -27,7 +27,7 @@ import (
 var (
 	BridgeName     = "afxdp-kind-br"
 	vEthNamePrefix = "veth"
-	bridgeIP       = "192.168.1.1"
+	bridgeIP       = "192.168.1.1/24"
 )
 
 // Create a Kind Network
@@ -72,14 +72,10 @@ func CreateKindNetwork(numVeths, offset int) error {
 		logging.Infof("xdp-pass program loaded on: %s", vPeer)
 	}
 
-	// Configure Bridge IP addr
-	// var ipNet *net.IPNet
-	// ipNet.IP = net.ParseIP(bridgeIP)
-
-	// err = IPAddrAdd(b, ipNet)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "Setting the ip address for %s", b.Attrs().Name)
-	// }
+	err = IPAddrAdd(b, bridgeIP)
+	if err != nil {
+		return errors.Wrapf(err, "Setting the ip address for %s", b.Attrs().Name)
+	}
 
 	// TODO SET BRIDGE to up state
 
