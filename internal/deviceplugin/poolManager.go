@@ -17,6 +17,12 @@ package deviceplugin
 
 import (
 	"fmt"
+	"net"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
@@ -27,11 +33,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
-	"net"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
 /*

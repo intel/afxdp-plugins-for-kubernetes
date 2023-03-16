@@ -227,7 +227,7 @@ kind-deploy: image undeploy ## Deploy the Deamonset and CNI in Kind
 	@echo "****** Deploy Daemonset  ******"
 	@echo
 	kind load --name af-xdp-deployment docker-image afxdp-device-plugin
-	kubectl create -f ./deployments/daemonset-kind.yml
+	kubectl create -f ./deployments/daemonset-kind.yaml
 	@echo
 	@echo
 
