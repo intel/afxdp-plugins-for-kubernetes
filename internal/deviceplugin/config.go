@@ -57,6 +57,7 @@ type PoolConfig struct {
 	Devices                 map[string]*networking.Device // a map of devices that the pool will manage
 	Filters                 []string                      // the ethtool/rss filters we apply to devices from this pool
 	UdsServerDisable        bool                          // a boolean to say if pods in this pool require BPF loading the UDS server
+	BpfMapPinningEnable     bool                          // a boolean to say if pods in this pool require BPF map pinning
 	UdsTimeout              int                           // timeout value in seconds for the UDS sockets, user provided or defaults to value from constants package
 	UdsFuzz                 bool                          // a boolean to turn on fuzz testing within the UDS server, has no use outside of development and testing
 	RequiresUnprivilegedBpf bool                          // a boolean to say if this pool requires unprivileged BPF
@@ -248,6 +249,7 @@ func GetPoolConfigs(configFile string, net networking.Handler, host host.Handler
 				Mode:                    pool.Mode,
 				Devices:                 devices,
 				UdsServerDisable:        pool.UdsServerDisable,
+				BpfMapPinningEnable:     pool.BpfMapPinningEnable,
 				UdsTimeout:              pool.UdsTimeout,
 				UdsFuzz:                 pool.UdsFuzz,
 				RequiresUnprivilegedBpf: pool.RequiresUnprivilegedBpf,

@@ -409,6 +409,9 @@ EthtoolCmds is an array of strings. This is a setting that can be applied to dev
 
 UdsServerDisable is a Boolean configuration. If set to true, devices in this pool will not have the BPF app loaded onto the netdev. This means no UDS server is spun up when a device is allocated to a pod. By default, this is set to false.
 
+#### BpfMapPinningEnable
+BpfMapPinningEnable is a Boolean configuration. If set to true, will use BPF map pinning instead of a UDS to share an XSK map with a pod. By default, this is set to false. Should set UdsServerDisable to true when using this configuration.
+
 #### UdsTimeout
 
 UdsTimeout is an integer configuration. This value sets the amount of time, in seconds, that the UDS server will wait while there is no activity on the UDS. When this timeout limit is reached, the UDS server terminates and the UDS is deleted from the filesystem. This can be a useful setting, for example, in scenarios where large batches of pods are created together. Large batches of pods tend to take some time to spin up, so it might be beneficial to have the UDS server sit waiting a little longer for the pod to start. The maximum allowed value is 300 seconds (5 min). The minimum and default value is 30 seconds.

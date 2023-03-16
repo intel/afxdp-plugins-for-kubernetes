@@ -13,7 +13,8 @@ data:
           {
             "name":"myPool",
             "mode":"primary",
-            "UdsServerDisable": false,
+            "UdsServerDisable": true,
+            "BpfMapPinningEnable": true,
             "drivers":[
               {
                 "name":"veth"
@@ -72,6 +73,8 @@ spec:
           volumeMounts:
             - name: unixsock
               mountPath: /tmp/afxdp_dp/
+            - name: bpfmappinning
+              mountPath: /var/run/afxdp_dp/
               mountPropagation: Bidirectional
             - name: devicesock
               mountPath: /var/lib/kubelet/device-plugins/
@@ -87,6 +90,9 @@ spec:
         - name: unixsock
           hostPath:
             path: /tmp/afxdp_dp/
+        - name: bpfmappinning
+          hostPath:
+            path: /var/run/afxdp_dp/
         - name: devicesock
           hostPath:
             path: /var/lib/kubelet/device-plugins/

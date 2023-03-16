@@ -37,18 +37,22 @@ format: clangformat
 	@echo
 	@echo
 
+buildxdp:
+	@echo "******     Build xdp_pass     ******"
+	make -C ./internal/bpf/xdp-pass/
+	@echo "******     Build xdp_afxdp_redirect     ******"
+	make -C ./internal/bpf/xdp-afxdp-redirect/
+	@echo
+
 buildc:
 	@echo "******     Build BPF     ******"
 	@echo
 	gcc ./internal/bpf/bpfWrapper.c -lbpf -c -o ./internal/bpf/bpfWrapper.o
 	ar rs ./internal/bpf/libwrapper.a ./internal/bpf/bpfWrapper.o  &> /dev/null
-	@echo "******     Build xdp_pass     ******"
-	make -C ./internal/bpf/xdp-pass/
-	@echo
 	@echo
 	@echo
 
-builddp: buildc
+builddp: buildc buildxdp
 	@echo "******     Build DP      ******"
 	@echo
 	go build -o ./bin/afxdp-dp ./cmd/deviceplugin
