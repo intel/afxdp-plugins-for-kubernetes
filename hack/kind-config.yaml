@@ -4,4 +4,12 @@ apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
 - role: worker
+  extraMounts:
+  - hostPath: /tmp/afxdp_dp/
+    containerPath: /var/run/afxdp_dp/
+    propagation: Bidirectional
 - role: worker
+  extraMounts:
+  - hostPath: /tmp/afxdp_dp2/
+    containerPath: /var/run/afxdp_dp/
+    propagation: Bidirectional
