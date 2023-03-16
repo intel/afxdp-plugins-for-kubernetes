@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *	 http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -41,38 +41,41 @@ PoolManager represents an manages the pool of devices.
 Each PoolManager registers with Kubernetes as a different device type.
 */
 type PoolManager struct {
-	Name             string
-	Mode             string
-	Devices          map[string]*networking.Device
-	UpdateSignal     chan bool
-	DpAPISocket      string
-	DpAPIEndpoint    string
-	UdsServerDisable bool
-	UdsTimeout       int
-	DevicePrefix     string
-	UdsFuzz          bool
-	UID              string
-	EthtoolFilters   []string
-	DpAPIServer      *grpc.Server
-	ServerFactory    udsserver.ServerFactory
-	BpfHandler       bpf.Handler
-	NetHandler       networking.Handler
+	Name                string
+	Mode                string
+	Devices             map[string]*networking.Device
+	UpdateSignal        chan bool
+	DpAPISocket         string
+	DpAPIEndpoint       string
+	UdsServerDisable    bool
+	BpfMapPinningEnable bool
+	UdsTimeout          int
+	DevicePrefix        string
+	UdsFuzz             bool
+	UID                 string
+	EthtoolFilters      []string
+	DpAPIServer         *grpc.Server
+	ServerFactory       udsserver.ServerFactory
+	MapManagerFactory   bpf.MapManagerFactory
+	BpfHandler          bpf.Handler
+	NetHandler          networking.Handler
 }
 
 func NewPoolManager(config PoolConfig) PoolManager {
 	return PoolManager{
-		Name:             config.Name,
-		Mode:             config.Mode,
-		Devices:          config.Devices,
-		UpdateSignal:     make(chan bool),
-		DpAPISocket:      pluginapi.DevicePluginPath + constants.Plugins.DevicePlugin.DevicePrefix + "-" + config.Name + ".sock",
-		DpAPIEndpoint:    constants.Plugins.DevicePlugin.DevicePrefix + "-" + config.Name + ".sock",
-		UdsServerDisable: config.UdsServerDisable,
-		UdsTimeout:       config.UdsTimeout,
-		DevicePrefix:     constants.Plugins.DevicePlugin.DevicePrefix,
-		UdsFuzz:          config.UdsFuzz,
-		UID:              strconv.Itoa(config.UID),
-		EthtoolFilters:   config.EthtoolCmds,
+		Name:                config.Name,
+		Mode:                config.Mode,
+		Devices:             config.Devices,
+		UpdateSignal:        make(chan bool),
+		DpAPISocket:         pluginapi.DevicePluginPath + constants.Plugins.DevicePlugin.DevicePrefix + "-" + config.Name + ".sock",
+		DpAPIEndpoint:       constants.Plugins.DevicePlugin.DevicePrefix + "-" + config.Name + ".sock",
+		UdsServerDisable:    config.UdsServerDisable,
+		BpfMapPinningEnable: config.BpfMapPinningEnable,
+		UdsTimeout:          config.UdsTimeout,
+		DevicePrefix:        constants.Plugins.DevicePlugin.DevicePrefix,
+		UdsFuzz:             config.UdsFuzz,
+		UID:                 strconv.Itoa(config.UID),
+		EthtoolFilters:      config.EthtoolCmds,
 	}
 }
 
@@ -81,6 +84,7 @@ Init is called it initialise the PoolManager.
 */
 func (pm *PoolManager) Init(config PoolConfig) error {
 	pm.ServerFactory = udsserver.NewServerFactory()
+	pm.MapManagerFactory = bpf.NewMapMangerFactory()
 	pm.BpfHandler = bpf.NewHandler()
 	pm.NetHandler = networking.NewHandler()
 
@@ -149,7 +153,9 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 	response := pluginapi.AllocateResponse{}
 	var udsServer udsserver.Server
 	var udsPath string
+	var mapPath string
 	var err error
+	var mm bpf.MapManager
 
 	logging.Debugf("New allocate request on pool %s", pm.Name)
 
@@ -158,6 +164,15 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 		udsServer, udsPath, err = pm.ServerFactory.CreateServer(pm.DevicePrefix+"/"+pm.Name, pm.UID, pm.UdsTimeout, pm.UdsFuzz)
 		if err != nil {
 			logging.Errorf("Error Creating new UDS server: %v", err)
+			return &response, err
+		}
+	}
+
+	if pm.BpfMapPinningEnable {
+		logging.Infof("Creating new BPF Map manager %s %s", pm.DevicePrefix+"-maps/", pm.UID)
+		mm, mapPath, err = pm.MapManagerFactory.CreateMapManager(pm.DevicePrefix+"-maps/", pm.UID)
+		if err != nil {
+			logging.Errorf("Error new BPF Map manager: %v", err)
 			return &response, err
 		}
 	}
@@ -218,12 +233,41 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 				udsServer.AddDevice(device.Name(), fd)
 			}
 
+			if pm.BpfMapPinningEnable {
+				logging.Infof("Loading BPF program on device: %s and pinning the map", device.Name())
+				pinPath, err := mm.CreateBPFFS(device.Name(), mapPath)
+				if err != nil {
+					logging.Errorf("Error Creating the BPFFS: %v", err)
+					return &response, err
+				}
+
+				err = pm.BpfHandler.LoadBpfPinXskMap(device.Name(), pinPath)
+				if err != nil {
+					logging.Errorf("Error loading BPF Program on interface %s and pinning the map: %v", device.Name(), err)
+					return &response, err
+				}
+				//FULL PATH WILL INCLUDE THE XSKMAP...
+				fullPath := pinPath + constants.Bpf.Xsk_map
+				mm.AddMap(device.Name(), fullPath)
+			}
+
 			if pm.EthtoolFilters != nil {
 				device.SetEthtoolFilter(pm.EthtoolFilters)
 				if err = pm.NetHandler.WriteDeviceFile(device, constants.DeviceFile.Directory+constants.DeviceFile.Name); err != nil {
 					logging.Debugf("Error writing to device file %v", err)
 					return &response, err
 				}
+			}
+		}
+
+		if pm.BpfMapPinningEnable {
+			for _, path := range mm.GetMaps() {
+				logging.Debugf("mapping %s to %s", path, constants.Bpf.BpfMapPodPath)
+				cresp.Mounts = append(cresp.Mounts, &pluginapi.Mount{
+					HostPath:      path,
+					ContainerPath: constants.Bpf.BpfMapPodPath,
+					ReadOnly:      false,
+				})
 			}
 		}
 

@@ -9,6 +9,7 @@ require (
 	github.com/google/gofuzz v1.1.0
 	github.com/google/uuid v1.3.0
 	github.com/intel/afxdp-plugins-for-kubernetes/pkg/subfunctions v0.0.0
+	github.com/moby/sys/mount v0.3.3 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/safchain/ethtool v0.0.0-20210803160452-9aa261dae9b1
 	github.com/sirupsen/logrus v1.9.0

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *	 http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,10 @@
 #include <bpf/xsk.h> // for xsk_setup_xdp_prog, bpf_set_link_xdp_fd
 #include <net/if.h>  // for if_nametoindex
 #include <linux/if_link.h> // for XDP_FLAGS_DRV_MODE
+#include <bpf/libbpf.h>
+#include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "bpfWrapper.h"
 #include "log.h"
@@ -107,7 +111,7 @@ int Configure_busy_poll(int fd, int busy_timeout, int busy_budget) {
 	}
 
 	Log_Warning("%s: setsockopt failure, attempting to restore xsk to default state",
-		    __FUNCTION__);
+			__FUNCTION__);
 
 	Log_Warning("%s: unsetting SO_BUSY_POLL on file descriptor %d", __FUNCTION__, fd);
 
@@ -157,7 +161,7 @@ int Clean_bpf(char *ifname) {
 			// host libbpf versions. doesn't break functionality and this problem is
 			// being investigated.
 			Log_Warning("%s: Removal of xdp program is reporting error code: (%d)",
-				    __FUNCTION__, err);
+					__FUNCTION__, err);
 		} else {
 			Log_Error("%s: Removal of xdp program failed, returned: (%d)", __FUNCTION__,
 				  err);
@@ -182,9 +186,8 @@ int Load_attach_bpf_xdp_pass(char *ifname)
 	if (!ifindex) {
 		Log_Error("%s: if_index not valid: %s", __FUNCTION__, ifname);
 		return -1;
-	} else {
-		Log_Info("%s: if_index for interface %s is %d", __FUNCTION__, ifname, ifindex);
 	}
+	Log_Info("%s: if_index for interface %s is %d", __FUNCTION__, ifname, ifindex);
 
 	Log_Info("%s: starting setup of xdp-pass program on "
 		 "interface %s (%d)",
@@ -208,6 +211,72 @@ int Load_attach_bpf_xdp_pass(char *ifname)
 
 	Log_Info("%s: xdp-pass program loaded on %s (%d)",
 		 __FUNCTION__, ifname, ifindex);
+
+	return 0;
+}
+
+// TODO update logging to debug
+// TODO UPDATE TO RETURN MAP NAME
+// SEE struct bpf_map in https://elixir.bootlin.com/linux/latest/source/tools/lib/bpf/libbpf.c#L487
+int Load_bpf_pin_xsk_map(char *ifname, char *pin_path) {
+	struct bpf_object *obj;
+	struct bpf_program *prog;
+	struct bpf_link *link;
+	int ifindex, map_fd= -1;
+	int err;
+	const char *prog_name = "xdp_afxdp_redirect";
+	char *filename = "/afxdp/xdp_afxdp_redirect.o";
+    DECLARE_LIBBPF_OPTS(bpf_object_open_opts, bpf_opts, .pin_root_path = pin_path);
+
+	ifindex = if_nametoindex(ifname);
+	if (!ifindex) {
+		Log_Error("%s: if_index not valid: %s", __FUNCTION__, ifname);
+		return -1;
+	}
+	Log_Info("%s: if_index for interface %s is %d", __FUNCTION__, ifname, ifindex);
+
+	if (access(filename, O_RDONLY) < 0) {
+		Log_Error("%s:error accessing file %s: %s\n", __FUNCTION__, filename, strerror(errno));
+		return err;
+	}
+
+	obj = bpf_object__open_file(filename, &bpf_opts);
+	err = libbpf_get_error(obj);
+	if (err) {
+		Log_Error("%s: Couldn't open file(%s)\n",
+			__FUNCTION__, filename);
+		return err;
+	}
+
+	prog = bpf_object__find_program_by_name(obj, prog_name);
+	if (!prog) {
+		Log_Error("%s: Couldn't find xdp program in bpf object!\n",	__FUNCTION__);
+		err = -ENOENT;
+		return err;
+	}
+	bpf_program__set_type(prog, BPF_PROG_TYPE_XDP);
+
+	err = bpf_object__load(obj);
+	if (err) {
+	 	Log_Error("%s: Couldn't load BPF-OBJ file(%s) %s\n",
+	 		__FUNCTION__, filename, strerror(errno));
+	 	return err;
+	}
+
+	Log_Info("%s: bpf: Attach prog to ifindex %d\n", __FUNCTION__, ifindex);
+	link = bpf_program__attach_xdp(prog, ifindex);
+	if (!link) {
+		Log_Error("%s:ERROR: failed to attach program to %s\n", __FUNCTION__, ifname);
+		return err;
+	}
+
+	if(bpf_map__is_pinned(bpf_object__find_map_by_name(obj, "xsks_map"))){
+		Log_Info("%s: xsk map pinned to %s\n",  __FUNCTION__,
+		         bpf_map__get_pin_path(bpf_object__find_map_by_name(obj, "xsks_map")));
+	} else {
+		Log_Error("%s: xsk map is not pinned \n", __FUNCTION__);
+		return -1;
+	}
 
 	return 0;
 }
