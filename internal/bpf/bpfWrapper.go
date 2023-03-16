@@ -39,6 +39,7 @@ type Handler interface {
 	LoadBpfSendXskMap(ifname string) (int, error)
 	LoadAttachBpfXdpPass(ifname string) error
 	ConfigureBusyPoll(fd int, busyTimeout int, busyBudget int) error
+	LoadBpfPinXskMap(ifname, pin_path string) error
 	Cleanbpf(ifname string) error
 }
 
@@ -72,6 +73,19 @@ LoadBpfXdpPass is the GoLang wrapper for the C function Load_bpf_send_xsk_map
 */
 func (r *handler) LoadAttachBpfXdpPass(ifname string) error {
 	err := int(C.Load_attach_bpf_xdp_pass(C.CString(ifname)))
+
+	if err < 0 {
+		return errors.New("error loading BPF program onto interface")
+	}
+
+	return nil
+}
+
+/*
+LoadBpfPinXskMap is the GoLang wrapper for the C function Load_bpf_send_xsk_map
+*/
+func (r *handler) LoadBpfPinXskMap(ifname, pin_path string) error {
+	err := int(C.Load_bpf_pin_xsk_map(C.CString(ifname), C.CString(pin_path)))
 
 	if err < 0 {
 		return errors.New("error loading BPF program onto interface")

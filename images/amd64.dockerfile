@@ -39,4 +39,5 @@ COPY --from=cnibuilder /usr/src/afxdp_k8s_plugins/bin/afxdp /afxdp/afxdp
 COPY --from=dpbuilder /usr/src/afxdp_k8s_plugins/bin/afxdp-dp /afxdp/afxdp-dp
 COPY --from=dpbuilder /usr/src/afxdp_k8s_plugins/images/entrypoint.sh /afxdp/entrypoint.sh
 COPY --from=dpbuilder /usr/src/afxdp_k8s_plugins/internal/bpf/xdp-pass/xdp_pass.o /afxdp/xdp_pass.o
+COPY --from=dpbuilder /usr/src/afxdp_k8s_plugins/internal/bpf/xdp-afxdp-redirect/xdp_afxdp_redirect.o /afxdp/xdp_afxdp_redirect.o
 ENTRYPOINT ["/afxdp/entrypoint.sh"]

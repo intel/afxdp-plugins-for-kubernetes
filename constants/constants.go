@@ -82,6 +82,10 @@ var (
 	udsSockDir    = "/tmp/afxdp_dp/"  // host location where we place our uds sockets. If changing location remember to update daemonset mount point
 	udsPodPath    = "/tmp/afxdp.sock" // the uds filepath as it will appear in the end user application pod
 
+	/* BPF*/
+	bpfMapPodPath = "/tmp/xsks_map"
+	xsk_map       = "/xsks_map"
+
 	udsDirFileMode = 0700 // permissions for the directory in which we create our uds sockets
 
 	/* Handshake*/
@@ -129,6 +133,8 @@ var (
 	DeviceFile deviceFile
 	/* DeviceFile contains constants related to the devicefile */
 	EthtoolFilter ethtoolFilter
+	/* Bpf contains constants related to the BPF Map pinning */
+	Bpf bpf
 )
 
 type cni struct {
@@ -211,6 +217,11 @@ type uds struct {
 	DirFileMode int
 	PodPath     string
 	Handshake   handshake
+}
+
+type bpf struct {
+	BpfMapPodPath string
+	Xsk_map       string
 }
 
 type handshake struct {
@@ -332,6 +343,17 @@ func init() {
 			ResponseBadRequest:  handshakeResponseBadRequest,
 			ResponseError:       handshakeResponseError,
 		},
+	}
+
+	Bpf = bpf{
+		BpfMapPodPath: bpfMapPodPath,
+		Xsk_map:       xsk_map,
+	}
+
+	DeviceFile = deviceFile{
+		Name:            name,
+		FilePermissions: filePermissions,
+		Directory:       directory,
 	}
 
 	EthtoolFilter = ethtoolFilter{
