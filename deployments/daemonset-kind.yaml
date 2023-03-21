@@ -13,8 +13,7 @@ data:
           {
             "name":"myPool",
             "mode":"primary",
-            "UdsServerDisable": true,
-            "BpfMapPinningEnable": true,
+            "UdsServerDisable": false,
             "drivers":[
               {
                 "name":"veth"
@@ -62,12 +61,7 @@ spec:
           image: afxdp-device-plugin:latest
           imagePullPolicy: IfNotPresent
           securityContext:
-            capabilities:
-              drop:
-                - all
-              add:
-                - SYS_ADMIN
-                - NET_ADMIN
+            privileged: true
           resources:
             requests:
               cpu: "250m"
@@ -93,9 +87,6 @@ spec:
         - name: unixsock
           hostPath:
             path: /tmp/afxdp_dp/
-        - name: bpfmappinning
-          hostPath:
-            path: /var/run/afxdp_dp/
         - name: devicesock
           hostPath:
             path: /var/lib/kubelet/device-plugins/

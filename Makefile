@@ -61,17 +61,16 @@ buildcni: buildc
 
 build: builddp buildcni
 
-docker:
-	@echo "******   Docker Image    ******"
+##@ General Build - assumes K8s environment is already setup
+docker: ## Build docker image
+	@echo "******  Docker Image    ******"
 	@echo
 	docker build -t afxdp-device-plugin -f images/amd64.dockerfile .
 	@echo
 	@echo
 
-##@ General Deployment - assumes K8s environment is already setup
-
-podman:
-	@echo "******   Podman Image    ******"
+podman: ## Build podman image
+	@echo "******  Podman Image    ******"
 	@echo
 	podman build -t afxdp-device-plugin -f images/amd64.dockerfile .
 	@echo
@@ -199,6 +198,8 @@ clean:
 	@echo
 	@echo
 
+##@ General setup
+
 .PHONY: setup-flannel
 setup-flannel: ## Setup flannel
 	kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
@@ -215,6 +216,8 @@ del-kind: ## Remove a kind cluster callled af-xdp-deployment
 
 .PHONY: setup-kind
 setup-kind: del-kind ## Setup a kind cluster called af-xdp-deployment
+	mkdir -p /tmp/afxdp_dp/
+	mkdir -p /tmp/afxdp_dp2/
 	kind create cluster --config hack/kind-config.yaml --name af-xdp-deployment
 
 .PHONY: label-kind-nodes
