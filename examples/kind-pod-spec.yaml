@@ -1,0 +1,26 @@
+# WARNING: This is an example pod spec only. Remove all comments before use.
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: afxdp-pod                              # Pod name
+  annotations:
+    k8s.v1.cni.cncf.io/networks: afxdp-network # List of networks to attach to this pod (i.e. network name specified in network-attachment-definition.yaml)
+spec:
+  containers:
+  - name: afxdp
+    image: docker-image:latest                 # Specify your docker image here, along with PullPolicy and command
+    imagePullPolicy: IfNotPresent
+    command: ["tail", "-f", "/dev/null"]
+    securityContext:
+      capabilities:
+        add:
+          - NET_RAW
+          - IPC_LOCK
+          - BPF
+    resources:
+      requests:
+        afxdp/myPool: '1'                      # The resource requested needs to match the device plugin pool name / resource type
+      limits:                                  # The number requested needs to match the amount requested in annotations list above
+        afxdp/myPool: '1'                      # Requests and limits should match
+  restartPolicy: Never
