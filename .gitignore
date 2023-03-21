@@ -2,6 +2,7 @@ bin
 *.o
 *.a
 .idea
+*.ll
 test/e2e/udsTest
 test/fuzz/cni/cni-fuzz.zip
 test/fuzz/test/fuzz/deviceplugin/uds/fuzz_error.log
