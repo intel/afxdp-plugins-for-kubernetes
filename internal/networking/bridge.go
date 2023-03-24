@@ -58,11 +58,16 @@ func NewBridge(name string) (*netlink.Bridge, error) {
 
 	logging.Infof("Successfully created Bridge pair %s", b.Attrs().Name)
 
+	err = netlink.LinkSetUp(b)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to set the bridge to an up state")
+	}
+
 	return b, nil
 }
 
 func DelBridge(BridgeName string) error {
-	b,  err  := netlink.LinkByName(BridgeName)
+	b, err := netlink.LinkByName(BridgeName)
 	if err != nil {
 		return errors.Wrap(err, "failed to find bridge")
 	}
@@ -85,7 +90,7 @@ func GetBridgeByName(n string) (*netlink.Bridge, error) {
 
 func CheckBridgeExists(name string) (bool, error) {
 	b, err := netlink.LinkByName(name)
-	if err != nil || b == nil  {
+	if err != nil || b == nil {
 		return false, errors.Wrap(err, "failed to find bridge")
 	}
 
@@ -108,4 +113,4 @@ func IPAddrAdd(b *netlink.Bridge, ip string) error {
 	}
 
 	return netlink.AddrAdd(b, addr)
- }
+}
