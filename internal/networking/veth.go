@@ -96,3 +96,12 @@ func CheckVethExists(name string) (bool, error) {
 
 	return true, nil
 }
+
+func SetVethUp(l *netlink.Link) error {
+	err := netlink.LinkSetUp(*l)
+	if err != nil {
+		return errors.Wrap(err, "failed to set the veth to an up state")
+	}
+
+	return nil
+}

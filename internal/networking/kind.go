@@ -61,6 +61,11 @@ func CreateKindNetwork(numVeths, offset int) error {
 			return errors.Wrapf(err, "Error attaching veth %s peer %s to bridge %s", veth.Attrs().Name, b.Attrs().Name)
 		}
 		logging.Infof("Attached veth %s to bridge %s", veth.Attrs().Name, b.Attrs().Name)
+		p, _ := GetPeer(veth)
+		err = SetVethUp(p)
+		if err != nil {
+			return errors.Wrapf(err, "Error setting veth %s up", vPeer)
+		}
 
 		/* Load the xdp-pass program on that peer */
 		bh := bpf.NewHandler()
