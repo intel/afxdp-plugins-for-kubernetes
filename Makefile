@@ -211,7 +211,7 @@ setup-multus: ## Setup multus
 ##@ Kind Deployment - sets up a kind cluster and deploys the plugin and CNI
 
 .PHONY: del-kind
-del-kind: ## Remove a kind cluster callled af-xdp-deployment
+del-kind: ## Remove a kind cluster called af-xdp-deployment
 	kind delete cluster --name af-xdp-deployment
 
 .PHONY: setup-kind
