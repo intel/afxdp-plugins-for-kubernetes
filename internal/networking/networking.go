@@ -419,17 +419,6 @@ func readDeviceMap(filepath string) (map[string]*DeviceDetails, error) {
 }
 
 /*
-CreateVethDevices returns a device object and is intended for use with kind clusters only
-This function should not be used outside of testing
-*/
-func CreateVethDevices(numPairs int) error {
-
-	//TODO setup vEth pairs and interconnecting bridge on host as secondary interfaces.
-
-	return nil
-}
-
-/*
 writeDevice marshals device information and writes a device information to
 writeDeviceFile.
 */
