@@ -1,5 +1,6 @@
 /*
  * Copyright(c) 2022 Intel Corporation.
+ * Copyright(c) Red Hat Inc.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,10 +18,11 @@ package deviceplugin
 
 import (
 	"fmt"
+	"regexp"
+
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
-	"regexp"
 )
 
 const (
@@ -98,10 +100,10 @@ type configFile_Pool struct {
 }
 
 type configFile struct {
-	Pools    []*configFile_Pool `json:"Pools"`
-	LogFile  string             `json:"LogFile"`
-	LogLevel string             `json:"LogLevel"`
-	ClusterType string          `json:"clusterType"`
+	Pools       []*configFile_Pool `json:"Pools"`
+	LogFile     string             `json:"LogFile"`
+	LogLevel    string             `json:"LogLevel"`
+	ClusterType string             `json:"clusterType"`
 }
 
 func (c configFile_Device) Validate() error {

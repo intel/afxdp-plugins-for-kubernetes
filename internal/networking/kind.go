@@ -17,11 +17,10 @@ package networking
 
 import (
 	"strconv"
-//	"net"
 
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
 	"github.com/pkg/errors"
 	logging "github.com/sirupsen/logrus"
-	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
 )
 
 var (
@@ -48,7 +47,7 @@ func CreateKindNetwork(numVeths, offset int) error {
 	}
 	logging.Infof("Created bridge %s", b.Attrs().Name)
 
-	for i := offset; i < ((numVeths * 2) + offset); i = i+2 {
+	for i := offset; i < ((numVeths * 2) + offset); i = i + 2 {
 		vName := vEthNamePrefix + strconv.Itoa(i)
 		vPeer := vEthNamePrefix + strconv.Itoa(i+1)
 		veth, err := CreateVeth(vName, vPeer)
@@ -77,11 +76,10 @@ func CreateKindNetwork(numVeths, offset int) error {
 		return errors.Wrapf(err, "Setting the ip address for %s", b.Attrs().Name)
 	}
 
-	// TODO SET BRIDGE to up state
-
 	return nil
 }
 
+// CheckKindNetworkExists
 func CheckKindNetworkExists() (bool, error) {
 	return CheckBridgeExists(BridgeName)
 }
@@ -93,7 +91,7 @@ func DeleteKindNetwork(numVeths, offset int) error {
 		return errors.Wrap(err, "failed to delete bridge")
 	}
 
-	for i := offset; i < numVeths; i = i+2 {
+	for i := offset; i < numVeths; i = i + 2 {
 		vName := vEthNamePrefix + strconv.Itoa(i)
 		v, err := GetVethByName(vName)
 		if err != nil {
