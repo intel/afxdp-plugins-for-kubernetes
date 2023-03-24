@@ -39,22 +39,22 @@ The following prerequisites are required to run the plugins:
 	- **Note:** You may need to disable memlock on Docker.
 		Add the following section to `/etc/docker/daemon.json`:
 
-		```yaml
-		"default-ulimits": {
-		"memlock": {
-			"Name": "memlock",
-			"Hard": -1,
-			"Soft": -1
-			}
-		}
-		```
-		Restart the Docker service: `systemctl restart docker.service`
+        ```yaml
+        "default-ulimits": {
+        "memlock": {
+            "Name": "memlock",
+            "Hard": -1,
+            "Soft": -1
+            }
+        }
+        ```
+        Restart the Docker service: `systemctl restart docker.service`
 - **Kubernetes**
- 	- All recent versions should work.
- 	- Tested on `1.20.2`, `1.21.1`, `v1.22.4`, `v1.22.8`, `v1.23.0`, `v1.23.5`.
+     - All recent versions should work.
+     - Tested on `1.20.2`, `1.21.1`, `v1.22.4`, `v1.22.8`, `v1.23.0`, `v1.23.5`.
 - **A CNI network**
-	- To serve as the [default network](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md#key-concepts) to the Kubernetes pods.
-	- Any CNI should work. Tested with [Flannel](https://github.com/flannel-io/flannel).
+    - To serve as the [default network](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md#key-concepts) to the Kubernetes pods.
+    - Any CNI should work. Tested with [Flannel](https://github.com/flannel-io/flannel).
 - **Multus CNI**
 	- To enable attaching of multiple network interfaces to pods.
 	- [Multus quickstart guide](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md).
@@ -64,23 +64,23 @@ The following prerequisites are required to run the plugins:
 The following prerequisites are required to build and deploy the plugins from source:
 
 - **GoLang**
-	- To build the plugin binaries.
-	- All recent versions should work.
-	- Tested on `1.13.8`, `1.15.15`, `1.17`, `1.17.1`, `1.17.8`, `1.18`, `1.19`.
-	- [Download and install](https://golang.org/doc/install).
+    - To build the plugin binaries.
+    - All recent versions should work.
+    - Tested on `1.13.8`, `1.15.15`, `1.17`, `1.17.1`, `1.17.8`, `1.18`, `1.19`.
+    - [Download and install](https://golang.org/doc/install).
 - **Libbpf**
-	- To load and unload the XDP program onto the network device.
-	- Install on Ubuntu 20.10+: `apt install libbpf-dev`
-	- Older versions: [Install from source](https://github.com/libbpf/libbpf#build).
+    - To load and unload the XDP program onto the network device.
+    - Install on Ubuntu 20.10+: `apt install libbpf-dev`
+    - Older versions: [Install from source](https://github.com/libbpf/libbpf#build).
 - **GCC Compiler**
-	- To compile the C code used to call on the BPF Library.
-	- Install on Ubuntu: `apt install build-essential`
+    - To compile the C code used to call on the BPF Library.
+    - Install on Ubuntu: `apt install build-essential`
 - **Binutils**
-	- Used in archiving of C code object file.
-	- Install on Ubuntu: `apt install binutils`
+    - Used in archiving of C code object file.
+    - Install on Ubuntu: `apt install binutils`
 - **Clang**
     - Compiling the bpf progs for Kind.
-	- Install on Ubuntu: `apt install clang`
+    - Install on Ubuntu: `apt install clang`
 - **gcc-multilib**
    - Compiling the bpf progs for Kind.
    - Install on Ubuntu: `apt install gcc-multilib`
@@ -92,40 +92,40 @@ The following prerequisites are required to build and deploy the plugins from so
 The following static analysis, linting and formatting tools are not required for building and deploying, but are built into some of the Make targets and enforced by CI. It is recommended to have these installed on your development system.
 
 - **[GoFmt](https://pkg.go.dev/cmd/gofmt)**
-	- Applies standard formatting to Go code.
-	- Supplied with GoLang.
+    - Applies standard formatting to Go code.
+    - Supplied with GoLang.
 - **[Go Vet](https://pkg.go.dev/cmd/vet)**
-	- Examines Go source code and reports suspicious constructs.
-	- Supplied with GoLang.
+    - Examines Go source code and reports suspicious constructs.
+    - Supplied with GoLang.
 - **[GolangCI-Lint](https://golangci-lint.run/)**
-	- A Go linters aggregator.
-	- Install: `curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.42.1`
+    - A Go linters aggregator.
+    - Install: `curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.42.1`
 - **[Hadolint](https://github.com/hadolint/hadolint)**
-	- A Dockerfile linter that helps build best practice into Docker images.
-	- Runs in Docker container.
+    - A Dockerfile linter that helps build best practice into Docker images.
+    - Runs in Docker container.
 - **[Shellcheck](https://github.com/koalaman/shellcheck)**
-	- A static analysis tool for shell scripts.
-	- Install on Ubuntu: `apt install shellcheck`
+    - A static analysis tool for shell scripts.
+    - Install on Ubuntu: `apt install shellcheck`
 - **[Clang Format](https://clang.llvm.org/docs/ClangFormat.html)**
-	- Applies standard formatting to C code.
-	- Install on Ubuntu: `apt install clang-format`
+    - Applies standard formatting to C code.
+    - Install on Ubuntu: `apt install clang-format`
 - **[CLOC](https://github.com/AlDanial/cloc)**
-	- Count Lines Of Code, counts lines of code in many programming languages.
-	- Install on Ubuntu: `apt install cloc`
+    - Count Lines Of Code, counts lines of code in many programming languages.
+    - Install on Ubuntu: `apt install cloc`
 - **[Staticcheck](https://staticcheck.io/docs/getting-started/)**
-	- Static analysis tool used to perform debugging, identify performance issues, style rules and highlights code simplifications.
-	- Golang package which requires go environment `go install honnef.co/go/tools/cmd/staticcheck@latest`
+    - Static analysis tool used to perform debugging, identify performance issues, style rules and highlights code simplifications.
+    - Golang package which requires go environment `go install honnef.co/go/tools/cmd/staticcheck@latest`
 - **[Trivy](https://github.com/aquasecurity/trivy)**
-	- A comprehensive and versatile security scanner.
-	- [Install on Ubuntu](https://aquasecurity.github.io/trivy/v0.38/getting-started/installation/):
+    - A comprehensive and versatile security scanner.
+    - [Install on Ubuntu](https://aquasecurity.github.io/trivy/v0.38/getting-started/installation/):
 
-	```
-	sudo apt-get install wget apt-transport-https gnupg lsb-release
-	wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
-	echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | 					sudo tee -a /etc/apt/sources.list.d/trivy.list
-	sudo apt-get update
-	sudo apt-get install trivy
-	```
+    ```
+    sudo apt-get install wget apt-transport-https gnupg lsb-release
+    wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+    echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" |                     sudo tee -a /etc/apt/sources.list.d/trivy.list
+    sudo apt-get update
+    sudo apt-get install trivy
+    ```
 
 ## Build and Deploy from Source
 
@@ -137,10 +137,31 @@ The following steps happen **automatically**:
 
 1. `make build` is executed, resulting in CNI and Device Plugin binaries in `./bin`.
 2. `make image` is executed, resulting in the creation of a new Docker image that includes the CNI and Device Plugin binaries.
-	> **_NOTE:_** If testing on a multi-node cluster. The current absence of a Docker registry means this image will first need to be manually copied to all nodes (or rebuilt on all nodes using: `make image`).*
+    > **_NOTE:_** If testing on a multi-node cluster. The current absence of a Docker registry means this image will first need to be manually copied to all nodes (or rebuilt on all nodes using: `make image`).*
 3. The daemonset will run on all nodes, installing the CNI and starting the Device Plugin running on each node.
 
 The CNI and Device Plugin are now deployed.
+
+## Deploying on Kind
+
+ - Clone this repo and `cd` into it.
+ - Optional: Update the Kind configuration files: `hack/kind-config.yaml` and `deployments/daemonset-kind.yaml`.
+ - Run `make run-on-kind`.
+
+ This will deploy a kind cluster with a control plane and two worker nodes. It will build and run the DP daemonset, and install the CNI on all nodes.
+
+#### Running Pods
+
+- Create a network attachment definition file. This is the config for the CNI plugin.
+    - An example file can be found under [examples/network-attachment-definition.yaml](./examples/network-attachment-definition.yaml)
+    - Change the config if necessary. See comments in the example file.
+    - `kubectl create -f network-attachment-definition.yaml`
+- Create a pod spec:
+    - An example pod spec can be found under [examples/pod-spec.yaml](./examples/pod-spec.yaml)
+    - Configure the pod spec to use a suitable Docker image and to reference the network attachment definition as well as the resource type from the Device Plugin. See comments in the example file.
+    - `kubectl create -f pod-spec.yaml`
+
+> **_NOTE:_** With kind, you will need to give the pods CAP_BPF privilege UNLESS you run the following commands: `docker exec <node-name> sudo sysctl kernel.unprivileged_bpf_disabled=0`. Where node names are: af-xdp-deployment-worker and af-xdp-deployment-worker2.
 
 ## Device Plugin Config
 Under normal circumstances the device plugin config is set as part of a config map at the top of the [daemonset.yml](./deployments/daemonset.yml) file.
@@ -291,9 +312,9 @@ However, there are also three node-specific configs included:
  - The first node with **hostname** `k8snode1` is simply configured to assign `ice` devices to the pool. This is very similar to the general pool config for `myPool`, except there are no excluded devices. If `ens801f3` exists on this node, it will be added to `myPool`.
 
  - The second node with **hostname**  `k8snode2` is configured with both devices and drivers:
-	 - Two **devices**, `ens801f3` and `ens801f1`, will be added to `myPool` from `k8snode2`.
+     - Two **devices**, `ens801f3` and `ens801f1`, will be added to `myPool` from `k8snode2`.
 
-	 - There is one driver configured under the **drivers** field, the driver is named `ice`. The **primary** setting of `1` means only one of the available ice devices will be added form `k8snode2` and the **excludedDevices** setting ensures this device will not be `ens801f2`.
+     - There is one driver configured under the **drivers** field, the driver is named `ice`. The **primary** setting of `1` means only one of the available ice devices will be added form `k8snode2` and the **excludedDevices** setting ensures this device will not be `ens801f2`.
 
  - The third node with **hostname** `k8snode3` has no devices or drivers configured. Even if `k8snode3` has ice devices available, they will not be added to `myPool`.
 
@@ -425,10 +446,10 @@ The second pool:
 A log file and log level can be configured for the device plugin.
 - The log file is set using the **logFile** field. This file will be placed under `/var/log/afxdp-k8s-plugins/`.
 - The log level is set using the **logLevel** field. Available options are:
-	- `error` - Only logs errors.
-	- `warning` - Logs errors and warnings.
-	- `info` - Logs errors, warnings and basic info about the operation of the device plugin.
-	- `debug` - Logs all the above along with additional in-depth info about the operation of the device plugin.
+    - `error` - Only logs errors.
+    - `warning` - Logs errors and warnings.
+    - `info` - Logs errors, warnings and basic info about the operation of the device plugin.
+    - `debug` - Logs all the above along with additional in-depth info about the operation of the device plugin.
 
 The example below shows a config including log settings.
 
