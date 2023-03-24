@@ -506,3 +506,32 @@ SUM:                            73           1148           1677          10033
 
 ## Sequence Diagram
 ![](./docs/sequence.png)
+
+## Make help
+
+To see the available build targets use `make help`
+
+```bash
+$ make help
+
+Usage:
+  make <target>
+  help             Display this help.
+
+General Build - assumes K8s environment is already setup
+  docker           Build docker image
+  podman           Build podman image
+  undeploy         Undeploy the Deamonset
+  deploy           Deploy the Deamonset and CNI
+
+General setup
+  setup-flannel    Setup flannel
+  setup-multus     Setup multus
+
+Kind Deployment - sets up a kind cluster and deploys the plugin and CNI
+  del-kind         Remove a kind cluster called af-xdp-deployment
+  setup-kind       Setup a kind cluster called af-xdp-deployment
+  label-kind-nodes  label the kind worker nodes with cndp="true"
+  kind-deploy      Deploy the Deamonset and CNI in Kind
+  run-on-kind      Setup a kind cluster and deploy the device plugin
+```
