@@ -1,5 +1,6 @@
 /*
  * Copyright(c) 2022 Intel Corporation.
+ * Copyright(c) Red Hat Inc.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -43,7 +44,6 @@ In this fakeHandler it does nothing.
 func (f *fakeHandler) LoadAttachBpfXdpPass(ifname string) error {
 	return nil
 }
-
 
 /*
 ConfigureBusyPoll is the GoLang wrapper for the C function Configure_busy_poll

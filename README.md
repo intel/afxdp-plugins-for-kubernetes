@@ -15,7 +15,8 @@ The following prerequisites are required to build and deploy the plugins:
 	- Tested on `20.10.5`, `20.10.7`, `20.10.12`, `20.10.14`, `20.10.18`.
 	- **Note:** You may need to disable memlock on Docker.
 		Add the following section to `/etc/docker/daemon.json`:
-		```
+
+		```yaml
 		"default-ulimits": {
 		"memlock": {
 			"Name": "memlock",
@@ -50,8 +51,14 @@ The following prerequisites are required to build and deploy the plugins:
 	- Used in archiving of C code object file.
 	- Install on Ubuntu: `apt install binutils`
 - **Clang**
-    - Compiling the xdp-pass prog
-- **gcc-multilib llvm package TODO**
+    - Compiling the bpf progs for Kind.
+	- Install on Ubuntu: `apt install clang`
+- **gcc-multilib**
+   - Compiling the bpf progs for Kind.
+   - Install on Ubuntu: `apt install gcc-multilib`
+- **llvm**
+   - Compiling the bpf progs for Kind.
+   - Install on Ubuntu: `apt install llvm`
 
 ### Development
 The following static analysis, linting and formatting tools are not required for building and deploying but are built into some of the Make targets and enforced by CI. It is recommended to have these installed on your development system.
@@ -83,7 +90,7 @@ The following static analysis, linting and formatting tools are not required for
 - **[Trivy](https://github.com/aquasecurity/trivy)**
 	- A comprehensive and versatile security scanner.
 	- [Install on Ubuntu](https://aquasecurity.github.io/trivy/v0.38/getting-started/installation/):
-	
+
 	```
 	sudo apt-get install wget apt-transport-https gnupg lsb-release
 	wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
@@ -102,10 +109,18 @@ The following steps happen **automatically**:
 
 1. `make build` is executed, resulting in CNI and Device Plugin binaries in `./bin`.
 2. `make image` is executed, resulting in the creation of a new Docker image that includes the CNI and Device Plugin binaries.
-	- ***Note:** If testing on a multi-node cluster. The current absence of a Docker registry means this image will first need to be manually copied to all nodes (or rebuilt on all nodes using: `make image`).*
+	> **_NOTE:_** If testing on a multi-node cluster. The current absence of a Docker registry means this image will first need to be manually copied to all nodes (or rebuilt on all nodes using: `make image`).*
 3. The daemonset will run on all nodes, installing the CNI and starting the Device Plugin running on each node.
 
 The CNI and Device Plugin are now deployed.
+
+## Deploying on Kind
+
+ - Clone this repo and `cd` into it.
+ - Optional: Update the Kind configuration files: `hack/kind-config.yaml` and `deployments/daemonset-kind.yaml`.
+ - Run `make run-on-kind`.
+
+ This will deploy a kind cluster with a control plane and two worker nodes. It will build and run the DP daemonset, and install the CNI on all nodes.
 
 #### Running Pods
 
@@ -118,6 +133,7 @@ The CNI and Device Plugin are now deployed.
 	- Configure the pod spec to use a suitable Docker image and to reference the network attachment definition as well as the resource type from the Device Plugin. See comments in the example file.
 	- `kubectl create -f pod-spec.yaml`
 
+> **_NOTE:_** With kind, you will need to give the pods CAP_BPF privilege UNLESS you run the following commands: `docker exec <node-name> sudo sysctl kernel.unprivileged_bpf_disabled=0`. Where node names are: af-xdp-deployment-worker and af-xdp-deployment-worker2.
 
 ## Device Plugin Config
 Under normal circumstances the device plugin config is set as part of a config map at the top of the [daemonset.yml](./deployments/daemonset.yml) file.
@@ -136,7 +152,8 @@ The **mode** is the mode this pool operates in. Mode determines how pools scale 
 Additional secondary device modes are planned.
 
 The example below shows how to configure two pools in different modes.
-```
+
+```yaml
 {
    "pools":[
       {
@@ -158,7 +175,8 @@ The example below shows how to configure two pools in different modes.
 In production environments, the most common way to add devices to a pool is through configuring drivers for that pool. When a driver is configured to a pool, the device plugin will search the node for devices using this driver and add them to that pool. A pool can have multiple drivers associated with it. Drivers are identified by their name.
 
 The example below shows how to configure a single pool that is associated with two drivers.
-```
+
+```yaml
 {
    "pools":[
       {
@@ -175,6 +193,7 @@ The example below shows how to configure a single pool that is associated with t
       }
    ]
 }
+
 ```
 In the example above the device plugin will assign all devices of driver type `i40e` and `ice` to the pool `myPool`. The following explains how to add optional configurations that will limit the devices assigned per driver:
 
@@ -186,7 +205,8 @@ In the example above the device plugin will assign all devices of driver type `i
 In the example below a single pool is given the **name** `myPool`. The pool **mode** is `cdq`, meaning the device plugin will create subfunctions on top of the primary devices. To add primary devices to the pool the **drivers** field is used. In this case a single driver is identified by its **name**, `ice`, meaning the pool will be assigned primary devices that use the ice driver. To limit the number of primary ice devices assigned to the pool the **primary** field in this driver is set to `2`, meaning only two ice devices (per node) will be assigned to this pool. Also, in use here is the **excludeDevices** field. Two excluded devices are identified in this case by their **name**, `ens802f1` and `ens802f2`. As above, this pool will take two primary devices per node, neither will be ens802f1 or ens802f2. Finally, the **secondary** field is set to `50`, meaning 50 secondary devices will be created per primary device. Since the pool mode in this case is cdq, it means those secondary devices will be subfunctions.
 
 In summary: The pool `afxdp/myPool` will take two ice devices per node, where available. It will create a maximum of 50 subfunctions on top of each of those devices, meaning each node will have a maximum of 100 subfunctions. The devices ens802f1 and ens802f2 will not be used in this pool.
-```
+
+```yaml
 {
    "pools":[
       {
@@ -225,7 +245,7 @@ In the example below a single pool is given the **name** `myPool`. The pool **mo
 
 The three devices, `ens801f0`, `68:05:ca:2d:e9:1b` and `0000:81:00.1` have the **secondary** field set to `10`, `20` and `30`, meaning the device plugin will create 10, 20 and 30 secondary devices on these devices, respectively. Since the pool mode in this case is cdq, it means those secondary devices will be subfunctions.
 
-```
+```yaml
 {
    "pools":[
       {
@@ -269,7 +289,7 @@ However, there are also three node-specific configs included:
 
  - The third node with **hostname** `k8snode3` has no devices or drivers configured. Even if `k8snode3` has ice devices available, they will not be added to `myPool`.
 
-```
+```yaml
 {
    "pools":[
       {
@@ -342,9 +362,6 @@ UdsServerDisable is a Boolean configuration. If set to true, devices in this poo
 #### UdsTimeout
 UdsTimeout is an integer configuration. This value sets the amount of time, in seconds, that the UDS server will wait while there is no activity on the UDS. When this timeout limit is reached, the UDS server terminates and the UDS is deleted from the filesystem. This can be a useful setting, for example, in scenarios where large batches of pods are created together. Large batches of pods tend to take some time to spin up, so it might be beneficial to have the UDS server sit waiting a little longer for the pod to start. The maximum allowed value is 300 seconds (5 min). The minimum and default value is 30 seconds.
 
-#### RequiresUnprivilegedBpf
-RequiresUnprivilegedBpf is a Boolean configuration. Linux systems can be configured with a sysctl setting called *unprivileged_bpf_disabled*. If *unprivileged_bpf_disabled* is set, it means eBPF operations cannot be performed by unprivileged users (or pods) on this host. If your use case requires unprivileged eBPF, this pool configuration should be set to true. When set to true, the pool will not take any devices from a node where unprivileged eBPF has been prohibited. This will mean that pods requesting devices from this pool will only be scheduled on nodes where unprivileged eBPF is allowed. The default value is false.
-
 #### Examples
 The example below has two pools configured.
 
@@ -362,7 +379,8 @@ The second pool:
  - Is in `cdq` **mode**, meaning the device plugin will create subfunctions on top of the primary devices.
  - The **drivers** field for this pool has one driver, `ice`, meaning this pool will be assigned ice devices, where available.
  - The **UdsServerDisable** field is set to `true`, meaning no BPF app will be loaded onto the devices as they are being allocated to pods, so pods requesting `afxdp/myCdqPool` will be allocated "raw" subfunctions with nothing loaded.
-```
+
+```yaml
 {
    "pools":[
       {
@@ -405,7 +423,8 @@ A log file and log level can be configured for the device plugin.
 	- `debug` - Logs all the above along with additional in-depth info about the operation of the device plugin.
 
 The example below shows a config including log settings.
-```
+
+```yaml
 {
    "logLevel":"debug",
    "logFile":"afxdp-dp.log",
@@ -424,6 +443,31 @@ The example below shows a config including log settings.
       }
    ]
 }
+```
+
+### Cluster Types
+The cluster type flag is used to indicate if this is a physical cluster or a Kind cluster.
+
+```yaml
+{
+       "clusterType":"physical",
+       "logLevel":"debug",
+       "logFile":"afxdp-dp.log",
+       "pools":[
+          {
+             "name":"myPool",
+             "mode":"primary",
+             "drivers":[
+                {
+                   "name":"i40e"
+                },
+                {
+                   "name":"ice"
+                }
+             ]
+          }
+       ]
+    }
 ```
 
 ## CLOC
