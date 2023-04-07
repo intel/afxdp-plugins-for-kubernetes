@@ -3,14 +3,37 @@
 # AF_XDP Plugins for Kubernetes
 
 A Kubernetes device plugin and CNI plugin to provide AF_XDP networking to Kubernetes pods.
+
+## Deploy the Plugins
+Assuming you have a functional Kubernetes cluster and environment as described in the [prerequisites](#running-the-plugins), the plugins can be deployed with the following command: `kubectl apply -f https://raw.githubusercontent.com/intel/afxdp-plugins-for-kubernetes/main/deployments/daemonset.yml`
+
+This will deploy the daemonset with the default configuration described in [deployments/daemonset.yml](./deployments/daemonset.yml).
+Alternatively, to customize the configuration:
+- Download daemonset.yaml: `wget https://raw.githubusercontent.com/intel/afxdp-plugins-for-kubernetes/main/deployments/daemonset.yml`
+- Update daemonset.yml with the required configuration. See the [Device Plugin Config](#device-plugin-config) section.
+- Deploy the plugins with the updated config: `kubectl create -f daemonset.yml`
+
+## Running AF_XDP Pods
+
+- Create a network attachment definition file. This is the config for the CNI plugin.
+	- An example file can be found under [examples/network-attachment-definition.yaml](./examples/network-attachment-definition.yaml)
+	- Change the config if necessary. See comments in the example file.
+	- `kubectl create -f network-attachment-definition.yaml`
+- Create a pod spec:
+	- An example pod spec can be found under [examples/pod-spec.yaml](./examples/pod-spec.yaml)
+	- Configure the pod spec to use a suitable Docker image and to reference the network attachment definition as well as the resource type from the Device Plugin. See comments in the example file.
+	- `kubectl create -f pod-spec.yaml`
+
 ## Prerequisites
-### Required
-The following prerequisites are required to build and deploy the plugins:
+### Running the Plugins
+The following prerequisites are required to run the plugins:
 
 - **OS**
 	- Any OS that supports Kubernetes should work.
 	- Tested on Ubuntu 20.04.
-- **Docker**
+- **Kernel**
+	- AF_XDP support started from Linux kernel 4.18.
+- **Docker (or more recently Podman)**
 	- All recent versions should work.
 	- Tested on `20.10.5`, `20.10.7`, `20.10.12`, `20.10.14`, `20.10.18`.
 	- **Note:** You may need to disable memlock on Docker.
@@ -34,6 +57,11 @@ The following prerequisites are required to build and deploy the plugins:
 - **Multus CNI**
 	- To enable attaching of multiple network interfaces to pods.
 	- [Multus quickstart guide](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md).
+
+
+### Development
+The following prerequisites are required to build and deploy the plugins from source:
+
 - **GoLang**
 	- To build the plugin binaries.
 	- All recent versions should work.
@@ -50,8 +78,8 @@ The following prerequisites are required to build and deploy the plugins:
 	- Used in archiving of C code object file.
 	- Install on Ubuntu: `apt install binutils`
 
-### Development
-The following static analysis, linting and formatting tools are not required for building and deploying but are built into some of the Make targets and enforced by CI. It is recommended to have these installed on your development system.
+### Development (Optional)
+The following static analysis, linting and formatting tools are not required for building and deploying, but are built into some of the Make targets and enforced by CI. It is recommended to have these installed on your development system.
 
 - **[GoFmt](https://pkg.go.dev/cmd/gofmt)**
 	- Applies standard formatting to Go code.
@@ -89,7 +117,7 @@ The following static analysis, linting and formatting tools are not required for
 	sudo apt-get install trivy
 	```
 
-## Build and Deploy
+## Build and Deploy from Source
 
  - Clone this repo and `cd` into it.
  - Optional: Update configuration. See [Device Plugin Config](#device-plugin-config).
@@ -103,17 +131,6 @@ The following steps happen **automatically**:
 3. The daemonset will run on all nodes, installing the CNI and starting the Device Plugin running on each node.
 
 The CNI and Device Plugin are now deployed.
-
-#### Running Pods
-
-- Create a network attachment definition file. This is the config for the CNI plugin.
-	- An example file can be found under [examples/network-attachment-definition.yaml](./examples/network-attachment-definition.yaml)
-	- Change the config if necessary. See comments in the example file.
-	- `kubectl create -f network-attachment-definition.yaml`
-- Create a pod spec:
-	- An example pod spec can be found under [examples/pod-spec.yaml](./examples/pod-spec.yaml)
-	- Configure the pod spec to use a suitable Docker image and to reference the network attachment definition as well as the resource type from the Device Plugin. See comments in the example file.
-	- `kubectl create -f pod-spec.yaml`
 
 
 ## Device Plugin Config
@@ -149,7 +166,7 @@ The example below shows how to configure two pools in different modes.
 ```
 *Note that the above is not a fully working example as the pools have not yet been configured with devices. This will not pass the device plugin's config validation.*
 
-**Note:** Each pool created will require its own network attachment definition. See the [Running Pods](#running-pods) section above and the [network-attachment-definition.yaml](./examples/network-attachment-definition.yaml) example file for more info. The resource name provided as `k8s.v1.cni.cncf.io/resourceName` must match the pool name.
+**Note:** Each pool created will require its own network attachment definition. See the [Running AF_XDP Pods](#running-af_xdp-pods) section above and the [network-attachment-definition.yaml](./examples/network-attachment-definition.yaml) example file for more info. The resource name provided as `k8s.v1.cni.cncf.io/resourceName` must match the pool name.
 
 ### Pool Drivers
 In production environments, the most common way to add devices to a pool is through configuring drivers for that pool. When a driver is configured to a pool, the device plugin will search the node for devices using this driver and add them to that pool. A pool can have multiple drivers associated with it. Drivers are identified by their name.
@@ -432,7 +449,7 @@ Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 Go                              35            855           1477           7572
 YAML                            20             39             47            888
-Markdown                         4            119              0            679
+Markdown                         4            125              0            690
 Bourne Shell                     6             61             63            513
 C                                2             34             32            158
 make                             1             23             18            149
@@ -440,7 +457,7 @@ JSON                             2              0              0             32
 C/C++ Header                     2             10             28             28
 Dockerfile                       1              1             12              3
 -------------------------------------------------------------------------------
-SUM:                            73           1142           1677          10022
+SUM:                            73           1148           1677          10033
 -------------------------------------------------------------------------------
 
 ```

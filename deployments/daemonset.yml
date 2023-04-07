@@ -59,7 +59,7 @@ spec:
       serviceAccountName: afxdp-device-plugin
       containers:
         - name: kube-afxdp
-          image: afxdp-device-plugin:latest
+          image: intel/afxdp-plugins-for-kubernetes:latest
           imagePullPolicy: IfNotPresent
           securityContext:
             capabilities:
