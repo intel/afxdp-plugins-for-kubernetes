@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <bpf/xsk.h> // for xsk_setup_xdp_prog, bpf_set_link_xdp_fd
-#include <net/if.h>  // for if_nametoindex
+#include <bpf/xsk.h>	   // for xsk_setup_xdp_prog, bpf_set_link_xdp_fd
 #include <linux/if_link.h> // for XDP_FLAGS_DRV_MODE
+#include <net/if.h>	   // for if_nametoindex
 
 #include "bpfWrapper.h"
 #include "log.h"
@@ -169,8 +169,7 @@ int Clean_bpf(char *ifname) {
 	return 0;
 }
 
-int Load_attach_bpf_xdp_pass(char *ifname)
-{
+int Load_attach_bpf_xdp_pass(char *ifname) {
 	int prog_fd = -1, err, ifindex;
 	char *filename = "/afxdp/xdp_pass.o";
 	struct bpf_object *obj;
@@ -193,21 +192,18 @@ int Load_attach_bpf_xdp_pass(char *ifname)
 	/* Load the BPF program */
 	err = bpf_prog_load(filename, BPF_PROG_TYPE_XDP, &obj, &prog_fd);
 	if (err < 0) {
-		Log_Error("%s: Couldn't load BPF-OBJ file(%s)\n",
-			__FUNCTION__, filename);
+		Log_Error("%s: Couldn't load BPF-OBJ file(%s)\n", __FUNCTION__, filename);
 		return -1;
 	}
 
 	/* Attach the program to the interface at the xdp hook */
 	err = bpf_set_link_xdp_fd(ifindex, prog_fd, xdp_flags);
 	if (err < 0) {
-		Log_Error("%s: Couldn't attach the XDP PASS PROGRAM TO %s\n",
-			__FUNCTION__, ifname);
+		Log_Error("%s: Couldn't attach the XDP PASS PROGRAM TO %s\n", __FUNCTION__, ifname);
 		return -1;
 	}
 
-	Log_Info("%s: xdp-pass program loaded on %s (%d)",
-		 __FUNCTION__, ifname, ifindex);
+	Log_Info("%s: xdp-pass program loaded on %s (%d)", __FUNCTION__, ifname, ifindex);
 
 	return 0;
 }

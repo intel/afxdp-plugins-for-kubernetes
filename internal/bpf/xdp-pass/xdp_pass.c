@@ -12,13 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <linux/bpf.h>
 #include <bpf/bpf_helpers.h>
+#include <linux/bpf.h>
 
 SEC("xdp")
-int xdp_prog_pass(struct xdp_md *ctx)
-{
-	return XDP_PASS;
-}
+int xdp_prog_pass(struct xdp_md *ctx) { return XDP_PASS; }
 
 char _license[] SEC("license") = "Dual BSD";
