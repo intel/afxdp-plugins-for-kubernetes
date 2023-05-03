@@ -28,8 +28,8 @@ var (
 	devicePluginExitPoolError     = 4                          // device plugin device pool exit code, error occurred while building a device pool
 	devicePluginExitKindError     = 5                          // device plugin Kind exit code, error occurred while creating a kind secondary network
 
-	/* Cluster Types */
-	clusterTypes = []string{"kind", "physical"} // accepted kind cluster types
+	/* Kind Cluster */
+	kindCluster = false
 
 	/* Logging */
 	logLevels          = []string{"debug", "info", "warning", "error"} // accepted log levels
@@ -154,7 +154,7 @@ type plugins struct {
 	Modes        []string
 	Cni          cni
 	DevicePlugin devicePlugin
-	ClusterTypes []string
+	KindCluster  bool
 }
 
 type afxdp struct {
@@ -248,8 +248,8 @@ type ethtoolFilter struct {
 
 func init() {
 	Plugins = plugins{
-		Modes:        pluginModes,
-		ClusterTypes: clusterTypes,
+		Modes:       pluginModes,
+		KindCluster: kindCluster,
 		DevicePlugin: devicePlugin{
 			DefaultConfigFile: devicePluginDefaultConfigFile,
 			DevicePrefix:      devicePluginDevicePrefix,

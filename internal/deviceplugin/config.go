@@ -43,7 +43,7 @@ Global configurations such as log levels are contained here.
 type PluginConfig struct {
 	LogFile     string
 	LogLevel    string
-	ClusterType string
+	KindCluster bool
 }
 
 /*
@@ -81,7 +81,7 @@ func GetPluginConfig(configFile string) (PluginConfig, error) {
 	pluginConfig = PluginConfig{
 		LogFile:     cfgFile.LogFile,
 		LogLevel:    cfgFile.LogLevel,
-		ClusterType: cfgFile.ClusterType,
+		KindCluster: cfgFile.KindCluster,
 	}
 
 	return pluginConfig, nil

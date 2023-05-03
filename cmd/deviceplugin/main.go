@@ -18,6 +18,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/deviceplugin"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
@@ -25,10 +30,6 @@ import (
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	logging "github.com/sirupsen/logrus"
-	"io"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 var (
@@ -62,7 +63,7 @@ func main() {
 	}
 
 	// configure a set of veths and a bridge as a secondary kind network.
-	if cfg.ClusterType == "kind" {
+	if cfg.KindCluster == true {
 		if err := configureKindSecondaryNetwork(); err != nil {
 			logging.Errorf("Error configuring Kind Secondary Network: %v", err)
 			exit(constants.Plugins.DevicePlugin.ExitKindError)
