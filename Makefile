@@ -22,15 +22,18 @@ excluded_from_utests = "/test/e2e|/test/fuzz"
 
 all: format build test static
 
-format:
-	@echo "******     Go Format     ******"
-	@echo
-	-go fmt github.com/intel/afxdp-plugins-for-kubernetes/...
-	@echo
-	@echo
+clangformat:
 	@echo "******   Clang Format    ******"
 	@echo
 	-clang-format -i -style=file internal/bpf/*.c internal/bpf/*.h
+	-clang-format -i -style=file internal/bpf/xdp-pass/*.c
+	@echo
+	@echo
+
+format: clangformat
+	@echo "******     Go Format     ******"
+	@echo
+	-go fmt github.com/intel/afxdp-plugins-for-kubernetes/...
 	@echo
 	@echo
 
