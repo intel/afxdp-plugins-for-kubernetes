@@ -216,9 +216,6 @@ int Load_attach_bpf_xdp_pass(char *ifname) {
 	return 0;
 }
 
-// TODO update logging to debug
-// TODO UPDATE TO RETURN MAP NAME
-// SEE struct bpf_map in https://elixir.bootlin.com/linux/latest/source/tools/lib/bpf/libbpf.c#L487
 int Load_bpf_pin_xsk_map(char *ifname, char *pin_path) {
 	struct bpf_object *obj;
 	struct bpf_program *prog;
