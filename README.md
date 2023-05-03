@@ -5,10 +5,12 @@
 A Kubernetes device plugin and CNI plugin to provide AF_XDP networking to Kubernetes pods.
 
 ## Deploy the Plugins
+
 Assuming you have a functional Kubernetes cluster and environment as described in the [prerequisites](#running-the-plugins), the plugins can be deployed with the following command: `kubectl apply -f https://raw.githubusercontent.com/intel/afxdp-plugins-for-kubernetes/main/deployments/daemonset.yml`
 
 This will deploy the daemonset with the default configuration described in [deployments/daemonset.yml](./deployments/daemonset.yml).
 Alternatively, to customize the configuration:
+
 - Download daemonset.yaml: `wget https://raw.githubusercontent.com/intel/afxdp-plugins-for-kubernetes/main/deployments/daemonset.yml`
 - Update daemonset.yml with the required configuration. See the [Device Plugin Config](#device-plugin-config) section.
 - Deploy the plugins with the updated config: `kubectl create -f daemonset.yml`
@@ -16,13 +18,13 @@ Alternatively, to customize the configuration:
 ## Running AF_XDP Pods
 
 - Create a network attachment definition file. This is the config for the CNI plugin.
-	- An example file can be found under [examples/network-attachment-definition.yaml](./examples/network-attachment-definition.yaml)
-	- Change the config if necessary. See comments in the example file.
-	- `kubectl create -f network-attachment-definition.yaml`
+  - An example file can be found under [examples/network-attachment-definition.yaml](./examples/network-attachment-definition.yaml)
+  - Change the config if necessary. See comments in the example file.
+  - `kubectl create -f network-attachment-definition.yaml`
 - Create a pod spec:
-	- An example pod spec can be found under [examples/pod-spec.yaml](./examples/pod-spec.yaml)
-	- Configure the pod spec to use a suitable Docker image and to reference the network attachment definition as well as the resource type from the Device Plugin. See comments in the example file.
-	- `kubectl create -f pod-spec.yaml`
+  - An example pod spec can be found under [examples/pod-spec.yaml](./examples/pod-spec.yaml)
+  - Configure the pod spec to use a suitable Docker image and to reference the network attachment definition as well as the resource type from the Device Plugin. See comments in the example file.
+  - `kubectl create -f pod-spec.yaml`
 
 ## Prerequisites
 
@@ -31,15 +33,15 @@ Alternatively, to customize the configuration:
 The following prerequisites are required to run the plugins:
 
 - **OS**
-	- Any OS that supports Kubernetes should work.
-	- Tested on Ubuntu 20.04.
+  - Any OS that supports Kubernetes should work.
+  - Tested on Ubuntu 20.04.
 - **Kernel**
-	- AF_XDP support started from Linux kernel 4.18.
+  - AF_XDP support started from Linux kernel 4.18.
 - **Docker (or more recently Podman)**
-	- All recent versions should work.
-	- Tested on `20.10.5`, `20.10.7`, `20.10.12`, `20.10.14`, `20.10.18`.
-	- **Note:** You may need to disable memlock on Docker.
-		Add the following section to `/etc/docker/daemon.json`:
+  - All recent versions should work.
+  - Tested on `20.10.5`, `20.10.7`, `20.10.12`, `20.10.14`, `20.10.18`.
+  - **Note:** You may need to disable memlock on Docker.
+  Add the following section to `/etc/docker/daemon.json`:
 
     ```yaml
     "default-ulimits": {
@@ -59,11 +61,11 @@ The following prerequisites are required to run the plugins:
   - To serve as the [default network](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md#key-concepts) to the Kubernetes pods.
   - Any CNI should work. Tested with [Flannel](https://github.com/flannel-io/flannel).
 - **Multus CNI**
-	- To enable attaching of multiple network interfaces to pods.
-	- [Multus quickstart guide](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md).
+  - To enable attaching of multiple network interfaces to pods.
+  - [Multus quickstart guide](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md).
 
+### Development Prerequisites
 
-### Development
 The following prerequisites are required to build and deploy the plugins from source:
 
 - **GoLang**
@@ -91,7 +93,7 @@ The following prerequisites are required to build and deploy the plugins from so
   - Compiling the bpf progs for Kind.
   - Install on Ubuntu: `apt install llvm`
 
-### Development
+### Static analysis, linting and formatting
 
 The following static analysis, linting and formatting tools are not required for building and deploying but are built into some of the Make targets and enforced by CI. It is recommended to have these installed on your development system.
 
@@ -205,9 +207,9 @@ The example below shows how to configure two pools in different modes.
 }
 ```
 
-> **_NOTE:_** that the above is not a fully working example as the pools have not yet been configured with devices. This will not pass the device plugin's config validation.*
+> **_NOTE_1:_** that the above is not a fully working example as the pools have not yet been configured with devices. This will not pass the device plugin's config validation.
 
-> **_NOTE:_** Each pool created will require its own network attachment definition. See the [Running Pods](#running-pods) section above and the [network-attachment-definition.yaml](./examples/network-attachment-definition.yaml) example file for more info. The resource name provided as `k8s.v1.cni.cncf.io/resourceName` must match the pool name.
+> **_NOTE_2:_** Each pool created will require its own network attachment definition. See the [Running Pods](#running-pods) section above and the [network-attachment-definition.yaml](./examples/network-attachment-definition.yaml) example file for more info. The resource name provided as `k8s.v1.cni.cncf.io/resourceName` must match the pool name.
 
 ### Pool Drivers
 
