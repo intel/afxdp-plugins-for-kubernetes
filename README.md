@@ -194,12 +194,12 @@ The example below shows how to configure two pools in different modes.
 {
    "pools":[
       {
-         "name":"myCdqPool",
-         "mode":"cdq"
+         "name": "myCdqPool",
+         "mode": "cdq"
       },
       {
-         "name":"myPrimarypool",
-         "mode":"primary"
+         "name": "myPrimarypool",
+         "mode": "primary"
       }
    ]
 }
@@ -219,14 +219,14 @@ The example below shows how to configure a single pool that is associated with t
 {
    "pools":[
       {
-         "name":"myPool",
-         "mode":"primary",
+         "name": "myPool",
+         "mode": "primary",
          "drivers":[
             {
-               "name":"i40e"
+               "name": "i40e"
             },
             {
-               "name":"ice"
+               "name": "ice"
             }
          ]
       }
@@ -250,19 +250,19 @@ In summary: The pool `afxdp/myPool` will take two ice devices per node, where av
 {
    "pools":[
       {
-         "name":"myPool",
-         "mode":"cdq",
+         "name": "myPool",
+         "mode": "cdq",
          "drivers":[
             {
-               "name":"ice",
-               "primary":2,
-               "secondary":50,
+               "name": "ice",
+               "primary": 2,
+               "secondary": 50,
                "excludeDevices":[
                   {
-                     "name":"ens802f1"
+                     "name": "ens802f1"
                   },
                   {
-                     "name":"ens802f2"
+                     "name": "ens802f2"
                   }
                ]
             }
@@ -291,20 +291,20 @@ The three devices, `ens801f0`, `68:05:ca:2d:e9:1b` and `0000:81:00.1` have the *
 {
    "pools":[
       {
-         "name":"myPool",
-         "mode":"cdq",
+         "name": "myPool",
+         "mode": "cdq",
          "devices":[
             {
-               "name":"ens801f0",
-               "secondary":10
+               "name": "ens801f0",
+               "secondary": 10
             },
             {
-               "mac":"68:05:ca:2d:e9:1b",
-               "secondary":20
+               "mac": "68:05:ca:2d:e9:1b",
+               "secondary": 20
             },
             {
-               "pci":"0000:81:00.1",
-               "secondary":30
+               "pci": "0000:81:00.1",
+               "secondary": 30
             }
          ]
       }
@@ -336,52 +336,52 @@ However, there are also three node-specific configs included:
 {
    "pools":[
       {
-         "name":"myPool",
-         "mode":"cdq",
+         "name": "myPool",
+         "mode": "cdq",
          "drivers":[
             {
-               "name":"ice",
+               "name": "ice",
                "excludeDevices":[
                   {
-                     "name":"ens801f3"
+                     "name": "ens801f3"
                   }
                ]
             }
          ],
          "nodes":[
             {
-               "hostname":"k8snode1",
+               "hostname": "k8snode1",
                "drivers":[
                   {
-                     "name":"ice"
+                     "name": "ice"
                   }
                ]
             },
             {
-               "hostname":"k8snode2",
+               "hostname": "k8snode2",
                "devices":[
                   {
-                     "name":"ens801f3"
+                     "name": "ens801f3"
                   },
                   {
-                     "name":"ens801f1"
+                     "name": "ens801f1"
                   }
                ],
                "drivers":[
                   {
-                     "name":"ice",
+                     "name": "ice",
                      "ExcludeDevices":[
                         {
-                           "name":"ens801f2"
+                           "name": "ens801f2"
                         }
                      ],
-                     "primary":1,
-                     "secondary":20
+                     "primary": 1,
+                     "secondary": 20
                   }
                ]
             },
             {
-               "hostname":"k8snode3"
+               "hostname": "k8snode3"
             }
          ]
       }
@@ -415,6 +415,7 @@ UdsTimeout is an integer configuration. This value sets the amount of time, in s
 The example below has two pools configured.
 
 The first pool:
+
 - Has the **name** `myPrimarypool`.
 - Is in `primary` **mode**, meaning no secondary devices will be created. Pods requesting `afxdp/myPrimarypool` will be allocated the full NIC port.
 - The **drivers** field for this pool has one driver, `i40e`, meaning this pool will be assigned i40e devices, where available.
@@ -434,28 +435,28 @@ The second pool:
 {
    "pools":[
       {
-         "name":"myPrimarypool",
-         "mode":"primary",
-         "uid":1500,
-         "udsTimeout":300,
-         "RequiresUnprivilegedBpf":true,
+         "name": "myPrimarypool",
+         "mode": "primary",
+         "uid": 1500,
+         "udsTimeout": 300,
+         "RequiresUnprivilegedBpf": true,
          "ethtoolCmds":[
             "-X -device- equal 5 start 3",
             "--config-ntuple -device- flow-type udp4 dst-ip -ip- action"
          ],
          "drivers":[
             {
-               "name":"i40e"
+               "name": "i40e"
             }
          ]
       },
       {
-         "name":"myCdqPool",
-         "mode":"cdq",
-         "UdsServerDisable":true,
+         "name": "myCdqPool",
+         "mode": "cdq",
+         "UdsServerDisable": true,
          "drivers":[
             {
-               "name":"ice"
+               "name": "ice"
             }
          ]
       }
@@ -497,25 +498,25 @@ The example below shows a config including log settings.
 }
 ```
 
-### Cluster Types
+### Kind Cluster
 
-The cluster type flag is used to indicate if this is a physical cluster or a Kind cluster.
+The kindCluster flag is used to indicate if this is a physical cluster or a Kind cluster.
 
 ```yaml
 {
-       "clusterType":"physical",
-       "logLevel":"debug",
-       "logFile":"afxdp-dp.log",
+       "kindCluster": true,
+       "logLevel": "debug",
+       "logFile": "afxdp-dp.log",
        "pools":[
           {
-             "name":"myPool",
-             "mode":"primary",
+             "name": "myPool",
+             "mode": "primary",
              "drivers":[
                 {
-                   "name":"i40e"
+                   "name": "i40e"
                 },
                 {
-                   "name":"ice"
+                   "name": "ice"
                 }
              ]
           }

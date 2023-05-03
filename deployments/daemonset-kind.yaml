@@ -6,7 +6,7 @@ metadata:
 data:
   config.json: |
     {
-       "clusterType": "kind",
+       "kindCluster": true,
        "logLevel":"debug",
        "logFile":"afxdp-dp.log",
        "pools":[
