@@ -163,9 +163,9 @@ This will deploy a kind cluster with a control plane and two worker nodes. It wi
   - Change the config if necessary. See comments in the example file.
   - `kubectl create -f network-attachment-definition.yaml`
 - Create a pod spec:
-  - An example pod spec can be found under [examples/pod-spec.yaml](./examples/pod-spec.yaml)
+  - An example pod spec can be found under [examples/kind-pod-spec.yaml](./examples/kind-pod-spec.yaml)
   - Configure the pod spec to use a suitable Docker image and to reference the network attachment definition as well as the resource type from the Device Plugin. See comments in the example file.
-  - `kubectl create -f pod-spec.yaml`
+  - `kubectl create -f kind-pod-spec.yaml`
 
 > **_NOTE:_** With kind, you will need to give the pods CAP_BPF privilege UNLESS you run the following commands: `docker exec <node-name> sudo sysctl kernel.unprivileged_bpf_disabled=0`. Where node names are: af-xdp-deployment-worker and af-xdp-deployment-worker2.
 
@@ -411,6 +411,10 @@ UdsServerDisable is a Boolean configuration. If set to true, devices in this poo
 #### UdsTimeout
 
 UdsTimeout is an integer configuration. This value sets the amount of time, in seconds, that the UDS server will wait while there is no activity on the UDS. When this timeout limit is reached, the UDS server terminates and the UDS is deleted from the filesystem. This can be a useful setting, for example, in scenarios where large batches of pods are created together. Large batches of pods tend to take some time to spin up, so it might be beneficial to have the UDS server sit waiting a little longer for the pod to start. The maximum allowed value is 300 seconds (5 min). The minimum and default value is 30 seconds.
+
+#### RequiresUnprivilegedBpf
+
+RequiresUnprivilegedBpf is a Boolean configuration. Linux systems can be configured with a sysctl setting called _unprivileged_bpf_disabled_. If _unprivileged_bpf_disabled_ is set, it means eBPF operations cannot be performed by unprivileged users (or pods) on this host. If your use case requires unprivileged eBPF, this pool configuration should be set to true. When set to true, the pool will not take any devices from a node where unprivileged eBPF has been prohibited. This will mean that pods requesting devices from this pool will only be scheduled on nodes where unprivileged eBPF is allowed. The default value is false.
 
 #### Examples
 
