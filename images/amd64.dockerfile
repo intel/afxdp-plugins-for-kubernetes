@@ -16,7 +16,7 @@ FROM golang:1.20@sha256:52921e63cc544c79c111db1d8461d8ab9070992d9c636e1573176642
 COPY . /usr/src/afxdp_k8s_plugins
 WORKDIR /usr/src/afxdp_k8s_plugins
 RUN apt-get update && apt-get -y install --no-install-recommends libbpf-dev=1:0.3-2 \
-       && apt-get -y install --no-install-recommends clang llvm gcc-multilib \
+       && apt-get -y install --no-install-recommends clang=1:11.0-51+nmu5 llvm=1:11.0-51+nmu5 gcc-multilib=4:10.2.1-1 \
        && make buildcni
 
 FROM golang:1.20-alpine@sha256:87d0a3309b34e2ca732efd69fb899d3c420d3382370fd6e7e6d2cb5c930f27f9 as dpbuilder
