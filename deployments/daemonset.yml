@@ -6,7 +6,6 @@ metadata:
 data:
   config.json: |
     {
-       "clusterType":"physical",
        "logLevel":"debug",
        "logFile":"afxdp-dp.log",
        "pools":[
