@@ -22,3 +22,5 @@ test/fuzz/cni/outputDel/corpus/*
 
 !test/fuzz/deviceplugin/uds/outputUDS/
 test/fuzz/deviceplugin/uds/outputUDS/
+
+.vscode
