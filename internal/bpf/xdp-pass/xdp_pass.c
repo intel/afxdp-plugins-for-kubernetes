@@ -12,10 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// clang-format off
 #include <linux/types.h>
 #include <bpf/bpf_helpers.h>
 #include <linux/bpf.h>
-
+// clang-format on
 SEC("xdp")
 int xdp_prog_pass(struct xdp_md *ctx) { return XDP_PASS; }
 
