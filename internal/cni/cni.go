@@ -18,6 +18,11 @@ package cni
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"regexp"
+	"runtime"
+	"strings"
+
 	"github.com/containernetworking/cni/pkg/skel"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/100"
@@ -26,16 +31,13 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
+	dpcnisyncer "github.com/intel/afxdp-plugins-for-kubernetes/internal/dpcnisyncerclient"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/logformats"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	logging "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
-	"os"
-	"regexp"
-	"runtime"
-	"strings"
 )
 
 var bpfHandler = bpf.NewHandler()
@@ -51,6 +53,7 @@ type NetConfig struct {
 	Queues        string `json:"queues,omitempty"`
 	LogFile       string `json:"logFile,omitempty"`
 	LogLevel      string `json:"logLevel,omitempty"`
+	DPSyncer      bool   `json:"dpSyncer,omitempty"`
 }
 
 func init() {
@@ -368,6 +371,14 @@ func CmdDel(args *skel.CmdArgs) error {
 			if err != nil {
 				logging.Warningf("cmdDel(): failed to remove ethtool filter: %v", err)
 			}
+		}
+	}
+
+	if cfg.DPSyncer == true {
+		logging.Infof("cmdDel(): Asking Device Plugin to delete any BPF maps for %s", cfg.Device)
+		err := dpcnisyncer.DeleteNetDev(cfg.Device)
+		if err != nil {
+			logging.Errorf("cmdDel(): DeleteNetDev from Syncer Server Failed for %s: %v", cfg.Device, err)
 		}
 	}
 

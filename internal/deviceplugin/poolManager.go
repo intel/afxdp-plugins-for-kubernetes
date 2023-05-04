@@ -26,9 +26,11 @@ import (
 
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
+	dpcnisyncer "github.com/intel/afxdp-plugins-for-kubernetes/internal/dpcnisyncerserver"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/udsserver"
+	"github.com/pkg/errors"
 	logging "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -59,6 +61,7 @@ type PoolManager struct {
 	MapManagerFactory   bpf.MapManagerFactory
 	BpfHandler          bpf.Handler
 	NetHandler          networking.Handler
+	DpCniSyncerServer   *grpc.Server
 }
 
 func NewPoolManager(config PoolConfig) PoolManager {
@@ -97,6 +100,13 @@ func (pm *PoolManager) Init(config PoolConfig) error {
 		return err
 	}
 	logging.Infof("Pool "+pm.DevicePrefix+"/%s registered with Kubelet", pm.Name)
+
+	logging.Debug("CALLING startGRPCSyncer")
+	if err := pm.startGRPCSyncer(); err != nil {
+		logging.Error("Pool "+pm.DevicePrefix+"/%s syncer error %v", err)
+		return err
+	}
+	logging.Infof("Pool "+pm.DevicePrefix+"/%s syncer started serving", pm.Name)
 
 	if len(pm.Devices) > 0 {
 		pm.UpdateSignal <- true
@@ -375,6 +385,25 @@ func (pm *PoolManager) startGRPC() error {
 	return nil
 }
 
+func (pm *PoolManager) startGRPCSyncer() error {
+
+	var err error
+
+	pm.DpCniSyncerServer, err = dpcnisyncer.NewSyncerServer()
+	if err != nil {
+		return errors.Wrap(err, "Error creating the DpCniSyncerServer")
+	}
+	logging.Debugf(pm.DevicePrefix + " Syncer started serving")
+
+	return nil
+}
+
+// func (pm *PoolManager) stopGRPCSyncer() {
+
+// 	//TODO
+
+// }
+
 func (pm *PoolManager) stopGRPC() {
 	if pm.DpAPIServer != nil {
 		pm.DpAPIServer.Stop()
@@ -388,3 +417,5 @@ func (pm *PoolManager) cleanup() error {
 	}
 	return nil
 }
+
+//TODO SYNCER CLEANUP
