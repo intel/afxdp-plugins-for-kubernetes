@@ -12,9 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+// clang-format off
+#include <linux/types.h>
 #include <bpf/bpf_helpers.h>
 #include <linux/bpf.h>
+// clang-format on
 
 struct {
 	__uint(type, BPF_MAP_TYPE_XSKMAP);
