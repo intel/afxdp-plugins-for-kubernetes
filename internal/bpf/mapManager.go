@@ -27,12 +27,8 @@ import (
 	logging "github.com/sirupsen/logrus"
 )
 
-// import "google.golang.org/grpc"
-// TODO https://github.com/grpc/grpc-go
-
 const (
-	pinnedMapBaseDir = "/var/run/afxdp_dp/"
-	//pinnedMapDirFileMode = os.FileMode(0700)
+	pinnedMapBaseDir     = "/var/run/afxdp_dp/"
 	pinnedMapDirFileMode = os.FileMode(0755)
 	bpffsDirFileMode     = os.FileMode(0755)
 )
@@ -43,11 +39,15 @@ Implementations of this interface are the main type of this MapManager package. 
 */
 type MapManager interface {
 	CreateBPFFS(dev, path string) (string, error)
-	//	DeleteBPFFS(path string) error
-	//SetFilePermissions(path string) error
+	DeleteBPFFS(dev string) error
 	AddMap(dev, path string)
 	GetMaps() map[string]string
-	//Start()
+	GetBPFFS(dev string) string
+}
+
+type PoolBpfMapManager struct {
+	Manager MapManager
+	Path    string
 }
 
 /*
@@ -244,6 +244,40 @@ func (m *mapManager) GetMaps() map[string]string {
 	return m.maps
 }
 
-// func (m *mapManager) SetFilePermissions(path string) error {
+/*
+GetBPFFS
+*/
+func (m *mapManager) GetBPFFS(dev string) string {
 
-// }
+	if p, ok := m.maps[dev]; ok {
+		return p
+	}
+
+	return ""
+}
+
+func (m *mapManager) DeleteBPFFS(dev string) error {
+
+	var err error
+
+	bpffs := m.GetBPFFS(dev)
+	if bpffs == "" {
+		return errors.New("Could not find BPFFS")
+	}
+
+	if _, err := os.Stat(bpffs); os.IsNotExist(err) {
+		return errors.Wrapf(err, "Error finding BPFFS directory %s doesn't exist: %v", bpffs, err.Error())
+	}
+
+	if err = syscall.Unmount(bpffs, 0); err != nil {
+		return errors.Wrapf(err, "failed to umount %s: %v", bpffs, err.Error())
+	}
+
+	if err := os.Remove(bpffs); err != nil {
+		return errors.Wrapf(err, "Error Remove BPFFS directory %s: %v", bpffs, err.Error())
+	}
+
+	logging.Infof("Deleted BPFFS mount point at %s", bpffs)
+
+	return nil
+}

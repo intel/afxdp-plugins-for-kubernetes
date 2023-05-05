@@ -44,7 +44,7 @@ func DeleteNetDev(name string) error {
 
 	c := pb.NewNetDevClient(conn)
 	r, err := c.DelNetDev(ctx, &pb.DeleteNetDevReq{Name: name})
-	if err != nil {
+	if err != nil || r.Ret == -1 {
 		logging.Errorf("error deleting netdev resources for netdev %s", name)
 		return err
 	}

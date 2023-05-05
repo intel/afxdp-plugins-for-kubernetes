@@ -22,7 +22,9 @@ import (
 	"time"
 
 	// Replace with the actual proto package
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
 	pb "github.com/intel/afxdp-plugins-for-kubernetes/internal/dpcnisyncer"
+	"github.com/pkg/errors"
 	logging "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -35,16 +37,21 @@ const (
 
 type SyncerServer struct {
 	pb.UnimplementedNetDevServer
+	mapManager bpf.PoolBpfMapManager
 }
 
 func (s *SyncerServer) DelNetDev(ctx context.Context, in *pb.DeleteNetDevReq) (*pb.DeleteNetDevResp, error) {
 	netDevName := in.GetName()
 	// Delete the network interface called netdev using system calls or appropriate libraries
+	err := s.mapManager.Manager.DeleteBPFFS(netDevName)
+	if err != nil {
+		return &pb.DeleteNetDevResp{Ret: -1}, errors.Wrapf(err, "Could NOT delete BPFFS for %s", netDevName, err.Error())
+	}
 	logging.Infof("Network interface %s deleted", netDevName)
-	return &pb.DeleteNetDevResp{}, nil
+	return &pb.DeleteNetDevResp{Ret: 0}, nil
 }
 
-func NewSyncerServer() (*grpc.Server, error) {
+func NewSyncerServer(mm bpf.PoolBpfMapManager) (*grpc.Server, error) {
 	if _, err := os.Stat(sockAddr); !os.IsNotExist(err) {
 		if err := os.RemoveAll(sockAddr); err != nil {
 			logging.Errorf("sockAddr %s does not exist", sockAddr)
@@ -59,7 +66,7 @@ func NewSyncerServer() (*grpc.Server, error) {
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterNetDevServer(s, &SyncerServer{})
+	pb.RegisterNetDevServer(s, &SyncerServer{mapManager: mm})
 	go func() {
 		if err := s.Serve(lis); err != nil {
 			logging.Error("Could not RegisterNetDevServer: %v", err)
