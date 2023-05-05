@@ -62,6 +62,8 @@ type PoolManager struct {
 	BpfHandler          bpf.Handler
 	NetHandler          networking.Handler
 	DpCniSyncerServer   *grpc.Server
+	SyncerActive        bool
+	Pbm                 bpf.PoolBpfMapManager
 }
 
 func NewPoolManager(config PoolConfig) PoolManager {
@@ -101,12 +103,23 @@ func (pm *PoolManager) Init(config PoolConfig) error {
 	}
 	logging.Infof("Pool "+pm.DevicePrefix+"/%s registered with Kubelet", pm.Name)
 
-	logging.Debug("CALLING startGRPCSyncer")
-	if err := pm.startGRPCSyncer(); err != nil {
-		logging.Error("Pool "+pm.DevicePrefix+"/%s syncer error %v", err)
-		return err
+	if pm.BpfMapPinningEnable {
+		var err error
+
+		logging.Infof("Creating new BPF Map manager %s %s", pm.DevicePrefix+"-maps/", pm.UID)
+		pm.Pbm.Manager, pm.Pbm.Path, err = pm.MapManagerFactory.CreateMapManager(pm.DevicePrefix+"-maps/", pm.UID)
+		if err != nil {
+			logging.Errorf("Error new BPF Map manager: %v", err)
+			return err
+		}
+
+		logging.Debug("Creating new DP<=>CNI gRPC Syncer")
+		if err := pm.startGRPCSyncer(pm.Pbm); err != nil {
+			logging.Error("Pool "+pm.DevicePrefix+"/%s syncer error %v", err)
+			return err
+		}
+		logging.Infof("Pool "+pm.DevicePrefix+"/%s syncer started serving", pm.Name)
 	}
-	logging.Infof("Pool "+pm.DevicePrefix+"/%s syncer started serving", pm.Name)
 
 	if len(pm.Devices) > 0 {
 		pm.UpdateSignal <- true
@@ -163,9 +176,7 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 	response := pluginapi.AllocateResponse{}
 	var udsServer udsserver.Server
 	var udsPath string
-	var mapPath string
 	var err error
-	var mm bpf.MapManager
 
 	logging.Debugf("New allocate request on pool %s", pm.Name)
 
@@ -174,15 +185,6 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 		udsServer, udsPath, err = pm.ServerFactory.CreateServer(pm.DevicePrefix+"/"+pm.Name, pm.UID, pm.UdsTimeout, pm.UdsFuzz)
 		if err != nil {
 			logging.Errorf("Error Creating new UDS server: %v", err)
-			return &response, err
-		}
-	}
-
-	if pm.BpfMapPinningEnable {
-		logging.Infof("Creating new BPF Map manager %s %s", pm.DevicePrefix+"-maps/", pm.UID)
-		mm, mapPath, err = pm.MapManagerFactory.CreateMapManager(pm.DevicePrefix+"-maps/", pm.UID)
-		if err != nil {
-			logging.Errorf("Error new BPF Map manager: %v", err)
 			return &response, err
 		}
 	}
@@ -245,7 +247,7 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 
 			if pm.BpfMapPinningEnable {
 				logging.Infof("Loading BPF program on device: %s and pinning the map", device.Name())
-				pinPath, err := mm.CreateBPFFS(device.Name(), mapPath)
+				pinPath, err := pm.Pbm.Manager.CreateBPFFS(device.Name(), pm.Pbm.Path)
 				if err != nil {
 					logging.Errorf("Error Creating the BPFFS: %v", err)
 					return &response, err
@@ -256,9 +258,17 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 					logging.Errorf("Error loading BPF Program on interface %s and pinning the map: %v", device.Name(), err)
 					return &response, err
 				}
+
+				pm.Pbm.Manager.AddMap(device.Name(), pinPath)
+
 				//FULL PATH WILL INCLUDE THE XSKMAP...
 				fullPath := pinPath + constants.Bpf.Xsk_map
-				mm.AddMap(device.Name(), fullPath)
+				logging.Debugf("mapping %s to %s", fullPath, constants.Bpf.BpfMapPodPath)
+				cresp.Mounts = append(cresp.Mounts, &pluginapi.Mount{
+					HostPath:      fullPath,
+					ContainerPath: constants.Bpf.BpfMapPodPath,
+					ReadOnly:      false,
+				})
 			}
 
 			if pm.EthtoolFilters != nil {
@@ -270,16 +280,16 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 			}
 		}
 
-		if pm.BpfMapPinningEnable {
-			for _, path := range mm.GetMaps() {
-				logging.Debugf("mapping %s to %s", path, constants.Bpf.BpfMapPodPath)
-				cresp.Mounts = append(cresp.Mounts, &pluginapi.Mount{
-					HostPath:      path,
-					ContainerPath: constants.Bpf.BpfMapPodPath,
-					ReadOnly:      false,
-				})
-			}
-		}
+		// if pm.BpfMapPinningEnable {
+		// 	for _, path := range mm.GetMaps() {
+		// 		logging.Debugf("mapping %s to %s", path, constants.Bpf.BpfMapPodPath)
+		// 		cresp.Mounts = append(cresp.Mounts, &pluginapi.Mount{
+		// 			HostPath:      path,
+		// 			ContainerPath: constants.Bpf.BpfMapPodPath,
+		// 			ReadOnly:      false,
+		// 		})
+		// 	}
+		// }
 
 		envs[constants.Devices.EnvVarList] = strings.Join(crqt.DevicesIDs, " ")
 		envsPrint, err := tools.PrettyString(envs)
@@ -385,11 +395,11 @@ func (pm *PoolManager) startGRPC() error {
 	return nil
 }
 
-func (pm *PoolManager) startGRPCSyncer() error {
+func (pm *PoolManager) startGRPCSyncer(mm bpf.PoolBpfMapManager) error {
 
 	var err error
 
-	pm.DpCniSyncerServer, err = dpcnisyncer.NewSyncerServer()
+	pm.DpCniSyncerServer, err = dpcnisyncer.NewSyncerServer(mm)
 	if err != nil {
 		return errors.Wrap(err, "Error creating the DpCniSyncerServer")
 	}
