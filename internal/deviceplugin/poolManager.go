@@ -133,6 +133,7 @@ Terminate is called it terminate the PoolManager.
 */
 func (pm *PoolManager) Terminate() error {
 	pm.stopGRPC()
+	pm.stopGRPCSyncer()
 	if err := pm.cleanup(); err != nil {
 		logging.Infof("Cleanup error: %v", err)
 	}
@@ -280,17 +281,6 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 			}
 		}
 
-		// if pm.BpfMapPinningEnable {
-		// 	for _, path := range mm.GetMaps() {
-		// 		logging.Debugf("mapping %s to %s", path, constants.Bpf.BpfMapPodPath)
-		// 		cresp.Mounts = append(cresp.Mounts, &pluginapi.Mount{
-		// 			HostPath:      path,
-		// 			ContainerPath: constants.Bpf.BpfMapPodPath,
-		// 			ReadOnly:      false,
-		// 		})
-		// 	}
-		// }
-
 		envs[constants.Devices.EnvVarList] = strings.Join(crqt.DevicesIDs, " ")
 		envsPrint, err := tools.PrettyString(envs)
 		if err != nil {
@@ -408,11 +398,12 @@ func (pm *PoolManager) startGRPCSyncer(mm bpf.PoolBpfMapManager) error {
 	return nil
 }
 
-// func (pm *PoolManager) stopGRPCSyncer() {
-
-// 	//TODO
-
-// }
+func (pm *PoolManager) stopGRPCSyncer() {
+	if pm.DpCniSyncerServer != nil {
+		pm.DpCniSyncerServer.Stop()
+		pm.DpCniSyncerServer = nil
+	}
+}
 
 func (pm *PoolManager) stopGRPC() {
 	if pm.DpAPIServer != nil {
@@ -425,7 +416,13 @@ func (pm *PoolManager) cleanup() error {
 	if err := os.Remove(pm.DpAPISocket); err != nil && !os.IsNotExist(err) {
 		return err
 	}
+
+	for dev := range pm.Pbm.Manager.GetMaps() {
+		logging.Debugf("Deleting BPFFS for dev %s", dev)
+		err := pm.Pbm.Manager.DeleteBPFFS(dev)
+		if err != nil {
+			return errors.Wrapf(err, "Could NOT delete BPFFS for %s", dev, err.Error())
+		}
+	}
 	return nil
 }
-
-//TODO SYNCER CLEANUP
