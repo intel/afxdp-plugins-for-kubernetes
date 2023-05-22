@@ -37,26 +37,65 @@ const (
 
 type SyncerServer struct {
 	pb.UnimplementedNetDevServer
-	mapManager bpf.PoolBpfMapManager
+	mapManagers []bpf.PoolBpfMapManager
+	grpcServer  *grpc.Server
+}
+
+func (s *SyncerServer) RegisterMapManager(b bpf.PoolBpfMapManager) {
+
+	if s.mapManagers != nil {
+		for _, v := range s.mapManagers {
+			if v.Manager.GetName() == b.Manager.GetName() {
+				logging.Infof("%s is already registered", b.Manager.GetName())
+				return
+			}
+		}
+	}
+
+	s.mapManagers = append(s.mapManagers, b)
 }
 
 func (s *SyncerServer) DelNetDev(ctx context.Context, in *pb.DeleteNetDevReq) (*pb.DeleteNetDevResp, error) {
 	netDevName := in.GetName()
-	// Delete the network interface called netdev using system calls or appropriate libraries
-	err := s.mapManager.Manager.DeleteBPFFS(netDevName)
+
+	logging.Infof("Looking up Map Manager for %s", netDevName)
+	found := false
+	var pm bpf.PoolBpfMapManager
+	for _, mm := range s.mapManagers {
+		bpffs := mm.Manager.GetBPFFS(netDevName)
+		if bpffs != "" {
+			found = true
+			pm = mm
+			break
+		}
+	}
+
+	if !found {
+		logging.Errorf("Could NOT find the map manager for device %s", netDevName)
+		return &pb.DeleteNetDevResp{Ret: -1}, errors.New("Could NOT find the map manager for device")
+	}
+
+	logging.Infof("Map Manager found, deleting BPFFS for %s", netDevName)
+	err := pm.Manager.DeleteBPFFS(netDevName)
 	if err != nil {
+		logging.Errorf("Could NOT delete BPFFS for %s", netDevName)
 		return &pb.DeleteNetDevResp{Ret: -1}, errors.Wrapf(err, "Could NOT delete BPFFS for %s", netDevName, err.Error())
 	}
+
 	logging.Infof("Network interface %s deleted", netDevName)
 	return &pb.DeleteNetDevResp{Ret: 0}, nil
 }
 
-func NewSyncerServer(mm bpf.PoolBpfMapManager) (*grpc.Server, error) {
+func NewSyncerServer() (*SyncerServer, error) {
 	if _, err := os.Stat(sockAddr); !os.IsNotExist(err) {
 		if err := os.RemoveAll(sockAddr); err != nil {
 			logging.Errorf("sockAddr %s does not exist", sockAddr)
 			return nil, err
 		}
+	}
+
+	server := &SyncerServer{
+		grpcServer: grpc.NewServer(),
 	}
 
 	lis, err := net.Listen(protocol, sockAddr)
@@ -65,10 +104,9 @@ func NewSyncerServer(mm bpf.PoolBpfMapManager) (*grpc.Server, error) {
 		return nil, err
 	}
 
-	s := grpc.NewServer()
-	pb.RegisterNetDevServer(s, &SyncerServer{mapManager: mm})
+	pb.RegisterNetDevServer(server.grpcServer, server)
 	go func() {
-		if err := s.Serve(lis); err != nil {
+		if err := server.grpcServer.Serve(lis); err != nil {
 			logging.Error("Could not RegisterNetDevServer: %v", err)
 		}
 	}()
@@ -85,7 +123,7 @@ func NewSyncerServer(mm bpf.PoolBpfMapManager) (*grpc.Server, error) {
 	}
 	conn.Close()
 	logging.Debugf("NewSyncerServer up and Running")
-	return s, nil
+	return server, nil
 }
 
 func Cleanup() error {

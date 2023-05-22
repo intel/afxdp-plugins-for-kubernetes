@@ -18,11 +18,13 @@ package deviceplugin
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"regexp"
 	"strconv"
 
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/dpcnisyncerserver"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
@@ -32,6 +34,7 @@ import (
 var (
 	network     networking.Handler
 	node        host.Handler
+	dpcniserver *dpcnisyncerserver.SyncerServer
 	cfgFile     *configFile
 	hostDevices map[string]*networking.Device
 )
@@ -52,16 +55,17 @@ It contains pool specific details, such as mode and the device list.
 This object is passed into the PoolManager.
 */
 type PoolConfig struct {
-	Name                    string                        // the name of the pool, used for logging and advertising resource to K8s. Pods will request this resource
-	Mode                    string                        // the mode that this pool operates in
-	Devices                 map[string]*networking.Device // a map of devices that the pool will manage
-	UdsServerDisable        bool                          // a boolean to say if pods in this pool require BPF loading the UDS server
-	BpfMapPinningEnable     bool                          // a boolean to say if pods in this pool require BPF map pinning
-	UdsTimeout              int                           // timeout value in seconds for the UDS sockets, user provided or defaults to value from constants package
-	UdsFuzz                 bool                          // a boolean to turn on fuzz testing within the UDS server, has no use outside of development and testing
-	RequiresUnprivilegedBpf bool                          // a boolean to say if this pool requires unprivileged BPF
-	UID                     int                           // the id of the pod user, we give this user ACL access to the UDS socket
-
+	Name                    string                          // the name of the pool, used for logging and advertising resource to K8s. Pods will request this resource
+	Mode                    string                          // the mode that this pool operates in
+	Devices                 map[string]*networking.Device   // a map of devices that the pool will manage
+	UdsServerDisable        bool                            // a boolean to say if pods in this pool require BPF loading the UDS server
+	BpfMapPinningEnable     bool                            // a boolean to say if pods in this pool require BPF map pinning
+	UdsTimeout              int                             // timeout value in seconds for the UDS sockets, user provided or defaults to value from constants package
+	UdsFuzz                 bool                            // a boolean to turn on fuzz testing within the UDS server, has no use outside of development and testing
+	RequiresUnprivilegedBpf bool                            // a boolean to say if this pool requires unprivileged BPF
+	UID                     int                             // the id of the pod user, we give this user ACL access to the UDS socket
+	EthtoolCmds             []string                        // list of ethtool filters to apply to the netdev
+	DPCNIServer             *dpcnisyncerserver.SyncerServer // grpc syncer between DP and CNI
 }
 
 /*
@@ -91,10 +95,16 @@ func GetPluginConfig(configFile string) (PluginConfig, error) {
 GetPoolConfigs returns a slice of PoolConfig objects.
 Each object containing the config and device list for one pool.
 */
-func GetPoolConfigs(configFile string, net networking.Handler, host host.Handler) ([]PoolConfig, error) {
+func GetPoolConfigs(configFile string, net networking.Handler, host host.Handler, server *dpcnisyncerserver.SyncerServer) ([]PoolConfig, error) {
 	var poolConfigs []PoolConfig
 	network = net
 	node = host
+	dpcniserver = server
+
+	if dpcniserver == nil {
+		logging.Error("Error dpcniserver not configured: %v")
+		return poolConfigs, errors.New("No dpcniserver")
+	}
 
 	if cfgFile == nil {
 		if err := readConfigFile(configFile); err != nil {
@@ -253,9 +263,9 @@ func GetPoolConfigs(configFile string, net networking.Handler, host host.Handler
 				UdsFuzz:                 pool.UdsFuzz,
 				RequiresUnprivilegedBpf: pool.RequiresUnprivilegedBpf,
 				UID:                     pool.UID,
+				DPCNIServer:             dpcniserver,
 			})
 		}
-
 	}
 
 	return poolConfigs, nil
