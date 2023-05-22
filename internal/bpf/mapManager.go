@@ -43,6 +43,7 @@ type MapManager interface {
 	AddMap(dev, path string)
 	GetMaps() map[string]string
 	GetBPFFS(dev string) string
+	GetName() string
 }
 
 type PoolBpfMapManager struct {
@@ -238,7 +239,15 @@ func (m *mapManager) AddMap(dev, path string) {
 }
 
 /*
+GetName
+*/
+func (m *mapManager) GetName() string {
+	return m.name
+}
+
+/*
 GetMaps
+// TODO ADD CHECK FOR IF MAP IS NULL or not first...
 */
 func (m *mapManager) GetMaps() map[string]string {
 	return m.maps

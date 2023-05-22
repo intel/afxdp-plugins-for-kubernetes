@@ -26,11 +26,10 @@ import (
 
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
-	dpcnisyncer "github.com/intel/afxdp-plugins-for-kubernetes/internal/dpcnisyncerserver"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/dpcnisyncerserver"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/udsserver"
-	"github.com/pkg/errors"
 	logging "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -61,7 +60,7 @@ type PoolManager struct {
 	MapManagerFactory   bpf.MapManagerFactory
 	BpfHandler          bpf.Handler
 	NetHandler          networking.Handler
-	DpCniSyncerServer   *grpc.Server
+	DpCniSyncerServer   *dpcnisyncerserver.SyncerServer
 	SyncerActive        bool
 	Pbm                 bpf.PoolBpfMapManager
 }
@@ -81,6 +80,7 @@ func NewPoolManager(config PoolConfig) PoolManager {
 		UdsFuzz:             config.UdsFuzz,
 		UID:                 strconv.Itoa(config.UID),
 		EthtoolFilters:      config.EthtoolCmds,
+		DpCniSyncerServer:   config.DPCNIServer,
 	}
 }
 
@@ -113,12 +113,8 @@ func (pm *PoolManager) Init(config PoolConfig) error {
 			return err
 		}
 
-		logging.Debug("Creating new DP<=>CNI gRPC Syncer")
-		if err := pm.startGRPCSyncer(pm.Pbm); err != nil {
-			logging.Error("Pool "+pm.DevicePrefix+"/%s syncer error %v", err)
-			return err
-		}
-		logging.Infof("Pool "+pm.DevicePrefix+"/%s syncer started serving", pm.Name)
+		logging.Debug("REGISTER MAP MANAGER WITH THE DP<=>CNI grpc Syncer")
+		pm.DpCniSyncerServer.RegisterMapManager(pm.Pbm)
 	}
 
 	if len(pm.Devices) > 0 {
@@ -133,7 +129,6 @@ Terminate is called it terminate the PoolManager.
 */
 func (pm *PoolManager) Terminate() error {
 	pm.stopGRPC()
-	pm.stopGRPCSyncer()
 	if err := pm.cleanup(); err != nil {
 		logging.Infof("Cleanup error: %v", err)
 	}
@@ -385,26 +380,6 @@ func (pm *PoolManager) startGRPC() error {
 	return nil
 }
 
-func (pm *PoolManager) startGRPCSyncer(mm bpf.PoolBpfMapManager) error {
-
-	var err error
-
-	pm.DpCniSyncerServer, err = dpcnisyncer.NewSyncerServer(mm)
-	if err != nil {
-		return errors.Wrap(err, "Error creating the DpCniSyncerServer")
-	}
-	logging.Debugf(pm.DevicePrefix + " Syncer started serving")
-
-	return nil
-}
-
-func (pm *PoolManager) stopGRPCSyncer() {
-	if pm.DpCniSyncerServer != nil {
-		pm.DpCniSyncerServer.Stop()
-		pm.DpCniSyncerServer = nil
-	}
-}
-
 func (pm *PoolManager) stopGRPC() {
 	if pm.DpAPIServer != nil {
 		pm.DpAPIServer.Stop()
@@ -417,12 +392,13 @@ func (pm *PoolManager) cleanup() error {
 		return err
 	}
 
-	for dev := range pm.Pbm.Manager.GetMaps() {
-		logging.Debugf("Deleting BPFFS for dev %s", dev)
-		err := pm.Pbm.Manager.DeleteBPFFS(dev)
-		if err != nil {
-			return errors.Wrapf(err, "Could NOT delete BPFFS for %s", dev, err.Error())
-		}
-	}
+	// TODO?
+	// for dev := range pm.Pbm.Manager.GetMaps() {
+	// 	logging.Debugf("Deleting BPFFS for dev %s", dev)
+	// 	err := pm.Pbm.Manager.DeleteBPFFS(dev)
+	// 	if err != nil {
+	// 		return errors.Wrapf(err, "Could NOT delete BPFFS for %s", dev, err.Error())
+	// 	}
+	// }
 	return nil
 }

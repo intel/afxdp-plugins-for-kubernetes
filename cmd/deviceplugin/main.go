@@ -25,6 +25,7 @@ import (
 
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/deviceplugin"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/dpcnisyncerserver"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/logformats"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
@@ -97,9 +98,16 @@ func main() {
 	}
 	logging.Infof("Host meets requirements")
 
+	//START THE SYNCER SERVER TODO CHECK BPF MAP
+	dpCniSyncerServer, err := dpcnisyncerserver.NewSyncerServer()
+	if err != nil {
+		logging.Errorf("Error creating the DpCniSyncerServer")
+	}
+	logging.Debugf("DP<=>CNI grpc Syncer started")
+
 	// pool configs
 	logging.Infof("Getting device pools")
-	poolConfigs, err := deviceplugin.GetPoolConfigs(configFile, netHandler, hostHandler)
+	poolConfigs, err := deviceplugin.GetPoolConfigs(configFile, netHandler, hostHandler, dpCniSyncerServer)
 	if err != nil {
 		logging.Warningf("Error getting device pools: %v", err)
 		exit(constants.Plugins.DevicePlugin.ExitPoolError)
