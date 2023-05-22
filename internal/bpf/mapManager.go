@@ -41,8 +41,8 @@ type MapManager interface {
 	CreateBPFFS(dev, path string) (string, error)
 	DeleteBPFFS(dev string) error
 	AddMap(dev, path string)
-	GetMaps() map[string]string
-	GetBPFFS(dev string) string
+	GetMaps() (map[string]string, error)
+	GetBPFFS(dev string) (string, error)
 	GetName() string
 }
 
@@ -147,7 +147,7 @@ func (m mapManager) CreateBPFFS(device, path string) (string, error) {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return "", errors.Wrapf(err, "Error creating BPFFS mount point base directory %s doesn't exist: %v", pinnedMapBaseDir, err.Error())
 	}
-	//TODO ADD DEVICE NAME
+
 	bpffsPath, err := generateRandomBpffsName(m.bpffsPath)
 	if err != nil {
 		return "", errors.Wrapf(err, "Error generating BPFFS path: %s: %v", pinnedMapBaseDir, err.Error())
@@ -247,30 +247,34 @@ func (m *mapManager) GetName() string {
 
 /*
 GetMaps
-// TODO ADD CHECK FOR IF MAP IS NULL or not first...
 */
-func (m *mapManager) GetMaps() map[string]string {
-	return m.maps
+func (m *mapManager) GetMaps() (map[string]string, error) {
+
+	if m.maps != nil {
+		return nil, errors.New("No Maps found")
+	}
+	return m.maps, nil
 }
 
 /*
 GetBPFFS
 */
-func (m *mapManager) GetBPFFS(dev string) string {
+func (m *mapManager) GetBPFFS(dev string) (string, error) {
 
-	if p, ok := m.maps[dev]; ok {
-		return p
+	_, err := m.GetMaps()
+	if err != nil {
+		if p, ok := m.maps[dev]; ok {
+			return p, nil
+		}
 	}
 
-	return ""
+	return "", errors.Wrapf(err, "Couldn't find any maps for dev %s: %v", dev, err.Error())
 }
 
 func (m *mapManager) DeleteBPFFS(dev string) error {
 
-	var err error
-
-	bpffs := m.GetBPFFS(dev)
-	if bpffs == "" {
+	bpffs, err := m.GetBPFFS(dev)
+	if err != nil {
 		return errors.New("Could not find BPFFS")
 	}
 
