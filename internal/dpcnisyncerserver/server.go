@@ -62,8 +62,8 @@ func (s *SyncerServer) DelNetDev(ctx context.Context, in *pb.DeleteNetDevReq) (*
 	found := false
 	var pm bpf.PoolBpfMapManager
 	for _, mm := range s.mapManagers {
-		bpffs := mm.Manager.GetBPFFS(netDevName)
-		if bpffs != "" {
+		_, err := mm.Manager.GetBPFFS(netDevName)
+		if err == nil {
 			found = true
 			pm = mm
 			break

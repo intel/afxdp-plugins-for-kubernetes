@@ -391,14 +391,4 @@ func (pm *PoolManager) cleanup() error {
 	if err := os.Remove(pm.DpAPISocket); err != nil && !os.IsNotExist(err) {
 		return err
 	}
-
-	// TODO?
-	// for dev := range pm.Pbm.Manager.GetMaps() {
-	// 	logging.Debugf("Deleting BPFFS for dev %s", dev)
-	// 	err := pm.Pbm.Manager.DeleteBPFFS(dev)
-	// 	if err != nil {
-	// 		return errors.Wrapf(err, "Could NOT delete BPFFS for %s", dev, err.Error())
-	// 	}
-	// }
-	return nil
 }
