@@ -19,15 +19,20 @@ import (
 	"context"
 	"net"
 
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	pb "github.com/intel/afxdp-plugins-for-kubernetes/internal/dpcnisyncer" // Replace with the actual proto package
 	logging "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
 const (
 	_proto = "unix"
-	sock   = "/tmp/afxdp_dp/syncer.sock"
+)
+
+var (
+	sock = pluginapi.DevicePluginPath + constants.Plugins.DevicePlugin.DevicePrefix + "-" + "syncer.sock"
 )
 
 func DeleteNetDev(name string) error {

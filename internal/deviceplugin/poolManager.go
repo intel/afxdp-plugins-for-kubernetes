@@ -61,6 +61,7 @@ type PoolManager struct {
 	BpfHandler          bpf.Handler
 	NetHandler          networking.Handler
 	DpCniSyncerServer   *dpcnisyncerserver.SyncerServer
+	DpCniSyncerSocket   string
 	SyncerActive        bool
 	Pbm                 bpf.PoolBpfMapManager
 }
@@ -133,6 +134,10 @@ func (pm *PoolManager) Terminate() error {
 		logging.Infof("Cleanup error: %v", err)
 	}
 	logging.Infof(pm.DevicePrefix + "/" + pm.Name + " terminated")
+
+	if pm.DpCniSyncerServer != nil {
+		pm.DpCniSyncerServer.StopGRPCSyncer()
+	}
 
 	return nil
 }
@@ -391,4 +396,5 @@ func (pm *PoolManager) cleanup() error {
 	if err := os.Remove(pm.DpAPISocket); err != nil && !os.IsNotExist(err) {
 		return err
 	}
+	return nil
 }
