@@ -15,7 +15,7 @@ jobs:
       contents: read  # for actions/checkout to fetch code
       statuses: write  # for github/super-linter to mark status of each linter run
     runs-on: ubuntu-latest
-    steps: 
+    steps:
     - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
     - name: super-linter
       uses: github/super-linter@985ef206aaca4d560cb9ee2af2b42ba44adc1d55 # v4.10.0
@@ -46,8 +46,8 @@ jobs:
 
 # go-static-tools scans code base and packages using go-vet, go mod verify and staticcheck
   go-static-tools:
-    runs-on: ubuntu-latest    
-    steps: 
+    runs-on: ubuntu-latest
+    steps:
     - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
     - name: Set up Go
       uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568 # v3.5.0
@@ -55,7 +55,7 @@ jobs:
         go-version: 1.19
 
     - name: Install dependencies
-      run:  sudo apt-get update && sudo apt install libbpf-dev
+      run:  sudo apt-get update && sudo apt install libbpf-dev clang llvm gcc-multilib
 
     - name: Install staticcheck
       run: go install honnef.co/go/tools/cmd/staticcheck@latest
