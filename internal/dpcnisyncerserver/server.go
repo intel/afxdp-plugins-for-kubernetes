@@ -22,17 +22,22 @@ import (
 	"time"
 
 	// Replace with the actual proto package
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
 	pb "github.com/intel/afxdp-plugins-for-kubernetes/internal/dpcnisyncer"
 	"github.com/pkg/errors"
 	logging "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
 const (
 	protocol = "unix"
-	sockAddr = "/tmp/afxdp_dp/syncer.sock"
+)
+
+var (
+	sockAddr = pluginapi.DevicePluginPath + constants.Plugins.DevicePlugin.DevicePrefix + "-" + "syncer.sock"
 )
 
 type SyncerServer struct {
@@ -86,6 +91,14 @@ func (s *SyncerServer) DelNetDev(ctx context.Context, in *pb.DeleteNetDevReq) (*
 	return &pb.DeleteNetDevResp{Ret: 0}, nil
 }
 
+func (s *SyncerServer) StopGRPCSyncer() {
+	if s.grpcServer != nil {
+		s.grpcServer.Stop()
+		s.grpcServer = nil
+	}
+	s.cleanup()
+}
+
 func NewSyncerServer() (*SyncerServer, error) {
 	if _, err := os.Stat(sockAddr); !os.IsNotExist(err) {
 		if err := os.RemoveAll(sockAddr); err != nil {
@@ -126,13 +139,9 @@ func NewSyncerServer() (*SyncerServer, error) {
 	return server, nil
 }
 
-func Cleanup() error {
+func (s *SyncerServer) cleanup() error {
 	if err := os.Remove(sockAddr); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 	return nil
 }
-
-// func StopGRPCSyncer() {
-// 	//TODO
-// }
