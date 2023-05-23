@@ -410,6 +410,7 @@ EthtoolCmds is an array of strings. This is a setting that can be applied to dev
 UdsServerDisable is a Boolean configuration. If set to true, devices in this pool will not have the BPF app loaded onto the netdev. This means no UDS server is spun up when a device is allocated to a pod. By default, this is set to false.
 
 #### BpfMapPinningEnable
+
 BpfMapPinningEnable is a Boolean configuration. If set to true, will use BPF map pinning instead of a UDS to share an XSK map with a pod. By default, this is set to false. Should set UdsServerDisable to true when using this configuration.
 
 #### UdsTimeout
