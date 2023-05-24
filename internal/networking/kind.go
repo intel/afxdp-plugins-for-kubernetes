@@ -58,7 +58,7 @@ func CreateKindNetwork(numVeths, offset int) error {
 		/* Attach one end of the veth pair to the bridge */
 		err = Attach(b, vPeer)
 		if err != nil {
-			return errors.Wrapf(err, "Error attaching veth %s peer %s to bridge %s", veth.Attrs().Name, b.Attrs().Name)
+			return errors.Wrapf(err, "Error attaching veth %s peer %s to bridge %s", veth.Attrs().Name, vPeer, b.Attrs().Name)
 		}
 		logging.Infof("Attached veth %s to bridge %s", veth.Attrs().Name, b.Attrs().Name)
 		p, _ := GetPeer(veth)
