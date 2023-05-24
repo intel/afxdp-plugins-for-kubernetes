@@ -74,7 +74,7 @@ jobs:
         go-version: 1.19
 
     - name: Install dependencies
-      run:  sudo apt-get update && sudo apt install libbpf-dev
+      run:  sudo apt-get update && sudo apt install libbpf-dev clang llvm gcc-multilib
 
     - name: unit-tests
       run: make test
