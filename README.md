@@ -63,6 +63,10 @@ The following prerequisites are required to run the plugins:
 - **Multus CNI**
   - To enable attaching of multiple network interfaces to pods.
   - [Multus quickstart guide](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md).
+- **Kind**
+  - To use a Kind deployment.
+  - [Kind quickstart guide](https://kind.sigs.k8s.io/docs/user/quick-start/)
+  - Tested with Kind version 0.18.0
 
 ### Development Prerequisites
 
