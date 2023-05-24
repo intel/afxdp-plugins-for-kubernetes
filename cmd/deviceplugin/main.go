@@ -104,9 +104,15 @@ func main() {
 		logging.Warningf("Error getting device pools: %v", err)
 		exit(constants.Plugins.DevicePlugin.ExitPoolError)
 	}
+	logging.Infof("Found %d poolConfigs", len(poolConfigs))
 
 	dp := devicePlugin{
 		pools: make(map[string]deviceplugin.PoolManager),
+	}
+
+	if cfg.KindCluster && len(poolConfigs) > 1 {
+		logging.Errorf("Too many pools for kind configuration")
+		exit(constants.Plugins.DevicePlugin.ExitKindError)
 	}
 
 	for _, poolConfig := range poolConfigs {
