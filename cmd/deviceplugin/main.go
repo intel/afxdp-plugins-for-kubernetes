@@ -63,7 +63,7 @@ func main() {
 	}
 
 	// configure a set of veths and a bridge as a secondary kind network.
-	if cfg.KindCluster == true {
+	if cfg.KindCluster {
 		if err := configureKindSecondaryNetwork(); err != nil {
 			logging.Errorf("Error configuring Kind Secondary Network: %v", err)
 			exit(constants.Plugins.DevicePlugin.ExitKindError)
