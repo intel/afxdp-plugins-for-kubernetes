@@ -33,7 +33,7 @@ var (
 func CreateKindNetwork(numVeths, offset int) error {
 
 	kindNetworkExists, _ := CheckKindNetworkExists()
-	if kindNetworkExists == true {
+	if kindNetworkExists {
 		logging.Infof("Bridge %s already exists deleting at as we don't know it's current state", BridgeName)
 		err := DeleteKindNetwork(numVeths, offset)
 		if err != nil {

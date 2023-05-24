@@ -32,7 +32,6 @@ type fakeHandler struct{}
 var (
 	kernelVersion        string
 	privilegedBpfAllowed bool
-	kindSecondaryNetwork bool
 )
 
 /*

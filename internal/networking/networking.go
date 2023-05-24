@@ -34,7 +34,6 @@ import (
 
 var (
 	sysClassNet = "/sys/class/net"
-	driverLink  = "device/driver"
 	pciLink     = "device"
 	pciDir      = "/sys/bus/pci/devices"
 )
