@@ -134,7 +134,7 @@ func GetPoolConfigs(configFile string, net networking.Handler, host host.Handler
 			delete(hostDevices, device)
 			continue
 		}
-		if kindSecondaryNetwork == false {
+		if !kindSecondaryNetwork {
 			physical, err := network.IsPhysicalPort(device)
 			if err != nil {
 				logging.Errorf("Error determining if %s is a physical device: %v", device, err)
