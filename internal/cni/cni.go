@@ -374,7 +374,7 @@ func CmdDel(args *skel.CmdArgs) error {
 		}
 	}
 
-	if cfg.DPSyncer == true {
+	if cfg.DPSyncer {
 		logging.Infof("cmdDel(): Asking Device Plugin to delete any BPF maps for %s", cfg.Device)
 		err := dpcnisyncer.DeleteNetDev(cfg.Device)
 		if err != nil {
