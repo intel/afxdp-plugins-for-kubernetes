@@ -66,7 +66,7 @@ func Fuzz(data []byte) int {
 	//START THE SYNCER SERVER TODO CHECK BPF MAP
 	dpCniSyncerServer, err := dpcnisyncerserver.NewSyncerServer()
 	if err != nil {
-		logging.Errorf("Error creating the DpCniSyncerServer")
+		panic(1)
 	}
 
 	_, err = dp.GetPoolConfigs(tmpfile.Name(), networking.NewHandler(), host.NewHandler(), dpCniSyncerServer)
