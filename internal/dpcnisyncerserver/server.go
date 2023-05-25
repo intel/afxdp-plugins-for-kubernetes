@@ -84,7 +84,7 @@ func (s *SyncerServer) DelNetDev(ctx context.Context, in *pb.DeleteNetDevReq) (*
 	err := pm.Manager.DeleteBPFFS(netDevName)
 	if err != nil {
 		logging.Errorf("Could NOT delete BPFFS for %s", netDevName)
-		return &pb.DeleteNetDevResp{Ret: -1}, errors.Wrapf(err, "Could NOT delete BPFFS for %s", netDevName, err.Error())
+		return &pb.DeleteNetDevResp{Ret: -1}, errors.Wrapf(err, "Could NOT delete BPFFS for %s: %v", netDevName, err.Error())
 	}
 
 	logging.Infof("Network interface %s deleted", netDevName)
@@ -120,7 +120,7 @@ func NewSyncerServer() (*SyncerServer, error) {
 	pb.RegisterNetDevServer(server.grpcServer, server)
 	go func() {
 		if err := server.grpcServer.Serve(lis); err != nil {
-			logging.Error("Could not RegisterNetDevServer: %v", err)
+			logging.Errorf("Could not RegisterNetDevServer: %v", err)
 		}
 	}()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

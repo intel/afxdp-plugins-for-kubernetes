@@ -46,7 +46,7 @@ func TestAllocate(t *testing.T) {
 			"dev_9": networking.CreateTestDevice("dev_9", "primary", "ice", "0000:81:00.9", "68:05:ca:2d:e9:09", netHandler),
 		},
 		UdsServerDisable:        false,
-		BpfMapPinningEnable      false,
+		BpfMapPinningEnable:     false,
 		UdsTimeout:              0,
 		UdsFuzz:                 false,
 		RequiresUnprivilegedBpf: false,

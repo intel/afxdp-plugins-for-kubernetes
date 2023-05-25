@@ -103,7 +103,7 @@ func GetPoolConfigs(configFile string, net networking.Handler, host host.Handler
 	dpcniserver = server
 
 	if dpcniserver == nil {
-		logging.Error("Error dpcniserver not configured: %v")
+		logging.Error("Error dpcniserver not configured")
 		return poolConfigs, errors.New("No dpcniserver")
 	}
 
