@@ -53,7 +53,7 @@ func DeleteNetDev(name string) error {
 		logging.Errorf("error deleting netdev resources for netdev %s", name)
 		return err
 	}
-	logging.Infof("Server response:", r)
+	logging.Infof("Server response:%v", r)
 
 	return nil
 }
