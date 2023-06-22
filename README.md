@@ -150,6 +150,7 @@ The **mode** is the mode this pool operates in. Mode determines how pools scale 
 Additional secondary device modes are planned.
 
 The example below shows how to configure two pools in different modes.
+> **_NOTE:_**  Currently, CDQ is not publicly available yet, but will be in the future.
 ```
 {
    "pools":[
