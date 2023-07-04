@@ -9,6 +9,12 @@ spec:
       "cniVersion": "0.3.0",
       "type": "afxdp",
       "mode": "primary",
+      "ethtoolCmds" : [
+                "-K -device- ntuple off",
+                "-K -device- ntuple on",
+                "-N -device- rx-flow-hash udp4 fn",
+                "-N -device- flow-type udp4 src-port 5001 dst-port 5001 action 7"
+             ],
       "logFile": "afxdp-cni-e2e.log",
       "logLevel": "debug",
       "ipam": {

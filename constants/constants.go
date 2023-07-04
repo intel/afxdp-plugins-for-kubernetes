@@ -101,11 +101,6 @@ var (
 	handshakeResponseBadRequest  = "/nak"                  // general non-acknowledgement response, usually indicates a bad request
 	handshakeResponseError       = "/error"                // general error occurred response, indicates an error occurred on the device plugin end
 
-	/*DeviceFile*/
-	name            = "device.json"    // file which enables passing of device information from device plugin to CNI in the form of device map object.
-	directory       = "/tmp/afxdp_dp/" // host location where deviceFile file is placed.
-	filePermissions = 0600             // permissions for device file.
-
 	/*EthtoolFilters*/
 	ethtoolFilterRegex = `^[a-zA-Z0-9-:.-/\s/g]+$` // regex to validate ethtool filter commands.
 )
@@ -338,13 +333,7 @@ func init() {
 			ResponseError:       handshakeResponseError,
 		},
 	}
-
-	DeviceFile = deviceFile{
-		Name:            name,
-		FilePermissions: filePermissions,
-		Directory:       directory,
-	}
-
+	
 	EthtoolFilter = ethtoolFilter{
 		EthtoolFilterRegex: ethtoolFilterRegex,
 	}
