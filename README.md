@@ -403,10 +403,6 @@ Below are some additional optional configurations that can be applied to pools.
 UID is an integer configuration. It is useful in scenarios where the AF_XDP pod runs as a non-zero user. This configuration can be used to inform the device plugin about the user ID of the pod. This allows that non-zero user to use the UDS without issue. If unset, then only user 0 can use the UDS.
 Note: User 0 does not imply that the pod needs to be privileged.
 
-#### EthtoolCmds
-
-EthtoolCmds is an array of strings. This is a setting that can be applied to devices in a `primary` mode pool. Here the user can provide a list of Ethtool filters to apply to the devices as they are being allocated to a pod. These strings should be formatted exactly as if setting Ethtool filters manually from the command line. Some Ethtool filters require the netdev name or the IP address and in these instances, the user can substitute these with `-device-` and `-ip-`  respectively. The plugins will apply the filters with the correct name and IP address when they become known during pod creation.
-
 #### UdsServerDisable
 
 UdsServerDisable is a Boolean configuration. If set to true, devices in this pool will not have the BPF app loaded onto the netdev. This means no UDS server is spun up when a device is allocated to a pod. By default, this is set to false.
@@ -425,13 +421,12 @@ The example below has two pools configured.
 
 The first pool:
 
-- Has the **name** `myPrimarypool`.
-- Is in `primary` **mode**, meaning no secondary devices will be created. Pods requesting `afxdp/myPrimarypool` will be allocated the full NIC port.
-- The **drivers** field for this pool has one driver, `i40e`, meaning this pool will be assigned i40e devices, where available.
-- The **uid** field for this pool is set to `1500` meaning the AF_XDP pod can run as user 1500 and use the UDS without issue.
-- The **udsTimeout** field for this pool is set to `300`, meaning the UDS server will only time out and terminate after 5 minutes of inactivity on the UDS.
-- The **RequiresUnprivilegedBpf** field is set to `true` meaning this pool will only be assigned devices from nodes where unprivileged eBPF is allowed.
-- Finally, the **ethtoolCmds** field has two filters configured. This means the filters `ethtool -X <device> equal 5 start 3` and `ethtool --config-ntuple -device- flow-type udp4 dst-ip <ip> action` will be configured on all devices as they are being attached to the AF_XDP pods. The plugins will substitute `<device>` and `<ip>` accordingly.
+ - Has the **name** `myPrimarypool`.
+ - Is in `primary` **mode**, meaning no secondary devices will be created. Pods requesting `afxdp/myPrimarypool` will be allocated the full NIC port.
+ - The **drivers** field for this pool has one driver, `i40e`, meaning this pool will be assigned i40e devices, where available.
+ - The **uid** field for this pool is set to `1500` meaning the AF_XDP pod can run as user 1500 and use the UDS without issue.
+ - The **udsTimeout** field for this pool is set to `300`, meaning the UDS server will only time out and terminate after 5 minutes of inactivity on the UDS.
+ - The **RequiresUnprivilegedBpf** field is set to `true` meaning this pool will only be assigned devices from nodes where unprivileged eBPF is allowed.
 
 The second pool:
 
@@ -444,15 +439,11 @@ The second pool:
 {
    "pools":[
       {
-         "name": "myPrimarypool",
-         "mode": "primary",
-         "uid": 1500,
-         "udsTimeout": 300,
-         "RequiresUnprivilegedBpf": true,
-         "ethtoolCmds":[
-            "-X -device- equal 5 start 3",
-            "--config-ntuple -device- flow-type udp4 dst-ip -ip- action"
-         ],
+         "name":"myPrimarypool",
+         "mode":"primary",
+         "uid":1500,
+         "udsTimeout":300,
+         "RequiresUnprivilegedBpf":true,
          "drivers":[
             {
                "name": "i40e"
@@ -532,6 +523,14 @@ The kindCluster flag is used to indicate if this is a physical cluster or a Kind
        ]
     }
 ```
+
+### Ethtool Filters
+Ethtool filters can be applied to devices during CNI runtime. This setting can only be assigned to devices in a `primary` mode pool from the networkAttachmentDefinition file.
+The EthtoolCmds field is an array of strings. These strings should be formatted exactly as if setting Ethtool filters where manually from the command line. Some Ethtool filters require the device name or the IP address and in these instances, the user can substitute these with `-device-` and `-ip-` respectively. The plugins will apply the filters with the correct name and IP address when they become known during pod creation.
+
+From the [examples/network-attachment-definition.yaml](./examples/network-attachment-definition.yaml) file: **ethtoolCmds** field has two filters configured. This means the filters `ethtool -X <device> equal 5 start 3` and `ethtool --config-ntuple -device- flow-type udp4 dst-ip <ip> action` will be configured on all devices as they are being attached to the AF_XDP pods. The plugins will substitute `<device>` and `<ip>` accordingly.
+
+*Note: When setting ethtool commands in the **ethtoolCmds** field, the 'ethtool' prefix must be removed.
 
 ## CLOC
 

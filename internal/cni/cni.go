@@ -29,7 +29,6 @@ import (
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/logformats"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
-	//"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	logging "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
 	"os"
@@ -203,14 +202,14 @@ func CmdAdd(args *skel.CmdArgs) error {
 	}
 
 	if cfg.Mode == "primary" {
-		ethInstalled, version, err := host.HasEthtool()
-		if err != nil {
-			logging.Warningf("cmdAdd(): failed to discover ethtool on host: %v", err)
-		}
-		if ethInstalled {
-			logging.Debugf("cmdAdd(): ethtool found on host")
-			logging.Debugf("\t" + version)
-			if cfg.EthtoolCmds != nil {
+		if cfg.EthtoolCmds != nil {
+			ethInstalled, version, err := host.HasEthtool()
+			if err != nil {
+				logging.Warningf("cmdAdd(): failed to discover ethtool on host: %v", err)
+			}
+			if ethInstalled {
+				logging.Debugf("cmdAdd(): ethtool found on host")
+				logging.Debugf("\t" + version)
 				logging.Infof("cmdAdd(): applying ethtool filters on device: %s", cfg.Device)
 				iPAddr, err := extractIP(result)
 				if err != nil {
@@ -222,9 +221,9 @@ func CmdAdd(args *skel.CmdArgs) error {
 					logging.Errorf("cmdAdd(): unable to executed ethtool filter: %v", err)
 					return err
 				}
-			} else {
-				logging.Debugf("cmdAdd(): ethtool filters have not been specified")
 			}
+		} else {
+			logging.Debugf("cmdAdd(): ethtool filters have not been specified")
 		}
 	}
 
@@ -345,19 +344,20 @@ func CmdDel(args *skel.CmdArgs) error {
 			return err
 		}
 	}
-
 	if cfg.Mode == "primary" {
-		logging.Debugf("cmdDel: checking host for Ethtool")
-		ethInstalled, _, err := host.HasEthtool()
-		if err != nil {
-			logging.Errorf("cmdDel(): error checking if Ethtool is present on host: %v", err)
-			return err
-		}
-		if ethInstalled {
-			logging.Infof("cmdDel(): Removing ethtool filters on device: %s", cfg.Device)
-			err := netHandler.DeleteEthtool(cfg.Device)
+		if cfg.EthtoolCmds != nil {
+			logging.Debugf("cmdDel: checking host for Ethtool")
+			ethInstalled, _, err := host.HasEthtool()
 			if err != nil {
-				logging.Warningf("cmdDel(): failed to remove ethtool filter: %v", err)
+				logging.Errorf("cmdDel(): error checking if Ethtool is present on host: %v", err)
+				return err
+			}
+			if ethInstalled {
+				logging.Infof("cmdDel(): Removing ethtool filters on device: %s", cfg.Device)
+				err := netHandler.DeleteEthtool(cfg.Device)
+				if err != nil {
+					logging.Warningf("cmdDel(): failed to remove ethtool filter: %v", err)
+				}
 			}
 		}
 	}

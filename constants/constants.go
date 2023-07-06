@@ -333,7 +333,7 @@ func init() {
 			ResponseError:       handshakeResponseError,
 		},
 	}
-	
+
 	EthtoolFilter = ethtoolFilter{
 		EthtoolFilterRegex: ethtoolFilterRegex,
 	}
