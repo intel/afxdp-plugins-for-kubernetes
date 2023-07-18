@@ -30,7 +30,7 @@ fakeHandler implements the FakeHandler interface.
 type fakeHandler struct{}
 
 var (
-	kernalVersion        string
+	kernelVersion        string
 	privilegedBpfAllowed bool
 )
 
@@ -46,11 +46,11 @@ KernelVersion checks the host kernel version and returns it as a string.
 In this FakeHandler it returns a dummy version for testing purposes.
 */
 func (r *fakeHandler) KernelVersion() (string, error) {
-	return kernalVersion, nil
+	return kernelVersion, nil
 }
 
 func (r *fakeHandler) SetKernalVersion(version string) {
-	kernalVersion = version
+	kernelVersion = version
 }
 
 /*

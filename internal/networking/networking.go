@@ -27,13 +27,13 @@ import (
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	"github.com/intel/afxdp-plugins-for-kubernetes/pkg/subfunctions"
+	_ethtool "github.com/safchain/ethtool"
 	logging "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
 )
 
 var (
 	sysClassNet = "/sys/class/net"
-	driverLink  = "device/driver"
 	pciLink     = "device"
 	pciDir      = "/sys/bus/pci/devices"
 )
@@ -80,7 +80,7 @@ func NewHandler() Handler {
 
 /*
 GetHostDevices returns information relating to host network devices.
-Device information is initialised and returned as a map of devices.
+Device information is initialized and returned as a map of devices.
 */
 func (r *handler) GetHostDevices() (map[string]*Device, error) {
 	devices := make(map[string]*Device)
@@ -91,6 +91,9 @@ func (r *handler) GetHostDevices() (map[string]*Device, error) {
 		return devices, err
 	}
 	for _, intf := range interfaces {
+		if intf.Name == "lo" {
+			continue
+		}
 		pciAdd, err := r.GetDevicePci(intf.Name)
 		if err != nil {
 			return devices, err
@@ -133,7 +136,7 @@ func (r *handler) GetIPAddresses(interfaceName string) ([]string, error) {
 }
 
 /*
-CycleDevice takes a netdave name and sets the device 'UP', then 'DOWN'
+CycleDevice takes a netdev name and sets the device 'UP', then 'DOWN'
 Primerally used to workaround error - 22 of loading bpf prog onto a device
 that was never in 'UP' state, e.g. after a reboot
 Equivalent to 'ip link set <interface_name> down' and 'ip link set <interface_name> up'
@@ -156,11 +159,10 @@ func (r *handler) CycleDevice(interfaceName string) error {
 }
 
 /*
-GetDeviceDriver takes a netdave name and returns the driver type.
+GetDeviceDriver takes a netdev name and returns the driver type.
 */
 func (r *handler) GetDeviceDriver(interfaceName string) (string, error) {
-	link := filepath.Join(sysClassNet, interfaceName, driverLink)
-	driverInfo, err := os.Readlink(link)
+	driver, err := _ethtool.DriverName(interfaceName)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", nil
@@ -168,11 +170,11 @@ func (r *handler) GetDeviceDriver(interfaceName string) (string, error) {
 		logging.Errorf("Error getting driver for device %s: %v", interfaceName, err.Error())
 		return "", err
 	}
-	return filepath.Base(driverInfo), nil
+	return driver, nil
 }
 
 /*
-GetDevicePci takes a netdave name and returns the pci address.
+GetDevicePci takes a netdev name and returns the pci address.
 */
 func (r *handler) GetDevicePci(interfaceName string) (string, error) {
 	link := filepath.Join(sysClassNet, interfaceName, pciLink)

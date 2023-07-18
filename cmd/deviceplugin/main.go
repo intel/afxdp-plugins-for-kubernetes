@@ -18,6 +18,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/deviceplugin"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
@@ -25,10 +30,6 @@ import (
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	logging "github.com/sirupsen/logrus"
-	"io"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 var (
@@ -59,6 +60,15 @@ func main() {
 	if err := configureLogging(cfg); err != nil {
 		logging.Errorf("Error configuring logging: %v", err)
 		exit(constants.Plugins.DevicePlugin.ExitLogError)
+	}
+
+	// configure a set of veths and a bridge as a secondary kind network.
+	if cfg.KindCluster {
+		if err := configureKindSecondaryNetwork(); err != nil {
+			logging.Errorf("Error configuring Kind Secondary Network: %v", err)
+			exit(constants.Plugins.DevicePlugin.ExitKindError)
+		}
+
 	}
 
 	//device file
@@ -94,9 +104,15 @@ func main() {
 		logging.Warningf("Error getting device pools: %v", err)
 		exit(constants.Plugins.DevicePlugin.ExitPoolError)
 	}
+	logging.Infof("Found %d poolConfigs", len(poolConfigs))
 
 	dp := devicePlugin{
 		pools: make(map[string]deviceplugin.PoolManager),
+	}
+
+	if cfg.KindCluster && len(poolConfigs) > 1 {
+		logging.Errorf("Too many pools for kind configuration")
+		exit(constants.Plugins.DevicePlugin.ExitKindError)
 	}
 
 	for _, poolConfig := range poolConfigs {
@@ -162,6 +178,41 @@ func configureLogging(cfg deviceplugin.PluginConfig) error {
 			logging.SetFormatter(logformats.Debug)
 		}
 	}
+
+	return nil
+}
+
+// On each Kind node
+// Create a bridge afxdp-kind-br
+// Create 4 vethpairs starting at veth6
+//  +===============+
+//  | afxdp-kind-br |
+//  |     +---------|         +---------+
+//  |     |  veth7  | <=====> |  veth6  |
+//  |     +---------|         +---------+
+//  |     +---------|         +---------+
+//  |     |  veth9  | <=====> |  veth8  |
+//  |     +---------|         +---------+
+//  |     +---------|         +---------+
+//  |     |  veth11 | <=====> |  veth10 |
+//  |     +---------|         +---------+
+//  |     +---------|         +---------+
+//  |     |  veth13 | <=====> |  veth12 |
+//  |     +---------|         +---------+
+//  +===============+
+// The "even" veth of the pair will be added to the device plugin resource pool.
+// and plumbed to the Pod.
+func configureKindSecondaryNetwork() error {
+	numVeths := 4
+	offset := 6
+
+	err := networking.CreateKindNetwork(numVeths, offset)
+	if err != nil {
+		logging.Errorf("Error Creating CreateKindNetwork %s", err.Error())
+		return err
+	}
+
+	logging.Infof("Created CreateKindNetwork")
 
 	return nil
 }

@@ -1,5 +1,6 @@
 /*
  * Copyright(c) 2022 Intel Corporation.
+ * Copyright(c) Red Hat Inc.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,6 +26,7 @@ import "C"
 
 import (
 	"errors"
+
 	logging "github.com/sirupsen/logrus"
 )
 
@@ -35,6 +37,7 @@ without making actual BPF calls.
 */
 type Handler interface {
 	LoadBpfSendXskMap(ifname string) (int, error)
+	LoadAttachBpfXdpPass(ifname string) error
 	ConfigureBusyPoll(fd int, busyTimeout int, busyBudget int) error
 	Cleanbpf(ifname string) error
 }
@@ -62,6 +65,19 @@ func (r *handler) LoadBpfSendXskMap(ifname string) (int, error) {
 	}
 
 	return fd, nil
+}
+
+/*
+LoadBpfXdpPass is the GoLang wrapper for the C function Load_bpf_send_xsk_map
+*/
+func (r *handler) LoadAttachBpfXdpPass(ifname string) error {
+	err := int(C.Load_attach_bpf_xdp_pass(C.CString(ifname)))
+
+	if err < 0 {
+		return errors.New("error loading BPF program onto interface")
+	}
+
+	return nil
 }
 
 /*

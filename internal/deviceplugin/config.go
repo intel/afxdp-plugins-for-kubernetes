@@ -1,5 +1,6 @@
 /*
 * Copyright(c) 2022 Intel Corporation.
+* Copyright(c) Red Hat Inc.
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
 * You may obtain a copy of the License at
@@ -17,12 +18,15 @@ package deviceplugin
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"regexp"
+	"strconv"
+
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	logging "github.com/sirupsen/logrus"
-	"io/ioutil"
 )
 
 var (
@@ -37,8 +41,9 @@ PluginConfig is the object that represents the overall plugin config.
 Global configurations such as log levels are contained here.
 */
 type PluginConfig struct {
-	LogFile  string
-	LogLevel string
+	LogFile     string
+	LogLevel    string
+	KindCluster bool
 }
 
 /*
@@ -74,8 +79,9 @@ func GetPluginConfig(configFile string) (PluginConfig, error) {
 	}
 
 	pluginConfig = PluginConfig{
-		LogFile:  cfgFile.LogFile,
-		LogLevel: cfgFile.LogLevel,
+		LogFile:     cfgFile.LogFile,
+		LogLevel:    cfgFile.LogLevel,
+		KindCluster: cfgFile.KindCluster,
 	}
 
 	return pluginConfig, nil
@@ -119,17 +125,39 @@ func GetPoolConfigs(configFile string, net networking.Handler, host host.Handler
 		return poolConfigs, err
 	}
 
+	kindSecondaryNetwork, err := networking.CheckKindNetworkExists()
+	if err != nil {
+		logging.Errorf("Error checking if host has Kind secondary network: %v", err)
+	}
 	for device := range hostDevices {
-		physical, err := network.IsPhysicalPort(device)
-		if err != nil {
-			logging.Errorf("Error determining if %s is a physical device: %v", device, err)
+		if device == "lo" || device == "afxdp-kind-br" {
 			delete(hostDevices, device)
 			continue
 		}
-		if !physical {
-			logging.Debugf("%s is not a physical device, removing from list of host devices", device)
-			delete(hostDevices, device)
-			continue
+		if !kindSecondaryNetwork {
+			physical, err := network.IsPhysicalPort(device)
+			if err != nil {
+				logging.Errorf("Error determining if %s is a physical device: %v", device, err)
+				delete(hostDevices, device)
+				continue
+			}
+			if !physical {
+				logging.Debugf("%s is not a physical device, removing from list of host devices", device)
+				delete(hostDevices, device)
+				continue
+			}
+		} else {
+			re := regexp.MustCompile("[0-9]+")
+
+			vethNums := re.FindAllString(device, -1)
+			for _, n := range vethNums {
+				i, _ := strconv.Atoi(n)
+				if (i % 2) == 1 {
+					logging.Debugf("%s is an odd veth, removing from list of host devices", device)
+					delete(hostDevices, device)
+					continue
+				}
+			}
 		}
 		if tools.ArrayContainsPrefix(constants.Devices.Prohibited, device) {
 			logging.Debugf("%s a globally prohibited device, removing from list of host devices", device)

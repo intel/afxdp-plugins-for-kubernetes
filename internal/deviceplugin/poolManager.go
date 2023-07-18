@@ -1,5 +1,6 @@
 /*
  * Copyright(c) 2022 Intel Corporation.
+ * Copyright(c) Red Hat Inc.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +18,12 @@ package deviceplugin
 
 import (
 	"fmt"
+	"net"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
@@ -27,11 +34,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
-	"net"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
 /*

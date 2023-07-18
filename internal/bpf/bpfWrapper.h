@@ -1,5 +1,6 @@
 /*
  * Copyright(c) 2022 Intel Corporation.
+ * Copyright(c) Red Hat Inc.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +18,7 @@
 #define _WRAPPER_H_
 
 int Load_bpf_send_xsk_map(char *ifname);
+int Load_attach_bpf_xdp_pass(char *ifname);
 int Configure_busy_poll(int fd, int busy_timeout, int busy_budget);
 int Clean_bpf(char *ifname);
 

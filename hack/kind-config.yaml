@@ -1,0 +1,17 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+
+nodes:
+- role: control-plane
+- role: worker
+  extraMounts:
+  - hostPath: /tmp/afxdp_dp/
+    containerPath: /tmp/afxdp_dp/
+    propagation: Bidirectional
+    selinuxRelabel: false
+- role: worker
+  extraMounts:
+  - hostPath: /tmp/afxdp_dp2/
+    containerPath: /tmp/afxdp_dp/
+    propagation: Bidirectional
+    selinuxRelabel: false
