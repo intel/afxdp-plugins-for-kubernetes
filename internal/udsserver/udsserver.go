@@ -16,44 +16,17 @@
 package udsserver
 
 import (
-	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
-	"github.com/intel/afxdp-plugins-for-kubernetes/internal/resourcesapi"
-	"github.com/intel/afxdp-plugins-for-kubernetes/internal/uds"
-	logging "github.com/sirupsen/logrus"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-)
 
-const (
-	handshakeVersion = "0.1"
-	requestVersion   = "/version"
-
-	requestConnect  = "/connect"
-	responseHostOk  = "/host_ok"
-	responseHostNak = "/host_nak"
-
-	requestFd     = "/xsk_map_fd"
-	responseFdAck = "/fd_ack"
-	responseFdNak = "/fd_nak"
-
-	requestBusyPoll     = "/config_busy_poll"
-	responseBusyPollAck = "/config_busy_poll_ack"
-	responseBusyPollNak = "/config_busy_poll_nak"
-
-	requestFin     = "/fin"
-	responseFinAck = "/fin_ack"
-
-	responseBadRequest = "/nak"
-	responseError      = "/error"
-
-	udsMsgBufSize  = 64
-	udsCtlBufSize  = 4
-	udsProtocol    = "unixpacket"      // "unix"=SOCK_STREAM, "unixdomain"=SOCK_DGRAM, "unixpacket"=SOCK_SEQPACKET
-	usdSockDir     = "/tmp/afxdp_dp/"  // if changing, remember to update daemonset to mount this dir
-	udsDirFileMode = os.FileMode(0700) // drwx------
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/resourcesapi"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/uds"
+	logging "github.com/sirupsen/logrus"
 )
 
 /*
@@ -119,7 +92,7 @@ func (f *serverFactory) CreateServer(deviceType, user string, timeout int, udsFu
 	}
 
 	subDir := strings.ReplaceAll(deviceType, "/", "_")
-	udsPath, err := uds.GenerateRandomSocketName(usdSockDir+subDir+"/", udsDirFileMode)
+	udsPath, err := uds.GenerateRandomSocketName(constants.Uds.SockDir+subDir+"/", os.FileMode(constants.Uds.DirFileMode))
 	if err != nil {
 		logging.Errorf("Error generating socket file path: %v", err)
 		return &server{}, "", err
@@ -166,7 +139,7 @@ func (s *server) start() {
 	logging.Debugf("Initialising Unix domain socket: " + s.udsPath)
 
 	// init
-	if err := s.uds.Init(s.udsPath, udsProtocol, udsMsgBufSize, udsCtlBufSize, s.udsIdleTimeout, s.uid); err != nil {
+	if err := s.uds.Init(s.udsPath, constants.Uds.Protocol, constants.Uds.MsgBufSize, constants.Uds.CtlBufSize, s.udsIdleTimeout, s.uid); err != nil {
 		logging.Errorf("Error Initialising UDS: %v", err)
 		return
 	}
@@ -202,25 +175,25 @@ func (s *server) start() {
 	// first request should validate hostname/podname
 	connected := false
 	var podName string
-	if strings.Contains(request, requestConnect) {
+	if strings.Contains(request, constants.Uds.Handshake.RequestConnect) {
 		words := strings.Split(request, ",")
-		if len(words) == 2 && words[0] == requestConnect {
+		if len(words) == 2 && words[0] == constants.Uds.Handshake.RequestConnect {
 			podName = strings.ReplaceAll(words[1], " ", "")
 			connected, err = s.validatePod(podName)
 			if err != nil {
 				logging.Errorf("Error validating host %s: %v", podName, err)
-				if err := s.write(responseError); err != nil {
+				if err := s.write(constants.Uds.Handshake.ResponseError); err != nil {
 					logging.Errorf("Connection write error: %v", err)
 				}
 			}
 		}
 		if connected {
 			s.podName = podName
-			if err := s.write(responseHostOk); err != nil {
+			if err := s.write(constants.Uds.Handshake.ResponseHostOk); err != nil {
 				logging.Errorf("Connection write error: %v", err)
 			}
 		} else {
-			if err := s.write(responseHostNak); err != nil {
+			if err := s.write(constants.Uds.Handshake.ResponseHostNak); err != nil {
 				logging.Errorf("Connection write error: %v", err)
 			}
 		}
@@ -241,21 +214,21 @@ func (s *server) start() {
 
 		// process request
 		switch {
-		case strings.Contains(request, requestFd):
+		case strings.Contains(request, constants.Uds.Handshake.RequestFd):
 			err = s.handleFdRequest(request)
 
-		case request == requestVersion:
-			err = s.write(handshakeVersion)
+		case request == constants.Uds.Handshake.RequestVersion:
+			err = s.write(constants.Uds.Handshake.Version)
 
-		case strings.Contains(request, requestBusyPoll):
+		case strings.Contains(request, constants.Uds.Handshake.RequestBusyPoll):
 			err = s.handleBusyPollRequest(request, fd)
 
-		case request == requestFin:
-			err = s.write(responseFinAck)
+		case request == constants.Uds.Handshake.RequestFin:
+			err = s.write(constants.Uds.Handshake.ResponseFinAck)
 			connected = false
 
 		default:
-			err = s.write(responseBadRequest)
+			err = s.write(constants.Uds.Handshake.ResponseBadRequest)
 		}
 
 		if err != nil {
@@ -294,8 +267,8 @@ func (s *server) writeWithFD(response string, fd int) error {
 
 func (s *server) handleFdRequest(request string) error {
 	words := strings.Split(request, ",")
-	if len(words) != 2 || words[0] != requestFd {
-		if err := s.write(responseBadRequest); err != nil {
+	if len(words) != 2 || words[0] != constants.Uds.Handshake.RequestFd {
+		if err := s.write(constants.Uds.Handshake.ResponseBadRequest); err != nil {
 			return err
 		}
 		return nil
@@ -305,12 +278,12 @@ func (s *server) handleFdRequest(request string) error {
 
 	if fd, ok := s.devices[iface]; ok {
 		logging.Debugf("Pod " + s.podName + " - Device " + iface + " recognised")
-		if err := s.writeWithFD(responseFdAck, fd); err != nil {
+		if err := s.writeWithFD(constants.Uds.Handshake.ResponseFdAck, fd); err != nil {
 			return err
 		}
 	} else {
 		logging.Warningf("Pod " + s.podName + " - Device " + iface + " not recognised")
-		if err := s.write(responseFdNak); err != nil {
+		if err := s.write(constants.Uds.Handshake.ResponseFdNak); err != nil {
 			return err
 		}
 	}
@@ -320,14 +293,14 @@ func (s *server) handleFdRequest(request string) error {
 func (s *server) handleBusyPollRequest(request string, fd int) error {
 	if fd <= 0 {
 		logging.Errorf("Pod " + s.podName + " - Invalid file descriptor")
-		if err := s.write(responseBusyPollNak); err != nil {
+		if err := s.write(constants.Uds.Handshake.ResponseBusyPollNak); err != nil {
 			return err
 		}
 	}
 
 	words := strings.Split(request, ",")
-	if len(words) != 3 || words[0] != requestBusyPoll {
-		if err := s.write(responseBadRequest); err != nil {
+	if len(words) != 3 || words[0] != constants.Uds.Handshake.RequestBusyPoll {
+		if err := s.write(constants.Uds.Handshake.ResponseBadRequest); err != nil {
 			return err
 		}
 		return nil
@@ -352,12 +325,12 @@ func (s *server) handleBusyPollRequest(request string, fd int) error {
 
 	if err := s.bpf.ConfigureBusyPoll(fd, timeout, budget); err != nil {
 		logging.Errorf("Error configuring busy poll: %v", err)
-		if err := s.write(responseBusyPollNak); err != nil {
+		if err := s.write(constants.Uds.Handshake.ResponseBusyPollNak); err != nil {
 			logging.Errorf("Connection write error: %v", err)
 		}
 		return err
 	}
-	if err := s.write(responseBusyPollAck); err != nil {
+	if err := s.write(constants.Uds.Handshake.ResponseBusyPollAck); err != nil {
 		logging.Errorf("Connection write error: %v", err)
 	}
 

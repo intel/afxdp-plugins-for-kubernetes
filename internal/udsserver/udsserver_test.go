@@ -16,10 +16,12 @@
 package udsserver
 
 import (
+	"testing"
+
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/resourcesapi"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/uds"
 	"gotest.tools/assert"
-	"testing"
 )
 
 func TestCreateNewServer(t *testing.T) {
@@ -115,12 +117,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA"},
 			udsServerDevices: []string{"devA"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -133,12 +135,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -151,12 +153,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB", "devC", "devD", "devE", "devF", "devG", "devH", "devI", "devJ"},
 			udsServerDevices: []string{"devA", "devB", "devC", "devD", "devE", "devF", "devG", "devH", "devI", "devJ"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -169,12 +171,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		/*********************************************************
@@ -190,14 +192,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA"},
 			udsServerDevices: []string{"devA"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFd + ", devA",
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFd + ", devA",
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseFdAck,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseFdAck,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -210,18 +212,18 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB", "devC"},
 			udsServerDevices: []string{"devA", "devB", "devC"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFd + ", devA",
-				2: requestFd + ", devB",
-				3: requestFd + ", devC",
-				4: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFd + ", devA",
+				2: constants.Uds.Handshake.RequestFd + ", devB",
+				3: constants.Uds.Handshake.RequestFd + ", devC",
+				4: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseFdAck,
-				2: responseFdAck,
-				3: responseFdAck,
-				4: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseFdAck,
+				2: constants.Uds.Handshake.ResponseFdAck,
+				3: constants.Uds.Handshake.ResponseFdAck,
+				4: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -234,14 +236,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestVersion,
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestVersion,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: handshakeVersion,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.Version,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -254,20 +256,20 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB", "devC"},
 			udsServerDevices: []string{"devA", "devB", "devC"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestVersion,
-				2: requestFd + ", devA",
-				3: requestFd + ", devB",
-				4: requestFd + ", devC",
-				5: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestVersion,
+				2: constants.Uds.Handshake.RequestFd + ", devA",
+				3: constants.Uds.Handshake.RequestFd + ", devB",
+				4: constants.Uds.Handshake.RequestFd + ", devC",
+				5: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: handshakeVersion,
-				2: responseFdAck,
-				3: responseFdAck,
-				4: responseFdAck,
-				5: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.Version,
+				2: constants.Uds.Handshake.ResponseFdAck,
+				3: constants.Uds.Handshake.ResponseFdAck,
+				4: constants.Uds.Handshake.ResponseFdAck,
+				5: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		/*************************************************************************************
@@ -286,12 +288,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect,
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -304,12 +306,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ",",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ",",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -322,12 +324,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA, podB",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA, podB",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -340,12 +342,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA, podB, podC, podD, podE",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA, podB, podC, podD, podE",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -358,12 +360,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: "podA, " + requestConnect,
-				1: requestFin,
+				0: "podA, " + constants.Uds.Handshake.RequestConnect,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -376,12 +378,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: "podA, " + requestConnect + ", podA",
-				1: requestFin,
+				0: "podA, " + constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -394,12 +396,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: `\0` + requestConnect + ", podA",
-				1: requestFin,
+				0: `\0` + constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -412,12 +414,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: "\\0" + requestConnect + ", podA",
-				1: requestFin,
+				0: "\\0" + constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -430,12 +432,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: "dkjfhgkjdfs" + requestConnect + ", podA",
-				1: requestFin,
+				0: "dkjfhgkjdfs" + constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -448,12 +450,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: " " + requestConnect + ", podA",
-				1: requestFin,
+				0: " " + constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -466,12 +468,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: `\` + requestConnect + ", podA",
-				1: requestFin,
+				0: `\` + constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -484,12 +486,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: "\\\\" + requestConnect + ", podA",
-				1: requestFin,
+				0: "\\\\" + constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -502,12 +504,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: "," + requestConnect + ", podA",
-				1: requestFin,
+				0: "," + constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -520,12 +522,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA" + `\0`,
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA" + `\0`,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -538,12 +540,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA" + "\\0",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA" + "\\0",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -556,12 +558,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podAdkjfhgkjdfs",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podAdkjfhgkjdfs",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -574,12 +576,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA,dkjfhgkjdfs",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA,dkjfhgkjdfs",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -592,12 +594,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA" + `\`,
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA" + `\`,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -610,12 +612,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA\\\\",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA\\\\",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -628,12 +630,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA,",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA,",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -646,12 +648,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + `\0` + ", podA",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + `\0` + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -664,12 +666,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + "\\0" + ", podA",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + "\\0" + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -683,11 +685,11 @@ func TestStart(t *testing.T) {
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: `\0`,
-				1: requestFin,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -701,11 +703,11 @@ func TestStart(t *testing.T) {
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "\\0",
-				1: requestFin,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -719,11 +721,11 @@ func TestStart(t *testing.T) {
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "asdfxc",
-				1: requestFin,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseBadRequest,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseBadRequest,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -737,11 +739,11 @@ func TestStart(t *testing.T) {
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "asdfxc,",
-				1: requestFin,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseBadRequest,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseBadRequest,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -755,11 +757,11 @@ func TestStart(t *testing.T) {
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "asdfxc, podA,",
-				1: requestFin,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseBadRequest,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseBadRequest,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -773,11 +775,11 @@ func TestStart(t *testing.T) {
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: `\`,
-				1: requestFin,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseBadRequest,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseBadRequest,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -791,11 +793,11 @@ func TestStart(t *testing.T) {
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "\\\\",
-				1: requestFin,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseBadRequest,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseBadRequest,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -809,11 +811,11 @@ func TestStart(t *testing.T) {
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "*",
-				1: requestFin,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseBadRequest,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseBadRequest,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -827,11 +829,11 @@ func TestStart(t *testing.T) {
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "connect",
-				1: requestFin,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseBadRequest,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseBadRequest,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -845,11 +847,11 @@ func TestStart(t *testing.T) {
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "connect/",
-				1: requestFin,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseBadRequest,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseBadRequest,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -863,11 +865,11 @@ func TestStart(t *testing.T) {
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "/Connect",
-				1: requestFin,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseBadRequest,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseBadRequest,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -881,11 +883,11 @@ func TestStart(t *testing.T) {
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "/connect*",
-				1: requestFin,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -899,11 +901,11 @@ func TestStart(t *testing.T) {
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: `\/connect*`,
-				1: requestFin,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -917,11 +919,11 @@ func TestStart(t *testing.T) {
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
 				0: "*/connect*",
-				1: requestFin,
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -934,12 +936,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podX",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podX",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -952,12 +954,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devX", "devY"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -970,12 +972,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB", "devC", "devD"},
 			udsServerDevices: []string{"devA", "devB", "devC", "devX"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -988,12 +990,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB", "devC", "devD"},
 			udsServerDevices: []string{"devX", "devB", "devC", "devD"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -1006,12 +1008,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB", "devC", "devD"},
 			udsServerDevices: []string{"devA", "devB", "devX", "devD"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -1024,12 +1026,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB", "devC", "devD"},
 			udsServerDevices: []string{"devA", "devB", "devC", "devD", "devX"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -1042,12 +1044,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB", "devC", "devD"},
 			udsServerDevices: []string{"devA", "devB", "devC"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		{
@@ -1060,12 +1062,12 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostNak,
-				1: "should not get " + responseFinAck + " as should not have connected",
+				0: constants.Uds.Handshake.ResponseHostNak,
+				1: "should not get " + constants.Uds.Handshake.ResponseFinAck + " as should not have connected",
 			},
 		},
 		/****************************************************************
@@ -1081,14 +1083,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA"},
 			udsServerDevices: []string{"devA"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFd + ", devX",
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFd + ", devX",
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseFdNak,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseFdNak,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1101,18 +1103,18 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB", "devC"},
 			udsServerDevices: []string{"devA", "devB", "devC"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFd + ", devA",
-				2: requestFd + ", devX",
-				3: requestFd + ", devC",
-				4: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFd + ", devA",
+				2: constants.Uds.Handshake.RequestFd + ", devX",
+				3: constants.Uds.Handshake.RequestFd + ", devC",
+				4: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseFdAck,
-				2: responseFdNak,
-				3: responseFdAck,
-				4: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseFdAck,
+				2: constants.Uds.Handshake.ResponseFdNak,
+				3: constants.Uds.Handshake.ResponseFdAck,
+				4: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		/******************************************************
@@ -1128,14 +1130,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA"},
 			udsServerDevices: []string{"devA"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFd,
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFd,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1148,14 +1150,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA"},
 			udsServerDevices: []string{"devA"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFd + ",",
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFd + ",",
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseFdNak,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseFdNak,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1168,14 +1170,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFd + ", devA, devB",
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFd + ", devA, devB",
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1188,14 +1190,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: "devA, " + requestFd,
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: "devA, " + constants.Uds.Handshake.RequestFd,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1208,14 +1210,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: "devA, " + requestFd + ", devA",
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: "devA, " + constants.Uds.Handshake.RequestFd + ", devA",
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1228,14 +1230,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: `\0` + requestFd + ", devA",
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: `\0` + constants.Uds.Handshake.RequestFd + ", devA",
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1248,14 +1250,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: "\\0" + requestFd + ", devA",
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: "\\0" + constants.Uds.Handshake.RequestFd + ", devA",
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1268,14 +1270,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: "dkjfhgkjdfs" + requestFd + ", devA",
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: "dkjfhgkjdfs" + constants.Uds.Handshake.RequestFd + ", devA",
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1288,14 +1290,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: " " + requestFd + ", devA",
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: " " + constants.Uds.Handshake.RequestFd + ", devA",
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1308,14 +1310,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: `\` + requestFd + ", devA",
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: `\` + constants.Uds.Handshake.RequestFd + ", devA",
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1328,14 +1330,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: "\\\\" + requestFd + ", devA",
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: "\\\\" + constants.Uds.Handshake.RequestFd + ", devA",
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1348,14 +1350,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: "," + requestFd + ", devA",
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: "," + constants.Uds.Handshake.RequestFd + ", devA",
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1368,14 +1370,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFd + "," + `\0`,
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFd + "," + `\0`,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseFdNak,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseFdNak,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1388,14 +1390,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFd + "," + "\\0",
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFd + "," + "\\0",
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseFdNak,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseFdNak,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1408,14 +1410,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFd + ", devAdkjfhgkjdfs",
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFd + ", devAdkjfhgkjdfs",
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseFdNak,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseFdNak,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1428,14 +1430,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFd + ", devA,dkjfhgkjdfs",
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFd + ", devA,dkjfhgkjdfs",
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1448,14 +1450,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFd + ", devA" + `\`,
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFd + ", devA" + `\`,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseFdNak,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseFdNak,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1468,14 +1470,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFd + ", devA\\\\",
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFd + ", devA\\\\",
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseFdNak,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseFdNak,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1488,14 +1490,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFd + ", devA,",
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFd + ", devA,",
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		/***************************************************
@@ -1511,14 +1513,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
 				1: `\0`,
-				2: requestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1531,14 +1533,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
 				1: "\\0",
-				2: requestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1551,14 +1553,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
 				1: "",
-				2: requestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1571,14 +1573,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
 				1: " ",
-				2: requestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1591,14 +1593,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
 				1: ",",
-				2: requestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1611,14 +1613,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
 				1: "/",
-				2: requestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1631,14 +1633,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
 				1: `\`,
-				2: requestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1651,14 +1653,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
 				1: "dkjfhgkjdfs",
-				2: requestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1671,14 +1673,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
 				1: "*",
-				2: requestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1691,14 +1693,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
 				1: ";",
-				2: requestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1711,14 +1713,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
 				1: "\n",
-				2: requestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1731,14 +1733,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestVersion + requestFin,
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestVersion + constants.Uds.Handshake.RequestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1751,14 +1753,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestVersion + " " + requestFin,
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestVersion + " " + constants.Uds.Handshake.RequestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1771,14 +1773,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestVersion + "," + requestFin,
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestVersion + "," + constants.Uds.Handshake.RequestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1791,14 +1793,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestVersion + "\n" + requestFin,
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestVersion + "\n" + constants.Uds.Handshake.RequestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1811,14 +1813,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFd + requestFin,
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFd + constants.Uds.Handshake.RequestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1831,14 +1833,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFd + " " + requestFin,
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFd + " " + constants.Uds.Handshake.RequestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseBadRequest,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseBadRequest,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 		{
@@ -1851,14 +1853,14 @@ func TestStart(t *testing.T) {
 			fakePodDevices:   []string{"devA", "devB"},
 			udsServerDevices: []string{"devA", "devB"},
 			fakeRequests: map[int]string{
-				0: requestConnect + ", podA",
-				1: requestFd + ", " + requestFin,
-				2: requestFin,
+				0: constants.Uds.Handshake.RequestConnect + ", podA",
+				1: constants.Uds.Handshake.RequestFd + ", " + constants.Uds.Handshake.RequestFin,
+				2: constants.Uds.Handshake.RequestFin,
 			},
 			expectedResponse: map[int]string{
-				0: responseHostOk,
-				1: responseFdNak,
-				2: responseFinAck,
+				0: constants.Uds.Handshake.ResponseHostOk,
+				1: constants.Uds.Handshake.ResponseFdNak,
+				2: constants.Uds.Handshake.ResponseFinAck,
 			},
 		},
 	}
