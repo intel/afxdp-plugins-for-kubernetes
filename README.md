@@ -67,6 +67,7 @@ The following prerequisites are required to run the plugins:
   - To use a Kind deployment.
   - [Kind quickstart guide](https://kind.sigs.k8s.io/docs/user/quick-start/)
   - Tested with Kind version 0.18.0
+  - **Note:** For kind, please also install [**kubeadm**](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/)
 
 ### Development Prerequisites
 
