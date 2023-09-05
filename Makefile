@@ -26,7 +26,7 @@ clangformat:
 	@echo "******   Clang Format    ******"
 	@echo
 	-clang-format -i -style=file internal/bpf/*.c internal/bpf/*.h
-	-clang-format -i -style=file internal/bpf/xdp-pass/*.c
+#	-clang-format -i -style=file internal/bpf/xdp-pass/*.c
 	@echo
 	@echo
 
@@ -40,10 +40,10 @@ format: clangformat
 buildc:
 	@echo "******     Build BPF     ******"
 	@echo
-	gcc ./internal/bpf/bpfWrapper.c -lbpf -c -o ./internal/bpf/bpfWrapper.o
+	gcc ./internal/bpf/bpfWrapper.c -lxdp -c -o ./internal/bpf/bpfWrapper.o
 	ar rs ./internal/bpf/libwrapper.a ./internal/bpf/bpfWrapper.o  &> /dev/null
 	@echo "******     Build xdp_pass     ******"
-	make -C ./internal/bpf/xdp-pass/
+#	make -C ./internal/bpf/xdp-pass/
 	@echo
 	@echo
 	@echo
@@ -58,7 +58,7 @@ builddp: buildc
 buildcni: buildc
 	@echo "******     Build CNI     ******"
 	@echo
-	go build -o ./bin/afxdp ./cmd/cni
+	go build -ldflags="-extldflags=-static" -tags netgo -o ./bin/afxdp ./cmd/cni
 	@echo
 	@echo
 

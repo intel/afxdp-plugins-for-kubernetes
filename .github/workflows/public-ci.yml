@@ -38,8 +38,20 @@ jobs:
       with:
         go-version: 1.19
 
-    - name: Install dependencies
-      run:  sudo apt-get update && sudo apt install libbpf-dev clang llvm gcc-multilib
+    - name: Install libbpf and libxdp
+      run: | 
+          sudo apt update 
+          sudo apt install -y wget build-essential golang
+          sudo wget http://security.ubuntu.com/ubuntu/pool/main/libb/libbpf/libbpf1_1.1.0-1_amd64.deb
+          sudo wget http://security.ubuntu.com/ubuntu/pool/main/libb/libbpf/libbpf-dev_1.1.0-1_amd64.deb
+          sudo wget https://mirrors.edge.kernel.org/ubuntu/pool/main/x/xdp-tools/libxdp1_1.3.0-2ubuntu2_amd64.deb
+          sudo wget https://mirrors.edge.kernel.org/ubuntu/pool/main/x/xdp-tools/libxdp-dev_1.3.0-2ubuntu2_amd64.deb
+          sudo apt install -y ./libbpf1_1.1.0-1_amd64.deb
+          sudo apt install -y ./libbpf-dev_1.1.0-1_amd64.deb
+          sudo apt install -y ./libxdp1_1.3.0-2ubuntu2_amd64.deb
+          sudo apt install -y ./libxdp-dev_1.3.0-2ubuntu2_amd64.deb
+
+ 
 
     - name: Run build
       run: make build
@@ -54,8 +66,18 @@ jobs:
       with:
         go-version: 1.19
 
-    - name: Install dependencies
-      run:  sudo apt-get update && sudo apt install libbpf-dev clang llvm gcc-multilib
+    - name: Install libbpf and libxdp
+      run: | 
+          sudo apt update 
+          sudo apt install -y wget build-essential golang
+          sudo wget http://security.ubuntu.com/ubuntu/pool/main/libb/libbpf/libbpf1_1.1.0-1_amd64.deb
+          sudo wget http://security.ubuntu.com/ubuntu/pool/main/libb/libbpf/libbpf-dev_1.1.0-1_amd64.deb
+          sudo wget https://mirrors.edge.kernel.org/ubuntu/pool/main/x/xdp-tools/libxdp1_1.3.0-2ubuntu2_amd64.deb
+          sudo wget https://mirrors.edge.kernel.org/ubuntu/pool/main/x/xdp-tools/libxdp-dev_1.3.0-2ubuntu2_amd64.deb
+          sudo apt install -y ./libbpf1_1.1.0-1_amd64.deb
+          sudo apt install -y ./libbpf-dev_1.1.0-1_amd64.deb
+          sudo apt install -y ./libxdp1_1.3.0-2ubuntu2_amd64.deb
+          sudo apt install -y ./libxdp-dev_1.3.0-2ubuntu2_amd64.deb
 
     - name: Install staticcheck
       run: go install honnef.co/go/tools/cmd/staticcheck@latest
@@ -73,8 +95,18 @@ jobs:
       with:
         go-version: 1.19
 
-    - name: Install dependencies
-      run:  sudo apt-get update && sudo apt install libbpf-dev clang llvm gcc-multilib
+    - name: Install libbpf and libxdp
+      run: | 
+          sudo apt update 
+          sudo apt install -y wget build-essential golang
+          sudo wget http://security.ubuntu.com/ubuntu/pool/main/libb/libbpf/libbpf1_1.1.0-1_amd64.deb
+          sudo wget http://security.ubuntu.com/ubuntu/pool/main/libb/libbpf/libbpf-dev_1.1.0-1_amd64.deb
+          sudo wget https://mirrors.edge.kernel.org/ubuntu/pool/main/x/xdp-tools/libxdp1_1.3.0-2ubuntu2_amd64.deb
+          sudo wget https://mirrors.edge.kernel.org/ubuntu/pool/main/x/xdp-tools/libxdp-dev_1.3.0-2ubuntu2_amd64.deb
+          sudo apt install -y ./libbpf1_1.1.0-1_amd64.deb
+          sudo apt install -y ./libbpf-dev_1.1.0-1_amd64.deb
+          sudo apt install -y ./libxdp1_1.3.0-2ubuntu2_amd64.deb
+          sudo apt install -y ./libxdp-dev_1.3.0-2ubuntu2_amd64.deb
 
     - name: unit-tests
       run: make test

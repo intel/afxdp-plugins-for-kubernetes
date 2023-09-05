@@ -12,24 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.20@sha256:52921e63cc544c79c111db1d8461d8ab9070992d9c636e1573176642690c14b5 as cnibuilder
+FROM golang:1.20@sha256:efe38cb419e2b2012f66d1782d2efe2fd8884c71d9f342581e1697ba9047b5f8 as cnibuilder
 COPY . /usr/src/afxdp_k8s_plugins
 WORKDIR /usr/src/afxdp_k8s_plugins
-RUN apt-get update && apt-get -y install --no-install-recommends libbpf-dev=1:0.3-2 \
-       && apt-get -y install --no-install-recommends clang=1:11.0-51+nmu5 llvm=1:11.0-51+nmu5 gcc-multilib=4:10.2.1-1 \
-       && make buildcni
+RUN apt-get update \
+&& apt-get -y install --no-install-recommends libxdp-dev=1.3.1-1 \
+&& apt-get -y install -o APT::Keep-Downloaded-Packages=false --no-install-recommends clang=1:14.0-55.6  \
+&& apt-get -y install -o APT::Keep-Downloaded-Packages=false --no-install-recommends llvm=1:14.0-55.6 \
+&& apt-get -y install -o APT::Keep-Downloaded-Packages=false --no-install-recommends gcc-multilib=4:12.2.0-3 \
+&& make buildcni
 
-FROM golang:1.20-alpine@sha256:87d0a3309b34e2ca732efd69fb899d3c420d3382370fd6e7e6d2cb5c930f27f9 as dpbuilder
+FROM golang:1.20-alpine@sha256:ebceb16dc094769b6e2a393d51e0417c19084ba20eb8967fb3f7675c32b45774 as dpbuilder
 COPY . /usr/src/afxdp_k8s_plugins
 WORKDIR /usr/src/afxdp_k8s_plugins
-RUN apk add --no-cache build-base~=0.5 libbsd-dev~=0.11 \
-      && apk add --no-cache libbpf-dev~=0.5 --repository=https://dl-cdn.alpinelinux.org/alpine/v3.15/community \
-      && apk add --no-cache llvm~=15.0.7-r0 clang~=15.0.7-r0 \
-	  && make builddp
+RUN apk add --no-cache build-base~=0.5-r3 \
+&& apk add --no-cache libbsd-dev~=0.11.7 \
+&& apk add --no-cache libxdp-dev~=1.2.10-r0 \
+&& apk add --no-cache llvm15~=15.0.7-r0 \
+&& apk add --no-cache clang15~=15.0.7-r0 \
+&& make builddp
 
-FROM amd64/alpine:3.17@sha256:e2e16842c9b54d985bf1ef9242a313f36b856181f188de21313820e177002501
-RUN apk --no-cache -U add iproute2-rdma~=6.0 acl~=2.3 \
-      && apk --no-cache -U add libbpf~=0.5 --repository=http://dl-cdn.alpinelinux.org/alpine/v3.15/community
+FROM amd64/alpine:3.18@sha256:25fad2a32ad1f6f510e528448ae1ec69a28ef81916a004d3629874104f8a7f70
+RUN apk --no-cache -U add iproute2-rdma~=6.3.0-r0 acl~=2.3 \
+      && apk add --no-cache libxdp~=1.2.10-r0
 COPY --from=cnibuilder /usr/src/afxdp_k8s_plugins/bin/afxdp /afxdp/afxdp
 COPY --from=dpbuilder /usr/src/afxdp_k8s_plugins/bin/afxdp-dp /afxdp/afxdp-dp
 COPY --from=dpbuilder /usr/src/afxdp_k8s_plugins/images/entrypoint.sh /afxdp/entrypoint.sh

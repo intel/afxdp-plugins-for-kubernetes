@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include <bpf/xsk.h>	   // for xsk_setup_xdp_prog, bpf_set_link_xdp_fd
 #include <linux/if_link.h> // for XDP_FLAGS_DRV_MODE
 #include <net/if.h>	   // for if_nametoindex
+#include <xdp/libxdp.h>
+#include <xdp/xsk.h> // for xsk_setup_xdp_prog, bpf_set_link_xdp_fd
 
 #include "bpfWrapper.h"
 #include "log.h"
@@ -40,12 +40,12 @@ int Load_bpf_send_xsk_map(char *ifname) {
 	} else {
 		Log_Info("%s: if_index for interface %s is %d", __FUNCTION__, ifname, if_index);
 	}
-
 	Log_Info("%s: starting setup of xdp program on "
 		 "interface %s (%d)",
 		 __FUNCTION__, ifname, if_index);
 
 	err = xsk_setup_xdp_prog(if_index, &fd);
+	Log_Info("Error value: %d", err);
 	if (err) {
 		Log_Error("%s: setup of xdp program failed, "
 			  "returned: %d",
@@ -59,7 +59,7 @@ int Load_bpf_send_xsk_map(char *ifname) {
 			 __FUNCTION__, ifname, if_index, fd);
 		return fd;
 	}
-
+	Log_Info("FD value: %d", fd);
 	return -1;
 }
 
@@ -136,6 +136,7 @@ err_timeout:
 int Clean_bpf(char *ifname) {
 	int if_index, err;
 	int fd = -1;
+	struct xdp_multiprog *mp = NULL;
 
 	Log_Info("%s: disovering if_index for interface %s", __FUNCTION__, ifname);
 
@@ -150,19 +151,19 @@ int Clean_bpf(char *ifname) {
 	Log_Info("%s: starting removal of xdp program on interface %s (%d)", __FUNCTION__, ifname,
 		 if_index);
 
-	err = bpf_set_link_xdp_fd(if_index, fd, XDP_FLAGS_UPDATE_IF_NOEXIST);
+	mp = xdp_multiprog__get_from_ifindex(if_index);
+	if (!mp) {
+		Log_Error("%s: unable to receive correct multi_prog reference : %s", __FUNCTION__,
+			  mp);
+		return -1;
+	}
+
+	err = xdp_multiprog__detach(mp);
 	if (err) {
-		if (err == EBUSY_CODE_WARNING) {
-			// unloading of XDP program found to return EBUSY error of -16 on certain
-			// host libbpf versions. doesn't break functionality and this problem is
-			// being investigated.
-			Log_Warning("%s: Removal of xdp program is reporting error code: (%d)",
-				    __FUNCTION__, err);
-		} else {
-			Log_Error("%s: Removal of xdp program failed, returned: (%d)", __FUNCTION__,
-				  err);
-			return 1;
-		}
+		Log_Error("%s: Removal of xdp program failed, returned: "
+			  "returned: %d",
+			  __FUNCTION__, err);
+		return -1;
 	}
 
 	Log_Info("%s: removed xdp program from interface %s (%d)", __FUNCTION__, ifname, if_index);
@@ -190,14 +191,14 @@ int Load_attach_bpf_xdp_pass(char *ifname) {
 		 __FUNCTION__, ifname, ifindex);
 
 	/* Load the BPF program */
-	err = bpf_prog_load(filename, BPF_PROG_TYPE_XDP, &obj, &prog_fd);
+	err = bpf_xdp_query_id(ifindex, (int)xdp_flags, &prog_fd);
 	if (err < 0) {
 		Log_Error("%s: Couldn't load BPF-OBJ file(%s)\n", __FUNCTION__, filename);
 		return -1;
 	}
 
 	/* Attach the program to the interface at the xdp hook */
-	err = bpf_set_link_xdp_fd(ifindex, prog_fd, xdp_flags);
+	err = bpf_xdp_attach(ifindex, prog_fd, XDP_FLAGS_UPDATE_IF_NOEXIST, NULL);
 	if (err < 0) {
 		Log_Error("%s: Couldn't attach the XDP PASS PROGRAM TO %s\n", __FUNCTION__, ifname);
 		return -1;
