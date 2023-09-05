@@ -17,6 +17,8 @@
 #include <bpf/xsk.h>	   // for xsk_setup_xdp_prog, bpf_set_link_xdp_fd
 #include <linux/if_link.h> // for XDP_FLAGS_DRV_MODE
 #include <net/if.h>	   // for if_nametoindex
+#include <bpf/bpf.h>
+#include <xdp/xsk.h>
 
 #include "bpfWrapper.h"
 #include "log.h"
@@ -40,12 +42,11 @@ int Load_bpf_send_xsk_map(char *ifname) {
 	} else {
 		Log_Info("%s: if_index for interface %s is %d", __FUNCTION__, ifname, if_index);
 	}
-
 	Log_Info("%s: starting setup of xdp program on "
 		 "interface %s (%d)",
 		 __FUNCTION__, ifname, if_index);
 
-	err = xsk_setup_xdp_prog(if_index, &fd);
+	err =  xsk_setup_xdp_prog(if_index, &fd);
 	if (err) {
 		Log_Error("%s: setup of xdp program failed, "
 			  "returned: %d",
@@ -59,7 +60,7 @@ int Load_bpf_send_xsk_map(char *ifname) {
 			 __FUNCTION__, ifname, if_index, fd);
 		return fd;
 	}
-
+	
 	return -1;
 }
 
