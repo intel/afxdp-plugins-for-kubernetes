@@ -116,6 +116,7 @@ func (pm *PoolManager) Init(config PoolConfig) error {
 
 		logging.Debug("REGISTER MAP MANAGER WITH THE DP<=>CNI grpc Syncer")
 		pm.DpCniSyncerServer.RegisterMapManager(pm.Pbm)
+		pm.DpCniSyncerServer.BpfMapPinEnable = true
 	}
 
 	if len(pm.Devices) > 0 {

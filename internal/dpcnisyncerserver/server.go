@@ -42,8 +42,9 @@ var (
 
 type SyncerServer struct {
 	pb.UnimplementedNetDevServer
-	mapManagers []bpf.PoolBpfMapManager
-	grpcServer  *grpc.Server
+	mapManagers     []bpf.PoolBpfMapManager
+	grpcServer      *grpc.Server
+	BpfMapPinEnable bool
 }
 
 func (s *SyncerServer) RegisterMapManager(b bpf.PoolBpfMapManager) {
@@ -61,34 +62,39 @@ func (s *SyncerServer) RegisterMapManager(b bpf.PoolBpfMapManager) {
 }
 
 func (s *SyncerServer) DelNetDev(ctx context.Context, in *pb.DeleteNetDevReq) (*pb.DeleteNetDevResp, error) {
-	netDevName := in.GetName()
 
-	logging.Infof("Looking up Map Manager for %s", netDevName)
-	found := false
-	var pm bpf.PoolBpfMapManager
-	for _, mm := range s.mapManagers {
-		_, err := mm.Manager.GetBPFFS(netDevName)
-		if err == nil {
-			found = true
-			pm = mm
-			break
+	if s.BpfMapPinEnable {
+		netDevName := in.GetName()
+
+		logging.Infof("Looking up Map Manager for %s", netDevName)
+		found := false
+		var pm bpf.PoolBpfMapManager
+		for _, mm := range s.mapManagers {
+			_, err := mm.Manager.GetBPFFS(netDevName)
+			if err == nil {
+				found = true
+				pm = mm
+				break
+			}
 		}
+
+		if !found {
+			logging.Errorf("Could NOT find the map manager for device %s", netDevName)
+			return &pb.DeleteNetDevResp{Ret: -1}, errors.New("Could NOT find the map manager for device")
+		}
+
+		logging.Infof("Map Manager found, deleting BPFFS for %s", netDevName)
+		err := pm.Manager.DeleteBPFFS(netDevName)
+		if err != nil {
+			logging.Errorf("Could NOT delete BPFFS for %s", netDevName)
+			return &pb.DeleteNetDevResp{Ret: -1}, errors.Wrapf(err, "Could NOT delete BPFFS for %s: %v", netDevName, err.Error())
+		}
+
+		logging.Infof("Network interface %s deleted", netDevName)
+		return &pb.DeleteNetDevResp{Ret: 0}, nil
 	}
 
-	if !found {
-		logging.Errorf("Could NOT find the map manager for device %s", netDevName)
-		return &pb.DeleteNetDevResp{Ret: -1}, errors.New("Could NOT find the map manager for device")
-	}
-
-	logging.Infof("Map Manager found, deleting BPFFS for %s", netDevName)
-	err := pm.Manager.DeleteBPFFS(netDevName)
-	if err != nil {
-		logging.Errorf("Could NOT delete BPFFS for %s", netDevName)
-		return &pb.DeleteNetDevResp{Ret: -1}, errors.Wrapf(err, "Could NOT delete BPFFS for %s: %v", netDevName, err.Error())
-	}
-
-	logging.Infof("Network interface %s deleted", netDevName)
-	return &pb.DeleteNetDevResp{Ret: 0}, nil
+	return &pb.DeleteNetDevResp{Ret: -1}, errors.New("BPF Map pinning is not enabled")
 }
 
 func (s *SyncerServer) StopGRPCSyncer() {
@@ -108,7 +114,8 @@ func NewSyncerServer() (*SyncerServer, error) {
 	}
 
 	server := &SyncerServer{
-		grpcServer: grpc.NewServer(),
+		grpcServer:      grpc.NewServer(),
+		BpfMapPinEnable: false,
 	}
 
 	lis, err := net.Listen(protocol, sockAddr)

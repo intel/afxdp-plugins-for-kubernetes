@@ -13,7 +13,7 @@ spec:
       "mode": "primary",                                     # CNI mode setting (required)
       "logFile": "afxdp-cni.log",                            # CNI log file location (optional)
       "logLevel": "debug",                                   # CNI logging level (optional)
-      "dpSyncer": true,                                      # Sync with Device Plugin over gRPC (optional)
+      "dpSyncer": true,                                      # Sync with Device Plugin over gRPC MUST BE SET for bpf map pinning
       "ipam": {                                              # CNI IPAM plugin and associated config (optional)
         "type": "host-local",
         "subnet": "192.168.1.0/24",
