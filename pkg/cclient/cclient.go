@@ -16,7 +16,7 @@ func main() {
 var cleaner uds.CleanupFunc
 
 /*
-GetClientVersion is an exported version for c of goclient's GetClientVersion()
+GetClientVersion is an exported version for c of the goclient GetClientVersion()
 */
 //export GetUdsClientVersion
 func GetUdsClientVersion() *C.char {
@@ -24,7 +24,7 @@ func GetUdsClientVersion() *C.char {
 }
 
 /*
-ServerVersion is an exported version for c of goclient's GetServerVersion()
+ServerVersion is an exported version for c of the goclient GetServerVersion()
 */
 //export GetUdsServerVersion
 func GetUdsServerVersion() *C.char {
@@ -41,36 +41,43 @@ func GetUdsServerVersion() *C.char {
 }
 
 /*
-GetXskMapFd is an exported version for c of goclient's XskMapFd()
+GetXskMapFd is an exported version for c of the goclient XskMapFd()
 */
 //export RequestXskMapFd
 func RequestXskMapFd(device *C.char) (fd C.int) {
-	fdVal, function, err := goclient.RequestXSKmapFD(C.GoString(device))
-	fd = C.int(fdVal)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		function()
-		return -1
+	if device != nil {
+		fdVal, function, err := goclient.RequestXSKmapFD(C.GoString(device))
+		fd = C.int(fdVal)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			function()
+			return -1
+		}
+
+		cleaner = function
+		return fd
 	}
 
-	cleaner = function
-
-	return fd
+	return -1
 }
 
 /*
-RequestBusyPoll is an exported version for c of goclient's RequestBusyPoll()
+RequestBusyPoll is an exported version for c of the goclient RequestBusyPoll()
 */
 //export RequestBusyPoll
 func RequestBusyPoll(busyTimeout, busyBudget, fd C.int) C.int {
-	function, err := goclient.RequestBusyPoll(int(busyTimeout), int(busyBudget), int(fd))
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		function()
-		return -1
+	timeout, budget, fdInt := int(busyTimeout), int(busyBudget), int(fd)
+	if timeout > -1 && budget > -1 && fdInt > -1 {
+		function, err := goclient.RequestBusyPoll(timeout, budget, fdInt)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			function()
+			return -1
+		}
+		cleaner = function
+		return 0
 	}
-	cleaner = function
-	return 0
+	return -1
 }
 
 /*
