@@ -67,7 +67,7 @@ func (r *fakeHandler) HasEthtool() (bool, string, error) {
 HasLibbpf checks if the host has libbpf installed and returns a boolean.
 In this FakeHandler it returns a dummy value.
 */
-func (r *fakeHandler) HasLibbpf() (bool, []string, error) {
+func (r *fakeHandler) HasLibxdp() (bool, []string, error) {
 	return true, nil, nil
 }
 
