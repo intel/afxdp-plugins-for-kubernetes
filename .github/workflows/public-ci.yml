@@ -50,6 +50,9 @@ jobs:
           sudo apt install -y ./libbpf-dev_1.1.0-1_amd64.deb
           sudo apt install -y ./libxdp1_1.3.0-2ubuntu2_amd64.deb
           sudo apt install -y ./libxdp-dev_1.3.0-2ubuntu2_amd64.deb
+          sudo apt install -y clang
+          sudo apt install -y llvm
+          sudo apt install -y gcc-multilib
 
  
 
@@ -107,6 +110,9 @@ jobs:
           sudo apt install -y ./libbpf-dev_1.1.0-1_amd64.deb
           sudo apt install -y ./libxdp1_1.3.0-2ubuntu2_amd64.deb
           sudo apt install -y ./libxdp-dev_1.3.0-2ubuntu2_amd64.deb
+          sudo apt install -y clang
+          sudo apt install -y llvm
+          sudo apt install -y gcc-multilib
 
     - name: unit-tests
       run: make test

@@ -174,6 +174,7 @@ int Load_attach_bpf_xdp_pass(char *ifname) {
 	int prog_fd = -1, err, ifindex;
 	char *filename = "/afxdp/xdp_pass.o";
 	struct bpf_object *obj;
+	struct xdp_program *prog;
 	__u32 xdp_flags = XDP_FLAGS_UPDATE_IF_NOEXIST | XDP_FLAGS_DRV_MODE;
 
 	Log_Info("%s: disovering if_index for interface %s", __FUNCTION__, ifname);
@@ -191,17 +192,22 @@ int Load_attach_bpf_xdp_pass(char *ifname) {
 		 __FUNCTION__, ifname, ifindex);
 
 	/* Load the BPF program */
-	err = bpf_xdp_query_id(ifindex, (int)xdp_flags, &prog_fd);
-	if (err < 0) {
-		Log_Error("%s: Couldn't load BPF-OBJ file(%s)\n", __FUNCTION__, filename);
-		return -1;
+	prog = xdp_program__open_file(filename, NULL, NULL);
+	err = libxdp_get_error(prog);
+	if (err) {
+		libxdp_strerror(err, "Couldn’t load XDP program",
+				sizeof("Couldn’t load XDP program"));
+		Log_Error("%s: Couldn’t load XDP program\n", __FUNCTION__, filename);
+		return err;
 	}
 
 	/* Attach the program to the interface at the xdp hook */
-	err = bpf_xdp_attach(ifindex, prog_fd, XDP_FLAGS_UPDATE_IF_NOEXIST, NULL);
-	if (err < 0) {
+	err = xdp_program__attach(prog, ifindex, XDP_FLAGS_UPDATE_IF_NOEXIST, 0);
+	if (err) {
+		libxdp_strerror(err, "Couldn't attach the xdp pass program",
+				sizeof("Couldn't attach the xdp pass program"));
 		Log_Error("%s: Couldn't attach the XDP PASS PROGRAM TO %s\n", __FUNCTION__, ifname);
-		return -1;
+		return err;
 	}
 
 	Log_Info("%s: xdp-pass program loaded on %s (%d)", __FUNCTION__, ifname, ifindex);
