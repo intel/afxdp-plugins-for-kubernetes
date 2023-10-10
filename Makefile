@@ -40,7 +40,7 @@ format: clangformat
 buildc:
 	@echo "******     Build BPF     ******"
 	@echo
-	gcc ./internal/bpf/bpfWrapper.c -lbpf -c -o ./internal/bpf/bpfWrapper.o
+	gcc ./internal/bpf/bpfWrapper.c -lxdp -c -o ./internal/bpf/bpfWrapper.o
 	ar rs ./internal/bpf/libwrapper.a ./internal/bpf/bpfWrapper.o  &> /dev/null
 	@echo "******     Build xdp_pass     ******"
 	make -C ./internal/bpf/xdp-pass/
@@ -58,7 +58,7 @@ builddp: buildc
 buildcni: buildc
 	@echo "******     Build CNI     ******"
 	@echo
-	go build -o ./bin/afxdp ./cmd/cni
+	go build -ldflags="-extldflags=-static" -tags netgo -o ./bin/afxdp ./cmd/cni
 	@echo
 	@echo
 
@@ -68,24 +68,24 @@ build: builddp buildcni
 docker: ## Build docker image
 	@echo "******  Docker Image    ******"
 	@echo
-	docker build -t afxdp-device-plugin -f images/amd64.dockerfile .
+	docker build -t localhost:5000/afxdp-device-plugin -f images/amd64.dockerfile .
 	@echo
 	@echo
 
 podman: ## Build podman image
 	@echo "******  Podman Image    ******"
 	@echo
-	podman build -t afxdp-device-plugin -f images/amd64.dockerfile .
+	podman build -t localhost:5000/afxdp-device-plugin -f images/amd64.dockerfile .
 	@echo
 	@echo
 
 image:
-	if $(MAKE) podman; then \
-	 echo "Podman build succeeded"; \
-	else \
-	 echo "Podman build failed, trying docker.."; \
+	# if $(MAKE) podman; then \
+	#  echo "Podman build succeeded"; \
+	# else \
+	#  echo "Podman build failed, trying docker.."; \
 	 $(MAKE) docker; \
-	fi
+	# fi
 
 undeploy: ## Undeploy the Deamonset
 	@echo "******  Stop Daemonset   ******"

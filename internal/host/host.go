@@ -17,11 +17,12 @@ package host
 
 import (
 	"errors"
-	logging "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
+
+	logging "github.com/sirupsen/logrus"
 )
 
 /*
@@ -33,7 +34,7 @@ type Handler interface {
 	AllowsUnprivilegedBpf() (bool, error)
 	KernelVersion() (string, error)
 	HasEthtool() (bool, string, error)
-	HasLibbpf() (bool, []string, error)
+	HasLibxdp() (bool, []string, error)
 	HasDevlink() (bool, string, error)
 	Hostname() (string, error)
 }
@@ -73,7 +74,7 @@ func (r *handler) KernelVersion() (string, error) {
 HasLibbpf checks if the host has libbpf installed and returns a boolean.
 It also returns a string array of libbpf libraries found under /usr/lib(64)/
 */
-func (r *handler) HasLibbpf() (bool, []string, error) {
+func (r *handler) HasLibxdp() (bool, []string, error) {
 	libPaths := []string{"/usr/lib/", "/usr/lib64/"}
 	foundLibbpf := false
 	var foundLibs []string
@@ -90,7 +91,7 @@ func (r *handler) HasLibbpf() (bool, []string, error) {
 		}
 
 		for _, file := range files {
-			if strings.Contains(file.Name(), "libbpf.so") {
+			if strings.Contains(file.Name(), "libxdp.so") {
 				foundLibbpf = true
 				foundLibs = append(foundLibs, path+file.Name())
 			}
@@ -254,4 +255,3 @@ func GivePermissions(filepath, uid, permissions string) error {
 	logging.Infof("Socket access granted to UID %s", uid)
 	return nil
 }
-

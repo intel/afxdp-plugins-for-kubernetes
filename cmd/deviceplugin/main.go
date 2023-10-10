@@ -185,21 +185,23 @@ func configureLogging(cfg deviceplugin.PluginConfig) error {
 // On each Kind node
 // Create a bridge afxdp-kind-br
 // Create 4 vethpairs starting at veth6
-//  +===============+
-//  | afxdp-kind-br |
-//  |     +---------|         +---------+
-//  |     |  veth7  | <=====> |  veth6  |
-//  |     +---------|         +---------+
-//  |     +---------|         +---------+
-//  |     |  veth9  | <=====> |  veth8  |
-//  |     +---------|         +---------+
-//  |     +---------|         +---------+
-//  |     |  veth11 | <=====> |  veth10 |
-//  |     +---------|         +---------+
-//  |     +---------|         +---------+
-//  |     |  veth13 | <=====> |  veth12 |
-//  |     +---------|         +---------+
-//  +===============+
+//
+//	+===============+
+//	| afxdp-kind-br |
+//	|     +---------|         +---------+
+//	|     |  veth7  | <=====> |  veth6  |
+//	|     +---------|         +---------+
+//	|     +---------|         +---------+
+//	|     |  veth9  | <=====> |  veth8  |
+//	|     +---------|         +---------+
+//	|     +---------|         +---------+
+//	|     |  veth11 | <=====> |  veth10 |
+//	|     +---------|         +---------+
+//	|     +---------|         +---------+
+//	|     |  veth13 | <=====> |  veth12 |
+//	|     +---------|         +---------+
+//	+===============+
+//
 // The "even" veth of the pair will be added to the device plugin resource pool.
 // and plumbed to the Pod.
 func configureKindSecondaryNetwork() error {
@@ -249,7 +251,7 @@ func checkHost(host host.Handler) (bool, error) {
 
 	// libbpf
 	logging.Debugf("Checking host for Libbpf")
-	bpfInstalled, libs, err := host.HasLibbpf()
+	bpfInstalled, libs, err := host.HasLibxdp()
 	if err != nil {
 		err := fmt.Errorf("libbpf not found on host")
 		return false, err

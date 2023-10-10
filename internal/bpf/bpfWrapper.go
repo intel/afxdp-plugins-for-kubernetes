@@ -16,10 +16,10 @@
 
 package bpf
 
-//#include <bpf/libbpf.h>
-//#include <bpf/xsk.h>
+//#include <xdp/libxdp.h>
+//#include <xdp/xsk.h>
 //#cgo CFLAGS: -I.
-//#cgo LDFLAGS: -L. -lbpf
+//#cgo LDFLAGS: -L. -lxdp -lbpf -lelf -lz
 //#include "bpfWrapper.h"
 //#include "log.h"
 import "C"
