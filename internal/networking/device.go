@@ -28,16 +28,15 @@ import (
 Device object represents networking devices, primary and secondary
 */
 type Device struct {
-	name           string
-	mode           string
-	driver         string
-	pci            string
-	macAddress     string
-	fullyAssigned  bool
-	ethtoolFilters []string
-	primary        *Device
-	secondaries    []*Device
-	netHandler     Handler
+	name          string
+	mode          string
+	driver        string
+	pci           string
+	macAddress    string
+	fullyAssigned bool
+	primary       *Device
+	secondaries   []*Device
+	netHandler    Handler
 }
 
 /*
@@ -46,14 +45,13 @@ This object has no functionality, methods or uses other than debug logging
 and writing the device to a JSON file.
 */
 type DeviceDetails struct {
-	Name           string
-	Mode           string
-	Driver         string
-	Pci            string
-	MacAddress     string
-	FullyAssigned  bool
-	EthtoolFilters []string
-	Primary        *DeviceDetails
+	Name          string
+	Mode          string
+	Driver        string
+	Pci           string
+	MacAddress    string
+	FullyAssigned bool
+	Primary       *DeviceDetails
 }
 
 /*
@@ -315,14 +313,6 @@ func (d *Device) Cycle() error {
 }
 
 /*
-GetEthtoolFilters returns a string array of ethtool filters from
-the device object
-*/
-func (d *Device) GetEthtoolFilters() []string {
-	return d.ethtoolFilters
-}
-
-/*
 UnassignedSecondaries returns the number of unassigned secondary devices available on this primary
 */
 func (d *Device) UnassignedSecondaries() int {
@@ -355,14 +345,12 @@ To be used in debug logging and writing the device to a JSON file.
 */
 func (d *Device) Public() *DeviceDetails {
 	return &DeviceDetails{
-		Name:           d.name,
-		Mode:           d.mode,
-		Driver:         d.driver,
-		Pci:            d.pci,
-		MacAddress:     d.macAddress,
-		FullyAssigned:  d.fullyAssigned,
-		EthtoolFilters: d.ethtoolFilters,
-
+		Name:          d.name,
+		Mode:          d.mode,
+		Driver:        d.driver,
+		Pci:           d.pci,
+		MacAddress:    d.macAddress,
+		FullyAssigned: d.fullyAssigned,
 		Primary: &DeviceDetails{
 			Name:          d.primary.name,
 			Mode:          d.primary.mode,
@@ -449,12 +437,4 @@ func CreateTestDevice(name string, mode string, driver string, pci string, macAd
 	dev.primary = dev
 
 	return dev
-}
-
-/*
-SetEthtoolFilter assigns ethtool filters to the ethtoolFilters
-field in the device object.
-*/
-func (d *Device) SetEthtoolFilter(ethtool []string) {
-	d.ethtoolFilters = ethtool
 }

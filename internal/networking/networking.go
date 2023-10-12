@@ -16,10 +16,8 @@
 package networking
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -53,8 +51,6 @@ type Handler interface {
 	GetDeviceByPCI(pci string) (string, error)
 	CycleDevice(interfaceName string) error
 	NetDevExists(device string) (bool, error)
-	GetDeviceFromFile(deviceName string, filepath string) (*Device, error)
-	WriteDeviceFile(device *Device, filepath string) error
 	CreateCdqSubfunction(parentPci string, pfnum string, sfnum string) error     // see subfunction package
 	DeleteCdqSubfunction(portIndex string) error                                 // see subfunction package
 	IsCdqSubfunction(name string) (bool, error)                                  // see subfunction package
@@ -221,64 +217,6 @@ func (r *handler) NetDevExists(device string) (bool, error) {
 }
 
 /*
-GetDeviceFromFile extracts device map fields from the device file (device.json).
-It creates and populates a new instance of the device map with the device file field values
-and returns the device object.
-*/
-func (r *handler) GetDeviceFromFile(deviceName string, filepath string) (*Device, error) {
-	var device *Device
-
-	deviceDetailsMap, err := readDeviceMap(filepath)
-	if err != nil {
-		logging.Errorf("Error reading device file: %v", err)
-		return device, err
-	}
-
-	if deviceDetails, ok := deviceDetailsMap[deviceName]; ok {
-		device = &Device{
-			name:           deviceDetails.Name,
-			mode:           deviceDetails.Mode,
-			driver:         deviceDetails.Driver,
-			pci:            deviceDetails.Pci,
-			macAddress:     deviceDetails.MacAddress,
-			fullyAssigned:  deviceDetails.FullyAssigned,
-			ethtoolFilters: deviceDetails.EthtoolFilters,
-			netHandler:     r,
-			primary: &Device{
-				name:          deviceDetails.Primary.Name,
-				mode:          deviceDetails.Primary.Mode,
-				driver:        deviceDetails.Primary.Driver,
-				pci:           deviceDetails.Primary.Pci,
-				macAddress:    deviceDetails.Primary.MacAddress,
-				fullyAssigned: deviceDetails.Primary.FullyAssigned,
-			},
-		}
-
-		delete(deviceDetailsMap, deviceName)
-	}
-	if err = writeDeviceMap(filepath, deviceDetailsMap); err != nil {
-		logging.Errorf("Error writing to device file: %v", err)
-		return device, err
-	}
-	return device, nil
-}
-
-/*
-WriteDeviceFile creates and writes the device map fields to file, enabling the
-CNI to read device information.
-*/
-func (r *handler) WriteDeviceFile(device *Device, filepath string) error {
-	deviceDetailsMap := make(map[string]*DeviceDetails)
-	deviceDetailsMap[device.Name()] = device.Public()
-
-	if err := writeDeviceMap(filepath, deviceDetailsMap); err != nil {
-		logging.Errorf("Error writing to device file: %v", err)
-		return err
-	}
-	return nil
-}
-
-/*
 GetDeviceByMAC returns the device name assiciated with a MAC address. Returns "" if it does not exist.
 */
 func (r *handler) GetDeviceByMAC(mac string) (string, error) {
@@ -398,39 +336,4 @@ Wrapper for Subfunctions API calls
 func (r *handler) GetCdqPfnum(netdev string) (string, error) {
 	result, err := subfunctions.GetCdqPfnum(netdev)
 	return result, err
-}
-
-/*
-readDevice reads the device file unmarshalls device information to
-a device map object
-*/
-func readDeviceMap(filepath string) (map[string]*DeviceDetails, error) {
-	deviceMap := make(map[string]*DeviceDetails)
-	raw, err := ioutil.ReadFile(filepath)
-	if err != nil {
-		return deviceMap, err
-	}
-
-	if err = json.Unmarshal(raw, &deviceMap); err != nil {
-		return deviceMap, err
-	}
-	return deviceMap, nil
-}
-
-/*
-writeDevice marshals device information and writes a device information to
-writeDeviceFile.
-*/
-func writeDeviceMap(filepath string, deviceMap map[string]*DeviceDetails) error {
-	jsonStr, err := json.MarshalIndent(deviceMap, "", " ")
-	if err != nil {
-		logging.Errorf("Error marshalling device map to json format: %v", err)
-		return err
-	}
-
-	if err = ioutil.WriteFile(filepath, jsonStr, os.FileMode(constants.DeviceFile.FilePermissions)); err != nil {
-		logging.Errorf("Error writing to device file: %v", err)
-		return err
-	}
-	return nil
 }

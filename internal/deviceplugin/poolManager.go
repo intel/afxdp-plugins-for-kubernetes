@@ -52,7 +52,6 @@ type PoolManager struct {
 	DevicePrefix     string
 	UdsFuzz          bool
 	UID              string
-	EthtoolFilters   []string
 	DpAPIServer      *grpc.Server
 	ServerFactory    udsserver.ServerFactory
 	BpfHandler       bpf.Handler
@@ -72,7 +71,6 @@ func NewPoolManager(config PoolConfig) PoolManager {
 		DevicePrefix:     constants.Plugins.DevicePlugin.DevicePrefix,
 		UdsFuzz:          config.UdsFuzz,
 		UID:              strconv.Itoa(config.UID),
-		EthtoolFilters:   config.EthtoolCmds,
 	}
 }
 
@@ -216,14 +214,6 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 				}
 				logging.Infof("BPF program loaded on: %s File descriptor: %s", device.Name(), strconv.Itoa(fd))
 				udsServer.AddDevice(device.Name(), fd)
-			}
-
-			if pm.EthtoolFilters != nil {
-				device.SetEthtoolFilter(pm.EthtoolFilters)
-				if err = pm.NetHandler.WriteDeviceFile(device, constants.DeviceFile.Directory+constants.DeviceFile.Name); err != nil {
-					logging.Debugf("Error writing to device file %v", err)
-					return &response, err
-				}
 			}
 		}
 

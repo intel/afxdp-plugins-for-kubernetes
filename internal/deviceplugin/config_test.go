@@ -1130,58 +1130,6 @@ func TestReadConfigFile(t *testing.T) {
 						}`,
 			expErr: errors.New(poolUdsTimeoutError),
 		},
-		{
-			name: "ethtool cannot be empty",
-			configFile: `{
-							"pools":[
-								{
-									"name":"testPool",
-									"mode":"cdq",
-									"ethtoolCmds" : ["-X -device- equal 5 start 3", ""],
-									"devices":[
-										{
-											"name":"dev1"
-										},
-										{
-											"name":"dev2"
-										}
-									],
-									"drivers":[
-										{
-											"name":"ice"
-										}
-									]
-								}
-							]
-						}`,
-			expErr: errors.New(poolEthtoolNotEmpty),
-		},
-		{
-			name: "ethtool cannot be empty",
-			configFile: `{
-							"pools":[
-								{
-									"name":"testPool",
-									"mode":"cdq",
-									"ethtoolCmds" : ["-X -device- equal 5 start 3","--config-ntuple _device_ flow-type udp4 dst-ip -ip- action"],
-									"devices":[
-										{
-											"name":"dev1"
-										},
-										{
-											"name":"dev2"
-										}
-									],
-									"drivers":[
-										{
-											"name":"ice"
-										}
-									]
-								}
-							]
-						}`,
-			expErr: errors.New(poolEthtoolCharacters),
-		},
 	}
 
 	for _, tc := range testCases {
@@ -1208,7 +1156,7 @@ func TestReadConfigFile(t *testing.T) {
 }
 
 func FuzzReadConfigFile(f *testing.F) {
-	testCases := []string {
+	testCases := []string{
 		`{
 			"pools":[
 				{
@@ -1226,10 +1174,10 @@ func FuzzReadConfigFile(f *testing.F) {
 			]
 		}`,
 	}
-    for _, tc := range testCases {
-        f.Add(tc)
-    }
-    f.Fuzz(func(t *testing.T, fileContents string) {
+	for _, tc := range testCases {
+		f.Add(tc)
+	}
+	f.Fuzz(func(t *testing.T, fileContents string) {
 		cfgFile = nil
 		content := []byte(fileContents)
 		dir, dirErr := ioutil.TempDir("/tmp", "test-afxdp-")

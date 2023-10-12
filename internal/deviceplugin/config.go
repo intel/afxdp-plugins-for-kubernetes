@@ -55,13 +55,12 @@ type PoolConfig struct {
 	Name                    string                        // the name of the pool, used for logging and advertising resource to K8s. Pods will request this resource
 	Mode                    string                        // the mode that this pool operates in
 	Devices                 map[string]*networking.Device // a map of devices that the pool will manage
-	Filters                 []string                      // the ethtool/rss filters we apply to devices from this pool
 	UdsServerDisable        bool                          // a boolean to say if pods in this pool require BPF loading the UDS server
 	UdsTimeout              int                           // timeout value in seconds for the UDS sockets, user provided or defaults to value from constants package
 	UdsFuzz                 bool                          // a boolean to turn on fuzz testing within the UDS server, has no use outside of development and testing
 	RequiresUnprivilegedBpf bool                          // a boolean to say if this pool requires unprivileged BPF
 	UID                     int                           // the id of the pod user, we give this user ACL access to the UDS socket
-	EthtoolCmds             []string                      // list of ethtool filters to apply to the netdev
+
 }
 
 /*
@@ -252,7 +251,6 @@ func GetPoolConfigs(configFile string, net networking.Handler, host host.Handler
 				UdsFuzz:                 pool.UdsFuzz,
 				RequiresUnprivilegedBpf: pool.RequiresUnprivilegedBpf,
 				UID:                     pool.UID,
-				EthtoolCmds:             pool.EthtoolCmds,
 			})
 		}
 

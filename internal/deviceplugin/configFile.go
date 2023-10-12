@@ -55,8 +55,6 @@ const (
 	poolUdsTimeoutError   = "UDS socket timeout must be -1, 0, or between 30 and 300 seconds"
 	poolModeRequiredError = "Plugin must have a mode"
 	poolModeMustBeError   = "Plugin mode must be one of "
-	poolEthtoolNotEmpty   = "Ethtool commands cannot be empty"
-	poolEthtoolCharacters = "Ethtool commands must be alphanumeric or contain only approved charaters"
 
 	// logging errors
 	filenameValidError = "must be a valid .log or .txt filename"
@@ -94,7 +92,6 @@ type configFile_Pool struct {
 	UdsFuzz                 bool                 `json:"UdsFuzz"`
 	RequiresUnprivilegedBpf bool                 `json:"RequiresUnprivilegedBpf"`
 	UID                     int                  `json:"uid"`
-	EthtoolCmds             []string             `json:"ethtoolCmds"`
 }
 
 type configFile struct {
@@ -228,13 +225,6 @@ func (c configFile_Pool) Validate() error {
 			&c.UID,
 			validation.When(!(c.UID == 0), validation.Max(constants.UID.Maximum)),
 			validation.When(!(c.UID == 0), validation.Min(constants.UID.Minimum)),
-		),
-		validation.Field(
-			&c.EthtoolCmds,
-			validation.Each(
-				validation.Required.When(len(c.EthtoolCmds) > 0).Error(poolEthtoolNotEmpty),
-				validation.Match(regexp.MustCompile(constants.EthtoolFilter.EthtoolFilterRegex)).Error(poolEthtoolCharacters),
-			),
 		),
 	)
 }

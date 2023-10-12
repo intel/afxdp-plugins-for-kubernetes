@@ -29,7 +29,6 @@ import (
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/logformats"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
-	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	logging "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
 	"os"
@@ -45,12 +44,13 @@ NetConfig holds the config passed via stdin
 */
 type NetConfig struct {
 	types.NetConf
-	Device        string `json:"deviceID"`
-	Mode          string `json:"mode"`
-	SkipUnloadBpf bool   `json:"skipUnloadBpf,omitempty"`
-	Queues        string `json:"queues,omitempty"`
-	LogFile       string `json:"logFile,omitempty"`
-	LogLevel      string `json:"logLevel,omitempty"`
+	Device        string   `json:"deviceID"`
+	Mode          string   `json:"mode"`
+	SkipUnloadBpf bool     `json:"skipUnloadBpf,omitempty"`
+	Queues        string   `json:"queues,omitempty"`
+	LogFile       string   `json:"logFile,omitempty"`
+	LogLevel      string   `json:"logLevel,omitempty"`
+	EthtoolCmds   []string `json:"ethtoolCmds,omitempty"`
 }
 
 func init() {
@@ -64,6 +64,7 @@ func (n NetConfig) Validate() error {
 	var (
 		allowedLogLevels               = constants.Logging.Levels
 		allowedModes                   = constants.Plugins.Modes
+		ethtoolRegex                   = constants.EthtoolFilter.EthtoolFilterRegex
 		logLevels        []interface{} = make([]interface{}, len(allowedLogLevels))
 		modes            []interface{} = make([]interface{}, len(allowedModes))
 	)
@@ -92,6 +93,13 @@ func (n NetConfig) Validate() error {
 		validation.Field(
 			&n.Mode,
 			validation.In(modes...).Error("validate(): must be "+fmt.Sprintf("%v", modes)),
+		),
+		validation.Field(
+			&n.EthtoolCmds,
+			validation.Each(
+				validation.Required.When(len(n.EthtoolCmds) > 0).Error("Ethtool field must not be empty"),
+				validation.Match(regexp.MustCompile(ethtoolRegex)).Error("Ethtool commands must be alphanumeric or approved characters"),
+			),
 		),
 	)
 }
@@ -142,7 +150,6 @@ CmdAdd is called by kubelet during pod create
 func CmdAdd(args *skel.CmdArgs) error {
 	host := host.NewHandler()
 	var result *current.Result
-	var deviceDetails *networking.Device
 	netHandler := networking.NewHandler()
 
 	cfg, err := loadConf(args.StdinData)
@@ -195,45 +202,28 @@ func CmdAdd(args *skel.CmdArgs) error {
 	}
 
 	if cfg.Mode == "primary" {
-		deviceFile, err := tools.FilePathExists(constants.DeviceFile.Directory + constants.DeviceFile.Name)
-		if err != nil {
-			logging.Errorf("cmdAdd(): Failed to locate deviceFile: %v", err)
-		}
-
-		if deviceFile {
-			deviceDetails, err = netHandler.GetDeviceFromFile(cfg.Device, constants.DeviceFile.Directory+constants.DeviceFile.Name)
-			if err != nil {
-				logging.Errorf("cmdAdd():- Failed to extract device map values: %v", err)
-				return err
-			}
-
+		if cfg.EthtoolCmds != nil {
 			ethInstalled, version, err := host.HasEthtool()
 			if err != nil {
 				logging.Warningf("cmdAdd(): failed to discover ethtool on host: %v", err)
 			}
-
 			if ethInstalled {
 				logging.Debugf("cmdAdd(): ethtool found on host")
 				logging.Debugf("\t" + version)
-				if deviceDetails != nil {
-					if deviceDetails.GetEthtoolFilters() != nil {
-						logging.Infof("cmdAdd(): applying ethtool filters on device: %s", cfg.Device)
-						ethtoolCommand := deviceDetails.GetEthtoolFilters()
-						iPAddr, err := extractIP(result)
-						if err != nil {
-							logging.Errorf("cmdAdd(): Error extracting IP from result interface %v", err)
-							return err
-						}
-						err = netHandler.SetEthtool(ethtoolCommand, cfg.Device, iPAddr)
-						if err != nil {
-							logging.Errorf("cmdAdd(): unable to executed ethtool filter: %v", err)
-							return err
-						}
-					} else {
-						logging.Debugf("cmdAdd(): ethtool filters have not been specified")
-					}
+				logging.Infof("cmdAdd(): applying ethtool filters on device: %s", cfg.Device)
+				iPAddr, err := extractIP(result)
+				if err != nil {
+					logging.Errorf("cmdAdd(): Error extracting IP from result interface %v", err)
+					return err
+				}
+				err = netHandler.SetEthtool(cfg.EthtoolCmds, cfg.Device, iPAddr)
+				if err != nil {
+					logging.Errorf("cmdAdd(): unable to executed ethtool filter: %v", err)
+					return err
 				}
 			}
+		} else {
+			logging.Debugf("cmdAdd(): ethtool filters have not been specified")
 		}
 	}
 
@@ -354,19 +344,20 @@ func CmdDel(args *skel.CmdArgs) error {
 			return err
 		}
 	}
-
 	if cfg.Mode == "primary" {
-		logging.Debugf("cmdDel: checking host for Ethtool")
-		ethInstalled, _, err := host.HasEthtool()
-		if err != nil {
-			logging.Errorf("cmdDel(): error checking if Ethtool is present on host: %v", err)
-			return err
-		}
-		if ethInstalled {
-			logging.Infof("cmdDel(): Removing ethtool filters on device: %s", cfg.Device)
-			err := netHandler.DeleteEthtool(cfg.Device)
+		if cfg.EthtoolCmds != nil {
+			logging.Debugf("cmdDel: checking host for Ethtool")
+			ethInstalled, _, err := host.HasEthtool()
 			if err != nil {
-				logging.Warningf("cmdDel(): failed to remove ethtool filter: %v", err)
+				logging.Errorf("cmdDel(): error checking if Ethtool is present on host: %v", err)
+				return err
+			}
+			if ethInstalled {
+				logging.Infof("cmdDel(): Removing ethtool filters on device: %s", cfg.Device)
+				err := netHandler.DeleteEthtool(cfg.Device)
+				if err != nil {
+					logging.Warningf("cmdDel(): failed to remove ethtool filter: %v", err)
+				}
 			}
 		}
 	}
