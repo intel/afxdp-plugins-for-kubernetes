@@ -8,6 +8,7 @@ require (
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/google/gofuzz v1.1.0
 	github.com/google/uuid v1.3.0
+	github.com/intel/afxdp-plugins-for-kubernetes/pkg/goclient v0.0.0
 	github.com/intel/afxdp-plugins-for-kubernetes/pkg/subfunctions v0.0.0
 	github.com/pkg/errors v0.9.1
 	github.com/safchain/ethtool v0.0.0-20210803160452-9aa261dae9b1
@@ -22,3 +23,4 @@ require (
 )
 
 replace github.com/intel/afxdp-plugins-for-kubernetes/pkg/subfunctions => ./pkg/subfunctions
+replace github.com/intel/afxdp-plugins-for-kubernetes/pkg/goclient => ./pkg/goclient
