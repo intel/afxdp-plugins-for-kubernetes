@@ -271,13 +271,5 @@ int Load_bpf_pin_xsk_map(char *ifname, char *pin_path) {
 		return err;
 	}
 
-	// if (bpf_map__is_pinned(bpf_object__find_map_by_name(obj, "xsks_map"))) {
-	// 	Log_Info("%s: xsk map pinned to %s\n", __FUNCTION__,
-	// 		 bpf_map__get_pin_path(bpf_object__find_map_by_name(obj, "xsks_map")));
-	// } else {
-	// 	Log_Error("%s: xsk map is not pinned \n", __FUNCTION__);
-	// 	return -1;
-	// }
-
 	return 0;
 }

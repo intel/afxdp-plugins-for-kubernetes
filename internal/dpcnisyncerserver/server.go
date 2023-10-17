@@ -21,7 +21,6 @@ import (
 	"os"
 	"time"
 
-	// Replace with the actual proto package
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
 	pb "github.com/intel/afxdp-plugins-for-kubernetes/internal/dpcnisyncer"

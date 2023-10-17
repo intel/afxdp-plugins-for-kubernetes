@@ -20,7 +20,7 @@ import (
 	"net"
 
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
-	pb "github.com/intel/afxdp-plugins-for-kubernetes/internal/dpcnisyncer" // Replace with the actual proto package
+	pb "github.com/intel/afxdp-plugins-for-kubernetes/internal/dpcnisyncer"
 	logging "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
