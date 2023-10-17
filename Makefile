@@ -27,6 +27,7 @@ clangformat:
 	@echo
 	-clang-format -i -style=file internal/bpf/*.c internal/bpf/*.h
 	-clang-format -i -style=file internal/bpf/xdp-pass/*.c
+	-clang-format -i -style=file internal/bpf/xdp-afxdp-redirect/*.c
 	@echo
 	@echo
 

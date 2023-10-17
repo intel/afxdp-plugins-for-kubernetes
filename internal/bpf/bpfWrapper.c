@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
+#include <errno.h>
+#include <fcntl.h>
 #include <linux/if_link.h> // for XDP_FLAGS_DRV_MODE
 #include <net/if.h>	   // for if_nametoindex
+#include <sys/stat.h>
+#include <unistd.h>
 #include <xdp/libxdp.h>
 #include <xdp/xsk.h> // for xsk_setup_xdp_prog, bpf_set_link_xdp_fd
-#include <unistd.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
 
 #include "bpfWrapper.h"
 #include "log.h"
@@ -112,7 +112,7 @@ int Configure_busy_poll(int fd, int busy_timeout, int busy_budget) {
 	}
 
 	Log_Warning("%s: setsockopt failure, attempting to restore xsk to default state",
-			__FUNCTION__);
+		    __FUNCTION__);
 
 	Log_Warning("%s: unsetting SO_BUSY_POLL on file descriptor %d", __FUNCTION__, fd);
 
@@ -191,7 +191,7 @@ int Load_attach_bpf_xdp_pass(char *ifname) {
 	}
 	Log_Info("%s: if_index for interface %s is %d", __FUNCTION__, ifname, ifindex);
 
-   	if (access(filename, O_RDONLY) < 0) {
+	if (access(filename, O_RDONLY) < 0) {
 		Log_Error("%s:error accessing file %s: %s\n", __FUNCTION__, filename,
 			  strerror(errno));
 		return err;
