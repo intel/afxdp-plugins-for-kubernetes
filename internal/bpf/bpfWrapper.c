@@ -112,7 +112,7 @@ int Configure_busy_poll(int fd, int busy_timeout, int busy_budget) {
 	}
 
 	Log_Warning("%s: setsockopt failure, attempting to restore xsk to default state",
-		    __FUNCTION__);
+			__FUNCTION__);
 
 	Log_Warning("%s: unsetting SO_BUSY_POLL on file descriptor %d", __FUNCTION__, fd);
 
@@ -191,6 +191,12 @@ int Load_attach_bpf_xdp_pass(char *ifname) {
 	}
 	Log_Info("%s: if_index for interface %s is %d", __FUNCTION__, ifname, ifindex);
 
+   	if (access(filename, O_RDONLY) < 0) {
+		Log_Error("%s:error accessing file %s: %s\n", __FUNCTION__, filename,
+			  strerror(errno));
+		return err;
+	}
+
 	Log_Info("%s: starting setup of xdp-pass program on "
 		 "interface %s (%d)",
 		 __FUNCTION__, ifname, ifindex);
@@ -242,42 +248,36 @@ int Load_bpf_pin_xsk_map(char *ifname, char *pin_path) {
 		return err;
 	}
 
-	obj = bpf_object__open_file(filename, &bpf_opts);
-	err = libbpf_get_error(obj);
+	Log_Info("%s: starting setup of xdp-redirect program on "
+		 "interface %s (%d)",
+		 __FUNCTION__, ifname, ifindex);
+
+	/* Load the BPF program */
+	prog = xdp_program__open_file(filename, NULL, NULL);
+	err = libxdp_get_error(prog);
 	if (err) {
-		Log_Error("%s: Couldn't open file(%s)\n", __FUNCTION__, filename);
+		libxdp_strerror(err, "Couldn’t load XDP program",
+				sizeof("Couldn’t load XDP program"));
+		Log_Error("%s: Couldn’t load XDP program\n", __FUNCTION__, filename);
 		return err;
 	}
 
-	prog = bpf_object__find_program_by_name(obj, prog_name);
-	if (!prog) {
-		Log_Error("%s: Couldn't find xdp program in bpf object!\n", __FUNCTION__);
-		err = -ENOENT;
-		return err;
-	}
-	bpf_program__set_type(prog, BPF_PROG_TYPE_XDP);
-
-	err = bpf_object__load(obj);
+	/* Attach the program to the interface at the xdp hook */
+	err = xdp_program__attach(prog, ifindex, XDP_FLAGS_UPDATE_IF_NOEXIST, 0);
 	if (err) {
-		Log_Error("%s: Couldn't load BPF-OBJ file(%s) %s\n", __FUNCTION__, filename,
-			  strerror(errno));
+		libxdp_strerror(err, "Couldn't attach the xdp pass program",
+				sizeof("Couldn't attach the xdp pass program"));
+		Log_Error("%s: Couldn't attach the XDP PASS PROGRAM TO %s\n", __FUNCTION__, ifname);
 		return err;
 	}
 
-	Log_Info("%s: bpf: Attach prog to ifindex %d\n", __FUNCTION__, ifindex);
-	link = bpf_program__attach_xdp(prog, ifindex);
-	if (!link) {
-		Log_Error("%s:ERROR: failed to attach program to %s\n", __FUNCTION__, ifname);
-		return err;
-	}
-
-	if (bpf_map__is_pinned(bpf_object__find_map_by_name(obj, "xsks_map"))) {
-		Log_Info("%s: xsk map pinned to %s\n", __FUNCTION__,
-			 bpf_map__get_pin_path(bpf_object__find_map_by_name(obj, "xsks_map")));
-	} else {
-		Log_Error("%s: xsk map is not pinned \n", __FUNCTION__);
-		return -1;
-	}
+	// if (bpf_map__is_pinned(bpf_object__find_map_by_name(obj, "xsks_map"))) {
+	// 	Log_Info("%s: xsk map pinned to %s\n", __FUNCTION__,
+	// 		 bpf_map__get_pin_path(bpf_object__find_map_by_name(obj, "xsks_map")));
+	// } else {
+	// 	Log_Error("%s: xsk map is not pinned \n", __FUNCTION__);
+	// 	return -1;
+	// }
 
 	return 0;
 }

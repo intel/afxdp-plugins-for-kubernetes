@@ -1,0 +1,26 @@
+# A working example of BPF MAP PINNING
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cndp-0-0
+  annotations:
+    k8s.v1.cni.cncf.io/networks: afxdp-network
+spec:
+  containers:
+    - name: cndp-0
+      command: ["/bin/bash"]
+      args: ["-c", "./jsonc_gen.sh -kp ; cndpfwd -c config.jsonc lb;"]
+      image:  quay.io/mtahhan/cndp-map-pinning:latest
+      imagePullPolicy: IfNotPresent
+      securityContext:
+        privileged: true
+          #capabilities:
+          #add:
+          #  - NET_RAW
+          #  - IPC_LOCK
+          #  - BPF
+      resources:
+        requests:
+          afxdp/myPool: '1'
+        limits:
+          afxdp/myPool: '1'
