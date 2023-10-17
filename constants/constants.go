@@ -350,12 +350,6 @@ func init() {
 		Xsk_map:       xsk_map,
 	}
 
-	DeviceFile = deviceFile{
-		Name:            name,
-		FilePermissions: filePermissions,
-		Directory:       directory,
-	}
-
 	EthtoolFilter = ethtoolFilter{
 		EthtoolFilterRegex: ethtoolFilterRegex,
 	}

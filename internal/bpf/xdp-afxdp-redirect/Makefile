@@ -14,9 +14,9 @@
 LLC ?= llc
 CLANG ?= clang
 
-all: xdpafxdp
+all: afxdp_redirect
 
-xdpafxdp:
+afxdp_redirect:
 	$(CLANG) -S \
 	-target bpf \
 	-D __BPF_TRACING__ \

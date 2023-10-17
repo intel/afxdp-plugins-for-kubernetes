@@ -17,8 +17,8 @@ COPY . /usr/src/afxdp_k8s_plugins
 WORKDIR /usr/src/afxdp_k8s_plugins
 RUN apt-get update \
 && apt-get -y install --no-install-recommends libxdp-dev=1.3.1-1 \
-&& apt-get -y install -o APT::Keep-Downloaded-Packages=false --no-install-recommends clang=1:14.0-55.6  \
-&& apt-get -y install -o APT::Keep-Downloaded-Packages=false --no-install-recommends llvm=1:14.0-55.6 \
+&& apt-get -y install -o APT::Keep-Downloaded-Packages=false --no-install-recommends clang=1:14.0-55.7~deb12u1 \
+&& apt-get -y install -o APT::Keep-Downloaded-Packages=false --no-install-recommends llvm=1:14.0-55.7~deb12u1 \
 && apt-get -y install -o APT::Keep-Downloaded-Packages=false --no-install-recommends gcc-multilib=4:12.2.0-3 \
 && make buildcni
 

@@ -272,14 +272,6 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 					ReadOnly:      false,
 				})
 			}
-
-			if pm.EthtoolFilters != nil {
-				device.SetEthtoolFilter(pm.EthtoolFilters)
-				if err = pm.NetHandler.WriteDeviceFile(device, constants.DeviceFile.Directory+constants.DeviceFile.Name); err != nil {
-					logging.Debugf("Error writing to device file %v", err)
-					return &response, err
-				}
-			}
 		}
 
 		envs[constants.Devices.EnvVarList] = strings.Join(crqt.DevicesIDs, " ")

@@ -19,6 +19,9 @@
 #include <xdp/libxdp.h>
 #include <xdp/xsk.h> // for xsk_setup_xdp_prog, bpf_set_link_xdp_fd
 #include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
 
 #include "bpfWrapper.h"
 #include "log.h"
