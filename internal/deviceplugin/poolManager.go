@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *	 http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,6 +26,7 @@ import (
 
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/bpf"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/dpcnisyncerserver"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/tools"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/udsserver"
@@ -41,36 +42,46 @@ PoolManager represents an manages the pool of devices.
 Each PoolManager registers with Kubernetes as a different device type.
 */
 type PoolManager struct {
-	Name             string
-	Mode             string
-	Devices          map[string]*networking.Device
-	UpdateSignal     chan bool
-	DpAPISocket      string
-	DpAPIEndpoint    string
-	UdsServerDisable bool
-	UdsTimeout       int
-	DevicePrefix     string
-	UdsFuzz          bool
-	UID              string
-	DpAPIServer      *grpc.Server
-	ServerFactory    udsserver.ServerFactory
-	BpfHandler       bpf.Handler
-	NetHandler       networking.Handler
+	Name                string
+	Mode                string
+	Devices             map[string]*networking.Device
+	UpdateSignal        chan bool
+	DpAPISocket         string
+	DpAPIEndpoint       string
+	UdsServerDisable    bool
+	BpfMapPinningEnable bool
+	UdsTimeout          int
+	DevicePrefix        string
+	UdsFuzz             bool
+	UID                 string
+	EthtoolFilters      []string
+	DpAPIServer         *grpc.Server
+	ServerFactory       udsserver.ServerFactory
+	MapManagerFactory   bpf.MapManagerFactory
+	BpfHandler          bpf.Handler
+	NetHandler          networking.Handler
+	DpCniSyncerServer   *dpcnisyncerserver.SyncerServer
+	DpCniSyncerSocket   string
+	SyncerActive        bool
+	Pbm                 bpf.PoolBpfMapManager
 }
 
 func NewPoolManager(config PoolConfig) PoolManager {
 	return PoolManager{
-		Name:             config.Name,
-		Mode:             config.Mode,
-		Devices:          config.Devices,
-		UpdateSignal:     make(chan bool),
-		DpAPISocket:      pluginapi.DevicePluginPath + constants.Plugins.DevicePlugin.DevicePrefix + "-" + config.Name + ".sock",
-		DpAPIEndpoint:    constants.Plugins.DevicePlugin.DevicePrefix + "-" + config.Name + ".sock",
-		UdsServerDisable: config.UdsServerDisable,
-		UdsTimeout:       config.UdsTimeout,
-		DevicePrefix:     constants.Plugins.DevicePlugin.DevicePrefix,
-		UdsFuzz:          config.UdsFuzz,
-		UID:              strconv.Itoa(config.UID),
+		Name:                config.Name,
+		Mode:                config.Mode,
+		Devices:             config.Devices,
+		UpdateSignal:        make(chan bool),
+		DpAPISocket:         pluginapi.DevicePluginPath + constants.Plugins.DevicePlugin.DevicePrefix + "-" + config.Name + ".sock",
+		DpAPIEndpoint:       constants.Plugins.DevicePlugin.DevicePrefix + "-" + config.Name + ".sock",
+		UdsServerDisable:    config.UdsServerDisable,
+		BpfMapPinningEnable: config.BpfMapPinningEnable,
+		UdsTimeout:          config.UdsTimeout,
+		DevicePrefix:        constants.Plugins.DevicePlugin.DevicePrefix,
+		UdsFuzz:             config.UdsFuzz,
+		UID:                 strconv.Itoa(config.UID),
+		EthtoolFilters:      config.EthtoolCmds,
+		DpCniSyncerServer:   config.DPCNIServer,
 	}
 }
 
@@ -79,6 +90,7 @@ Init is called it initialise the PoolManager.
 */
 func (pm *PoolManager) Init(config PoolConfig) error {
 	pm.ServerFactory = udsserver.NewServerFactory()
+	pm.MapManagerFactory = bpf.NewMapMangerFactory()
 	pm.BpfHandler = bpf.NewHandler()
 	pm.NetHandler = networking.NewHandler()
 
@@ -91,6 +103,21 @@ func (pm *PoolManager) Init(config PoolConfig) error {
 		return err
 	}
 	logging.Infof("Pool "+pm.DevicePrefix+"/%s registered with Kubelet", pm.Name)
+
+	if pm.BpfMapPinningEnable {
+		var err error
+
+		logging.Infof("Creating new BPF Map manager %s %s", pm.DevicePrefix+"-maps/", pm.UID)
+		pm.Pbm.Manager, pm.Pbm.Path, err = pm.MapManagerFactory.CreateMapManager(pm.DevicePrefix+"-maps/", pm.UID)
+		if err != nil {
+			logging.Errorf("Error new BPF Map manager: %v", err)
+			return err
+		}
+
+		logging.Debug("REGISTER MAP MANAGER WITH THE DP<=>CNI grpc Syncer")
+		pm.DpCniSyncerServer.RegisterMapManager(pm.Pbm)
+		pm.DpCniSyncerServer.BpfMapPinEnable = true
+	}
 
 	if len(pm.Devices) > 0 {
 		pm.UpdateSignal <- true
@@ -108,6 +135,10 @@ func (pm *PoolManager) Terminate() error {
 		logging.Infof("Cleanup error: %v", err)
 	}
 	logging.Infof(pm.DevicePrefix + "/" + pm.Name + " terminated")
+
+	if pm.DpCniSyncerServer != nil {
+		pm.DpCniSyncerServer.StopGRPCSyncer()
+	}
 
 	return nil
 }
@@ -214,6 +245,32 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 				}
 				logging.Infof("BPF program loaded on: %s File descriptor: %s", device.Name(), strconv.Itoa(fd))
 				udsServer.AddDevice(device.Name(), fd)
+			}
+
+			if pm.BpfMapPinningEnable {
+				logging.Infof("Loading BPF program on device: %s and pinning the map", device.Name())
+				pinPath, err := pm.Pbm.Manager.CreateBPFFS(device.Name(), pm.Pbm.Path)
+				if err != nil {
+					logging.Errorf("Error Creating the BPFFS: %v", err)
+					return &response, err
+				}
+
+				err = pm.BpfHandler.LoadBpfPinXskMap(device.Name(), pinPath)
+				if err != nil {
+					logging.Errorf("Error loading BPF Program on interface %s and pinning the map: %v", device.Name(), err)
+					return &response, err
+				}
+
+				pm.Pbm.Manager.AddMap(device.Name(), pinPath)
+
+				//FULL PATH WILL INCLUDE THE XSKMAP...
+				fullPath := pinPath + constants.Bpf.Xsk_map
+				logging.Debugf("mapping %s to %s", fullPath, constants.Bpf.BpfMapPodPath)
+				cresp.Mounts = append(cresp.Mounts, &pluginapi.Mount{
+					HostPath:      fullPath,
+					ContainerPath: constants.Bpf.BpfMapPodPath,
+					ReadOnly:      false,
+				})
 			}
 		}
 

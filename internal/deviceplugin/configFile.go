@@ -88,6 +88,7 @@ type configFile_Pool struct {
 	Devices                 []*configFile_Device `json:"Devices"`
 	Nodes                   []*configFile_Node   `json:"Nodes"`
 	UdsServerDisable        bool                 `json:"UdsServerDisable"`
+	BpfMapPinningEnable     bool                 `json:"BpfMapPinningEnable"`
 	UdsTimeout              int                  `json:"UdsTimeout"`
 	UdsFuzz                 bool                 `json:"UdsFuzz"`
 	RequiresUnprivilegedBpf bool                 `json:"RequiresUnprivilegedBpf"`

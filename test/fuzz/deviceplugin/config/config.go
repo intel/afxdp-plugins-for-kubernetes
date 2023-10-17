@@ -16,11 +16,13 @@
 package deviceplugin
 
 import (
-	dp "github.com/intel/afxdp-plugins-for-kubernetes/internal/deviceplugin"
-	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
-	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 	"io/ioutil"
 	"os"
+
+	dp "github.com/intel/afxdp-plugins-for-kubernetes/internal/deviceplugin"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/dpcnisyncerserver"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/networking"
 )
 
 const (
@@ -61,7 +63,13 @@ func Fuzz(data []byte) int {
 		panic(1)
 	}
 
-	_, err = dp.GetPoolConfigs(tmpfile.Name(), networking.NewHandler(), host.NewHandler())
+	//START THE SYNCER SERVER TODO CHECK BPF MAP
+	dpCniSyncerServer, err := dpcnisyncerserver.NewSyncerServer()
+	if err != nil {
+		panic(1)
+	}
+
+	_, err = dp.GetPoolConfigs(tmpfile.Name(), networking.NewHandler(), host.NewHandler(), dpCniSyncerServer)
 	if err != nil {
 		return 0
 	}
