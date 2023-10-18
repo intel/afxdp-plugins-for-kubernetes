@@ -227,7 +227,7 @@ int Load_attach_bpf_xdp_pass(char *ifname) {
 
 int Load_bpf_pin_xsk_map(char *ifname, char *pin_path) {
 	struct bpf_object *obj;
-	struct bpf_program *prog;
+	struct xdp_program *prog;
 	struct bpf_link *link;
 	int ifindex, map_fd = -1;
 	int err;
