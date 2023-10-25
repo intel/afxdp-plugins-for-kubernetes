@@ -20,6 +20,8 @@ ciWorkdir="./../../.github/e2e"
 run_dp="./../../bin/afxdp-dp"
 full_run=false
 daemonset=false
+daemonsetGo=false
+daemonsetUDS=false
 soak=false
 ci_run=false
 pids=( )
@@ -148,9 +150,15 @@ run_local_pods() {
 	echo
 	kubectl exec -i afxdp-e2e-test -- env
 	echo
-	echo "***** UDS Test *****"
-	echo
-	kubectl exec -i afxdp-e2e-test --container afxdp -- udsTest
+	if [ "$daemonsetUDS" = true ]; then
+		echo "***** UDS Test *****"
+		echo
+		kubectl exec -i afxdp-e2e-test --container afxdp -- udsTest uds
+	elif [ "$daemonsetGo" = true ]; then
+		echo "***** GO Library Test *****" 
+		echo
+		kubectl exec -i afxdp-e2e-test --container afxdp -- udsTest golang
+	fi
 	echo "***** Delete Pod *****"
 	kubectl delete pod --grace-period 0 --ignore-not-found=true afxdp-e2e-test &> /dev/null
 	if [ "$full_run" = true ]; then
@@ -374,6 +382,12 @@ then
 			;;
 			-d|--daemonset)
 				daemonset=true
+			;;
+			-g|--golang)
+				daemonsetGo=true
+			;;
+			-u|--uds)
+				daemonsetUDS=true
 			;;
 			-c|--ci)
 				ci_run=true
