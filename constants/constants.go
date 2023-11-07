@@ -74,16 +74,17 @@ var (
 	afxdpMinimumLinux = "4.18.0" // minimum Linux version for AF_XDP support
 
 	/* UDS*/
-	udsMaxTimeout = 300               // maximum configurable uds timeout in seconds
-	udsMinTimeout = 30                // minimum (and default) uds timeout in seconds
-	udsMsgBufSize = 64                // uds message buffer size
-	udsCtlBufSize = 4                 // uds control buffer size
-	udsProtocol   = "unixpacket"      // uds protocol: "unix"=SOCK_STREAM, "unixdomain"=SOCK_DGRAM, "unixpacket"=SOCK_SEQPACKET
-	udsSockDir    = "/tmp/afxdp_dp/"  // host location where we place our uds sockets. If changing location remember to update daemonset mount point
-	udsPodPath    = "/tmp/afxdp.sock" // the uds filepath as it will appear in the end user application pod
+	udsMaxTimeout = 300              // maximum configurable uds timeout in seconds
+	udsMinTimeout = 30               // minimum (and default) uds timeout in seconds
+	udsMsgBufSize = 64               // uds message buffer size
+	udsCtlBufSize = 4                // uds control buffer size
+	udsProtocol   = "unixpacket"     // uds protocol: "unix"=SOCK_STREAM, "unixdomain"=SOCK_DGRAM, "unixpacket"=SOCK_SEQPACKET
+	udsSockDir    = "/tmp/afxdp_dp/" // host location where we place our uds sockets. If changing location remember to update daemonset mount point
+	udsPodPath    = "/tmp/"          // the uds filepath as it will appear in the end user application pod
+	udsPodSock    = "/afxdp.sock"
 
 	/* BPF*/
-	bpfMapPodPath = "/tmp/xsks_map"
+	bpfMapPodPath = "/tmp/"
 	xsk_map       = "/xsks_map"
 
 	udsDirFileMode = 0700 // permissions for the directory in which we create our uds sockets
@@ -216,6 +217,7 @@ type uds struct {
 	SockDir     string
 	DirFileMode int
 	PodPath     string
+	SockName    string
 	Handshake   handshake
 }
 
@@ -326,6 +328,7 @@ func init() {
 		SockDir:     udsSockDir,
 		DirFileMode: udsDirFileMode,
 		PodPath:     udsPodPath,
+		SockName:    udsPodSock,
 		Handshake: handshake{
 			Version:             handshakeHandshakeVersion,
 			RequestVersion:      handshakeRequestVersion,
