@@ -40,7 +40,7 @@ var (
 
 	/* Devices */
 	devicesProhibited    = []string{"eno", "eth", "lo", "docker", "flannel", "cni"} // interfaces we never add to a pool
-	devicesEnvVar        = "AFXDP_DEVICES"                                          // env var set in the end user application pod, lists AF_XDP devices attached
+	devicesEnvVarPrefix  = "AFXDP_DEVICES_"                                         // env var set in the end user application pod, lists AF_XDP devices attached
 	deviceValidNameRegex = `^[a-zA-Z0-9_-]+$`                                       // regex to check if a string is a valid device name
 	deviceValidNameMin   = 1                                                        // minimum length of a device name
 	deviceValidNameMax   = 50                                                       // maximum length of a device name
@@ -286,7 +286,7 @@ func init() {
 
 	Devices = devices{
 		Prohibited:     devicesProhibited,
-		EnvVarList:     devicesEnvVar,
+		EnvVarList:     devicesEnvVarPrefix,
 		ValidNameRegex: deviceValidNameRegex,
 		ValidNameMin:   deviceValidNameMin,
 		ValidNameMax:   deviceValidNameMax,

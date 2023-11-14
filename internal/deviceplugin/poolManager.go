@@ -277,11 +277,8 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 			}
 		}
 
-		// MT this doesn't really work as the env var is being set per Allocate request
-		// Could leave the app to deduce the af_xdp device name from the path above
-		// or write the device name into a file in the same path as the xskmap
-		// or just drop altogher?
-		envs[constants.Devices.EnvVarList] = strings.Join(crqt.DevicesIDs[:], " ")
+		envVar := constants.Devices.EnvVarList + strings.ToUpper(pm.Name)
+		envs[envVar] = strings.Join(crqt.DevicesIDs[:], " ")
 		envsPrint, err := tools.PrettyString(envs)
 		if err != nil {
 			logging.Errorf("Error printing container environment variables: %v", err)
