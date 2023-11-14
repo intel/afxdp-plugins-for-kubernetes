@@ -84,7 +84,7 @@ var (
 	udsPodSock    = "/afxdp.sock"
 
 	/* BPF*/
-	bpfMapPodPath = "/tmp/"
+	bpfMapPodPath = "/tmp/afxdp_dp/"
 	xsk_map       = "/xsks_map"
 
 	udsDirFileMode = 0700 // permissions for the directory in which we create our uds sockets
