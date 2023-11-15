@@ -18,6 +18,7 @@ package deviceplugin
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
@@ -57,6 +58,8 @@ func TestAllocate(t *testing.T) {
 	pm.ServerFactory = udsserver.NewFakeServerFactory()
 	pm.BpfHandler = bpf.NewFakeHandler()
 
+	envVar := constants.Devices.EnvVarList + strings.ToUpper(pm.Name)
+
 	testCases := []struct {
 		name                  string
 		containerRequests     []*pluginapi.ContainerAllocateRequest
@@ -69,10 +72,10 @@ func TestAllocate(t *testing.T) {
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
 				{
-					Envs: map[string]string{constants.Devices.EnvVarList: "dev_1"},
+					Envs: map[string]string{envVar: "dev_1"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: constants.Uds.PodPath,
+							ContainerPath: constants.Uds.PodPath + "dev_1" + constants.Uds.SockName,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -90,10 +93,20 @@ func TestAllocate(t *testing.T) {
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
 				{
-					Envs: map[string]string{constants.Devices.EnvVarList: "dev_1 dev_2 dev_3"},
+					Envs: map[string]string{envVar: "dev_1 dev_2 dev_3"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: constants.Uds.PodPath,
+							ContainerPath: constants.Uds.PodPath + "dev_1" + constants.Uds.SockName,
+							HostPath:      "/tmp/fake-socket.sock",
+							ReadOnly:      false,
+						},
+						{
+							ContainerPath: constants.Uds.PodPath + "dev_2" + constants.Uds.SockName,
+							HostPath:      "/tmp/fake-socket.sock",
+							ReadOnly:      false,
+						},
+						{
+							ContainerPath: constants.Uds.PodPath + "dev_3" + constants.Uds.SockName,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -112,10 +125,10 @@ func TestAllocate(t *testing.T) {
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
 				{
-					Envs: map[string]string{constants.Devices.EnvVarList: "dev_1"},
+					Envs: map[string]string{envVar: "dev_1"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: constants.Uds.PodPath,
+							ContainerPath: constants.Uds.PodPath + "dev_1" + constants.Uds.SockName,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -124,10 +137,10 @@ func TestAllocate(t *testing.T) {
 					Annotations: map[string]string{},
 				},
 				{
-					Envs: map[string]string{constants.Devices.EnvVarList: "dev_2"},
+					Envs: map[string]string{envVar: "dev_2"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: constants.Uds.PodPath,
+							ContainerPath: constants.Uds.PodPath + "dev_2" + constants.Uds.SockName,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -146,10 +159,20 @@ func TestAllocate(t *testing.T) {
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
 				{
-					Envs: map[string]string{constants.Devices.EnvVarList: "dev_1 dev_2 dev_3"},
+					Envs: map[string]string{envVar: "dev_1 dev_2 dev_3"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: constants.Uds.PodPath,
+							ContainerPath: constants.Uds.PodPath + "dev_1" + constants.Uds.SockName,
+							HostPath:      "/tmp/fake-socket.sock",
+							ReadOnly:      false,
+						},
+						{
+							ContainerPath: constants.Uds.PodPath + "dev_2" + constants.Uds.SockName,
+							HostPath:      "/tmp/fake-socket.sock",
+							ReadOnly:      false,
+						},
+						{
+							ContainerPath: constants.Uds.PodPath + "dev_3" + constants.Uds.SockName,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -158,10 +181,20 @@ func TestAllocate(t *testing.T) {
 					Annotations: map[string]string{},
 				},
 				{
-					Envs: map[string]string{constants.Devices.EnvVarList: "dev_4 dev_5 dev_6"},
+					Envs: map[string]string{envVar: "dev_4 dev_5 dev_6"},
 					Mounts: []*pluginapi.Mount{
 						{
-							ContainerPath: constants.Uds.PodPath,
+							ContainerPath: constants.Uds.PodPath + "dev_4" + constants.Uds.SockName,
+							HostPath:      "/tmp/fake-socket.sock",
+							ReadOnly:      false,
+						},
+						{
+							ContainerPath: constants.Uds.PodPath + "dev_5" + constants.Uds.SockName,
+							HostPath:      "/tmp/fake-socket.sock",
+							ReadOnly:      false,
+						},
+						{
+							ContainerPath: constants.Uds.PodPath + "dev_6" + constants.Uds.SockName,
 							HostPath:      "/tmp/fake-socket.sock",
 							ReadOnly:      false,
 						},
@@ -179,14 +212,8 @@ func TestAllocate(t *testing.T) {
 			},
 			expContainerResponses: []*pluginapi.ContainerAllocateResponse{
 				{
-					Envs: map[string]string{constants.Devices.EnvVarList: ""},
-					Mounts: []*pluginapi.Mount{
-						{
-							ContainerPath: constants.Uds.PodPath,
-							HostPath:      "/tmp/fake-socket.sock",
-							ReadOnly:      false,
-						},
-					},
+					Envs:        map[string]string{envVar: ""},
+					Mounts:      []*pluginapi.Mount{},
 					Devices:     []*pluginapi.DeviceSpec{},
 					Annotations: map[string]string{},
 				},

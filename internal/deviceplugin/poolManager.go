@@ -278,7 +278,7 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 		}
 
 		envVar := constants.Devices.EnvVarList + strings.ToUpper(pm.Name)
-		envs[envVar] = strings.Join(crqt.DevicesIDs[:], " ")
+		envs[envVar] = strings.Join(crqt.DevicesIDs, " ")
 		envsPrint, err := tools.PrettyString(envs)
 		if err != nil {
 			logging.Errorf("Error printing container environment variables: %v", err)
