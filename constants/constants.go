@@ -80,7 +80,7 @@ var (
 	udsCtlBufSize = 4                // uds control buffer size
 	udsProtocol   = "unixpacket"     // uds protocol: "unix"=SOCK_STREAM, "unixdomain"=SOCK_DGRAM, "unixpacket"=SOCK_SEQPACKET
 	udsSockDir    = "/tmp/afxdp_dp/" // host location where we place our uds sockets. If changing location remember to update daemonset mount point
-	udsPodPath    = "/tmp/"          // the uds filepath as it will appear in the end user application pod
+	udsPodPath    = "/tmp/afxdp_dp/" // the uds filepath as it will appear in the end user application pod
 	udsPodSock    = "/afxdp.sock"
 
 	/* BPF*/
