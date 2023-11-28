@@ -73,14 +73,14 @@ build: builddp buildcni
 docker: ## Build docker image
 	@echo "******  Docker Image    ******"
 	@echo
-	docker build -t localhost:5000/afxdp-device-plugin -f images/amd64.dockerfile .
+	docker build -t afxdp-device-plugin -f images/amd64.dockerfile .
 	@echo
 	@echo
 
 podman: ## Build podman image
 	@echo "******  Podman Image    ******"
 	@echo
-	podman build -t localhost:5000/afxdp-device-plugin -f images/amd64.dockerfile .
+	podman build -t afxdp-device-plugin -f images/amd64.dockerfile .
 	@echo
 	@echo
 

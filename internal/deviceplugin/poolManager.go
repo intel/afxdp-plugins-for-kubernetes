@@ -196,19 +196,21 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 		cresp := new(pluginapi.ContainerAllocateResponse)
 		envs := make(map[string]string)
 
-		if !pm.UdsServerDisable {
-			cresp.Mounts = append(cresp.Mounts, &pluginapi.Mount{
-				HostPath:      udsPath,
-				ContainerPath: constants.Uds.PodPath,
-				ReadOnly:      false,
-			})
-		}
-
 		//loop each device request per container
 		for _, devName := range crqt.DevicesIDs {
 			device := pm.Devices[devName]
 			pretty, _ := tools.PrettyString(device.Public())
 			logging.Debugf("Device: %s", pretty)
+
+			containerSockPath := constants.Uds.PodPath + device.Name() + constants.Uds.SockName
+
+			if !pm.UdsServerDisable {
+				cresp.Mounts = append(cresp.Mounts, &pluginapi.Mount{
+					HostPath:      udsPath,
+					ContainerPath: containerSockPath,
+					ReadOnly:      false,
+				})
+			}
 
 			if device.Mode() != pm.Mode {
 				err := fmt.Errorf("pool mode %s does not match device mode %s", pm.Mode, device.Mode())
@@ -265,16 +267,18 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 
 				//FULL PATH WILL INCLUDE THE XSKMAP...
 				fullPath := pinPath + constants.Bpf.Xsk_map
-				logging.Debugf("mapping %s to %s", fullPath, constants.Bpf.BpfMapPodPath)
+				containerMapPath := constants.Bpf.BpfMapPodPath + device.Name() + constants.Bpf.Xsk_map
+				logging.Debugf("mapping %s to %s", fullPath, containerMapPath)
 				cresp.Mounts = append(cresp.Mounts, &pluginapi.Mount{
 					HostPath:      fullPath,
-					ContainerPath: constants.Bpf.BpfMapPodPath,
+					ContainerPath: containerMapPath,
 					ReadOnly:      false,
 				})
 			}
 		}
 
-		envs[constants.Devices.EnvVarList] = strings.Join(crqt.DevicesIDs, " ")
+		envVar := constants.Devices.EnvVarList + strings.ToUpper(pm.Name)
+		envs[envVar] = strings.Join(crqt.DevicesIDs, " ")
 		envsPrint, err := tools.PrettyString(envs)
 		if err != nil {
 			logging.Errorf("Error printing container environment variables: %v", err)
@@ -283,7 +287,6 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 		}
 		cresp.Envs = envs
 		response.ContainerResponses = append(response.ContainerResponses, cresp)
-
 	}
 
 	if !pm.UdsServerDisable {
