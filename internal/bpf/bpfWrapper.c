@@ -158,13 +158,12 @@ int Clean_bpf(char *ifname) {
 
 	mp = xdp_multiprog__get_from_ifindex(if_index);
 	if (!mp) {
-		Log_Error("%s: unable to receive correct multi_prog reference : %s", __FUNCTION__,
-			  mp);
-		return -1;
+		Log_Info("%s: No programs loaded on : %s", __FUNCTION__, ifname);
+		return 0;
 	}
 
 	err = xdp_multiprog__detach(mp);
-	if (err) {
+	if (err && err != -EINVAL) { // -EINVAL == No program attached
 		Log_Error("%s: Removal of xdp program failed, returned: "
 			  "returned: %d",
 			  __FUNCTION__, err);
@@ -172,104 +171,5 @@ int Clean_bpf(char *ifname) {
 	}
 
 	Log_Info("%s: removed xdp program from interface %s (%d)", __FUNCTION__, ifname, if_index);
-	return 0;
-}
-
-int Load_attach_bpf_xdp_pass(char *ifname) {
-	int prog_fd = -1, err, ifindex;
-	char *filename = "/afxdp/xdp_pass.o";
-	struct bpf_object *obj;
-	struct xdp_program *prog;
-	__u32 xdp_flags = XDP_FLAGS_UPDATE_IF_NOEXIST | XDP_FLAGS_DRV_MODE;
-
-	Log_Info("%s: disovering if_index for interface %s", __FUNCTION__, ifname);
-
-	ifindex = if_nametoindex(ifname);
-	if (!ifindex) {
-		Log_Error("%s: if_index not valid: %s", __FUNCTION__, ifname);
-		return -1;
-	}
-	Log_Info("%s: if_index for interface %s is %d", __FUNCTION__, ifname, ifindex);
-
-	if (access(filename, O_RDONLY) < 0) {
-		Log_Error("%s:error accessing file %s: %s\n", __FUNCTION__, filename,
-			  strerror(errno));
-		return err;
-	}
-
-	Log_Info("%s: starting setup of xdp-pass program on "
-		 "interface %s (%d)",
-		 __FUNCTION__, ifname, ifindex);
-
-	/* Load the BPF program */
-	prog = xdp_program__open_file(filename, NULL, NULL);
-	err = libxdp_get_error(prog);
-	if (err) {
-		libxdp_strerror(err, "Couldn’t load XDP program",
-				sizeof("Couldn’t load XDP program"));
-		Log_Error("%s: Couldn’t load XDP program\n", __FUNCTION__, filename);
-		return err;
-	}
-
-	/* Attach the program to the interface at the xdp hook */
-	err = xdp_program__attach(prog, ifindex, XDP_FLAGS_UPDATE_IF_NOEXIST, 0);
-	if (err) {
-		libxdp_strerror(err, "Couldn't attach the xdp pass program",
-				sizeof("Couldn't attach the xdp pass program"));
-		Log_Error("%s: Couldn't attach the XDP PASS PROGRAM TO %s\n", __FUNCTION__, ifname);
-		return err;
-	}
-
-	Log_Info("%s: xdp-pass program loaded on %s (%d)", __FUNCTION__, ifname, ifindex);
-
-	return 0;
-}
-
-int Load_bpf_pin_xsk_map(char *ifname, char *pin_path) {
-	struct bpf_object *obj;
-	struct xdp_program *prog;
-	struct bpf_link *link;
-	int ifindex, map_fd = -1;
-	int err;
-	const char *prog_name = "xdp_afxdp_redirect";
-	char *filename = "/afxdp/xdp_afxdp_redirect.o";
-	DECLARE_LIBBPF_OPTS(bpf_object_open_opts, bpf_opts, .pin_root_path = pin_path);
-
-	ifindex = if_nametoindex(ifname);
-	if (!ifindex) {
-		Log_Error("%s: if_index not valid: %s", __FUNCTION__, ifname);
-		return -1;
-	}
-	Log_Info("%s: if_index for interface %s is %d", __FUNCTION__, ifname, ifindex);
-
-	if (access(filename, O_RDONLY) < 0) {
-		Log_Error("%s:error accessing file %s: %s\n", __FUNCTION__, filename,
-			  strerror(errno));
-		return err;
-	}
-
-	Log_Info("%s: starting setup of xdp-redirect program on "
-		 "interface %s (%d)",
-		 __FUNCTION__, ifname, ifindex);
-
-	/* Load the BPF program */
-	prog = xdp_program__open_file(filename, NULL, NULL);
-	err = libxdp_get_error(prog);
-	if (err) {
-		libxdp_strerror(err, "Couldn’t load XDP program",
-				sizeof("Couldn’t load XDP program"));
-		Log_Error("%s: Couldn’t load XDP program\n", __FUNCTION__, filename);
-		return err;
-	}
-
-	/* Attach the program to the interface at the xdp hook */
-	err = xdp_program__attach(prog, ifindex, XDP_FLAGS_UPDATE_IF_NOEXIST, 0);
-	if (err) {
-		libxdp_strerror(err, "Couldn't attach the xdp pass program",
-				sizeof("Couldn't attach the xdp pass program"));
-		Log_Error("%s: Couldn't attach the XDP PASS PROGRAM TO %s\n", __FUNCTION__, ifname);
-		return err;
-	}
-
 	return 0;
 }

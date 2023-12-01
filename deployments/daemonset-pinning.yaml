@@ -1,0 +1,113 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: afxdp-dp-config
+  namespace: kube-system
+data:
+  config.json: |
+    {
+       "logLevel":"debug",
+       "logFile":"afxdp-dp.log",
+       "pools":[
+          {
+             "name":"myPool",
+             "mode":"primary",
+             "drivers":[
+                {
+                   "name":"i40e"
+                },
+                {
+                   "name":"ice"
+                }
+             ]
+          }
+       ]
+    }
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: afxdp-device-plugin
+  namespace: kube-system
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kube-afxdp-device-plugin
+  namespace: kube-system
+  labels:
+    tier: node
+    app: afxdp
+spec:
+  selector:
+    matchLabels:
+      name: afxdp-device-plugin
+  template:
+    metadata:
+      labels:
+        name: afxdp-device-plugin
+        tier: node
+        app: afxdp
+    spec:
+      hostNetwork: true
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          operator: Exists
+          effect: NoSchedule
+      serviceAccountName: afxdp-device-plugin
+      containers:
+        - name: kube-afxdp
+          image: afxdp-device-plugin:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "40Mi"
+            limits:
+              cpu: "1"
+              memory: "200Mi"
+          volumeMounts:
+            - name: unixsock
+              mountPath: /tmp/afxdp_dp/
+            - name: bpfmappinning
+              mountPath: /var/run/afxdp_dp/
+              mountPropagation: Bidirectional
+            - name: devicesock
+              mountPath: /var/lib/kubelet/device-plugins/
+            - name: resources
+              mountPath: /var/lib/kubelet/pod-resources/
+            - name: config-volume
+              mountPath: /afxdp/config
+            - name: log
+              mountPath: /var/log/afxdp-k8s-plugins/
+            - name: cnibin
+              mountPath: /opt/cni/bin/
+      volumes:
+        - name: unixsock
+          hostPath:
+            path: /tmp/afxdp_dp/
+        - name: bpfmappinning
+          hostPath:
+            path: /var/run/afxdp_dp/
+        - name: devicesock
+          hostPath:
+            path: /var/lib/kubelet/device-plugins/
+        - name: resources
+          hostPath:
+            path: /var/lib/kubelet/pod-resources/
+        - name: config-volume
+          configMap:
+            name: afxdp-dp-config
+            items:
+              - key: config.json
+                path: config.json
+        - name: log
+          hostPath:
+            path: /var/log/afxdp-k8s-plugins/
+        - name: cnibin
+          hostPath:
+            path: /opt/cni/bin/

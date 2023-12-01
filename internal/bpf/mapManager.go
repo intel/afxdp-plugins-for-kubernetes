@@ -21,6 +21,7 @@ import (
 	"syscall"
 
 	"github.com/google/uuid"
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
 	"github.com/intel/afxdp-plugins-for-kubernetes/internal/host"
 	"github.com/moby/sys/mount"
 	"github.com/pkg/errors"
@@ -28,7 +29,6 @@ import (
 )
 
 const (
-	pinnedMapBaseDir     = "/var/run/afxdp_dp/"
 	pinnedMapDirFileMode = os.FileMode(0755)
 	bpffsDirFileMode     = os.FileMode(0755)
 )
@@ -38,17 +38,17 @@ MapManager is the interface defining the MAP MANAGER.
 Implementations of this interface are the main type of this MapManager package. TODO UPDATE
 */
 type MapManager interface {
-	CreateBPFFS(dev, path string) (string, error)
+	CreateBPFFS() (string, error)
 	DeleteBPFFS(dev string) error
 	AddMap(dev, path string)
 	GetMaps() (map[string]string, error)
 	GetBPFFS(dev string) (string, error)
 	GetName() string
+	CleanupMapManager() error
 }
 
 type PoolBpfMapManager struct {
 	Manager MapManager
-	Path    string
 }
 
 /*
@@ -58,7 +58,7 @@ container is created the factory will create a MapManager to serve the
 associated pinned BPF Map. TODO UPDATE THIS....
 */
 type MapManagerFactory interface {
-	CreateMapManager(poolName, user string) (MapManager, string, error)
+	CreateMapManager(poolName, user string) (MapManager, error)
 }
 
 /*
@@ -89,15 +89,15 @@ func NewMapMangerFactory() MapManagerFactory {
 CreateMapManager creates, initialises, and returns an implementation of the MapManager interface.
 It also returns the filepath for bpf maps to be pinned.
 */
-func (f *mapManagerFactory) CreateMapManager(poolName, user string) (MapManager, string, error) {
+func (f *mapManagerFactory) CreateMapManager(poolName, user string) (MapManager, error) {
 
-	logging.Debugf("	  CreateMapManager	  ")
+	logging.Debugf("	  CreateMapManager %s	  ", poolName)
 	if poolName == "" || user == "" {
-		return nil, "", errors.New("Error poolname or user not set")
+		return nil, errors.New("Error poolname or user not set")
 	}
 	p, err := createBPFFSBaseDirectory(poolName, user)
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "Error creating BPFFS base directory %v", err.Error())
+		return nil, errors.Wrapf(err, "Error creating BPFFS base directory %v", err.Error())
 	}
 	logging.Infof("Created BPFFS Base directory %s", p)
 
@@ -108,13 +108,13 @@ func (f *mapManagerFactory) CreateMapManager(poolName, user string) (MapManager,
 		name:      poolName,
 	}
 
-	return manager, p, nil
+	return manager, nil
 }
 
 func giveBpffsBasePermissions(path, user string) error {
 	if user != "0" {
 		logging.Infof("Giving permissions to UID %s", user)
-		err := host.GivePermissions(path, user, "rwx")
+		err := host.GivePermissions(path, user, "rw")
 		if err != nil {
 			return errors.Wrapf(err, "Error giving permissions to BPFFS path %s", err.Error())
 		}
@@ -125,17 +125,17 @@ func giveBpffsBasePermissions(path, user string) error {
 
 func createBPFFSBaseDirectory(p, user string) (string, error) {
 
-	logging.Infof("Creating BPFFS Base directory %s", p)
+	path := constants.Bpf.PinMapBaseDir + p + "/"
 
-	path := pinnedMapBaseDir + p
+	logging.Infof("Creating BPFFS Base directory %s", path)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		//create base directory if it not exists, with correct file permissions
 		if err = os.MkdirAll(path, pinnedMapDirFileMode); err != nil {
-			return "", errors.Wrapf(err, "Error creating BPFFS base directory %s: %v", pinnedMapBaseDir, err.Error())
+			return "", errors.Wrapf(err, "Error creating BPFFS base directory %s: %v", constants.Bpf.PinMapBaseDir, err.Error())
 		}
 
 		if err = giveBpffsBasePermissions(path, user); err != nil {
-			return "", errors.Wrapf(err, "Error creating BPFFS base directory %s: %v", pinnedMapBaseDir, err.Error())
+			return "", errors.Wrapf(err, "Error creating BPFFS base directory %s: %v", constants.Bpf.PinMapBaseDir, err.Error())
 		}
 	}
 
@@ -143,22 +143,40 @@ func createBPFFSBaseDirectory(p, user string) (string, error) {
 	return path, nil
 }
 
-func (m mapManager) CreateBPFFS(device, path string) (string, error) {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return "", errors.Wrapf(err, "Error creating BPFFS mount point base directory %s doesn't exist: %v", pinnedMapBaseDir, err.Error())
+/*
+CleanupMapManager cleans up the base path where bpffs(es) were created.
+*/
+func (m mapManager) CleanupMapManager() error {
+
+	logging.Debugf("	  CleanupMapManager %s	  ", m.name)
+
+	if _, err := os.Stat(m.bpffsPath); err == nil {
+		if err = os.RemoveAll(m.bpffsPath); err != nil {
+			logging.Errorf("Cleanup error: %v", err)
+			return err
+		}
+		logging.Infof("Cleaned up dir %s", m.bpffsPath)
+	}
+
+	return nil
+}
+
+func (m mapManager) CreateBPFFS() (string, error) {
+	if _, err := os.Stat(m.bpffsPath); os.IsNotExist(err) {
+		return "", errors.Wrapf(err, "Error creating BPFFS mount point base directory %s doesn't exist: %v", m.bpffsPath, err.Error())
 	}
 
 	bpffsPath, err := generateRandomBpffsName(m.bpffsPath)
 	if err != nil {
-		return "", errors.Wrapf(err, "Error generating BPFFS path: %s: %v", pinnedMapBaseDir, err.Error())
+		return "", errors.Wrapf(err, "Error generating BPFFS path: %s: %v", bpffsPath, err.Error())
 	}
 
 	if err = os.MkdirAll(bpffsPath, bpffsDirFileMode); err != nil {
-		return "", errors.Wrapf(err, "Error creating BPFFS base directory %s: %v", pinnedMapBaseDir, err.Error())
+		return "", errors.Wrapf(err, "Error creating BPFFS base directory %s: %v", bpffsPath, err.Error())
 	}
 
 	if err = giveBpffsBasePermissions(bpffsPath, m.uid); err != nil {
-		return "", errors.Wrapf(err, "Error creating BPFFS base directory %s: %v", pinnedMapBaseDir, err.Error())
+		return "", errors.Wrapf(err, "Error creating BPFFS base directory %s: %v", bpffsPath, err.Error())
 	}
 	logging.Infof("created a directory %s", bpffsPath)
 

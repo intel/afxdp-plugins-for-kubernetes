@@ -12,6 +12,11 @@ spec:
     image: docker-image:latest                 # Specify your docker image here, along with PullPolicy and command
     imagePullPolicy: IfNotPresent
     command: ["tail", "-f", "/dev/null"]
+    # capabilities:                            # Should be configured if using DPDK/CNDP with BPF Map pinning.
+    #     add:
+    #       - NET_RAW
+    #       - IPC_LOCK
+    #       - BPF                             # Only needed if kernel version <= 5.18
     resources:
       requests:
         afxdp/myPool: '1'                      # The resource requested needs to match the device plugin pool name / resource type

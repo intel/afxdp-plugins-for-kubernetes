@@ -25,8 +25,10 @@ package bpf
 import "C"
 
 import (
-	"errors"
+	"os/exec"
+	"strings"
 
+	"github.com/pkg/errors"
 	logging "github.com/sirupsen/logrus"
 )
 
@@ -72,10 +74,10 @@ func (r *handler) LoadBpfSendXskMap(ifname string) (int, error) {
 LoadBpfXdpPass is the GoLang wrapper for the C function Load_bpf_send_xsk_map
 */
 func (r *handler) LoadAttachBpfXdpPass(ifname string) error {
-	err := int(C.Load_attach_bpf_xdp_pass(C.CString(ifname)))
+	bpfProg := "/afxdp/xdp_pass.o"
 
-	if err < 0 {
-		return errors.New("error loading BPF program onto interface")
+	if err := XdpLoaderCmd(ifname, "load", bpfProg, ""); err != nil {
+		return errors.Wrapf(err, "Couldn't Load %s to interface %s", bpfProg, ifname)
 	}
 
 	return nil
@@ -85,10 +87,37 @@ func (r *handler) LoadAttachBpfXdpPass(ifname string) error {
 LoadBpfPinXskMap is the GoLang wrapper for the C function Load_bpf_send_xsk_map
 */
 func (r *handler) LoadBpfPinXskMap(ifname, pin_path string) error {
-	err := int(C.Load_bpf_pin_xsk_map(C.CString(ifname), C.CString(pin_path)))
 
-	if err < 0 {
-		return errors.New("error loading BPF program onto interface")
+	bpfProg := "/afxdp/xdp_afxdp_redirect.o"
+
+	if err := XdpLoaderCmd(ifname, "load", bpfProg, pin_path); err != nil {
+		return errors.Wrapf(err, "Couldn't Load and pin %s to interface %s", bpfProg, ifname)
+	}
+
+	return nil
+}
+
+func XdpLoaderCmd(ifname, action, bpfProg, pin_path string) error {
+
+	cmd := exec.Command("xdp-loader", "unload", ifname, "--all")
+
+	if err := cmd.Run(); err != nil && err.Error() != "exit status 1" { // exit status 1 means no prog to unload
+		logging.Errorf("Error removing BPF program from device: %v", err)
+		return errors.New("Error removing BPF program from device")
+	}
+
+	if action == "load" {
+		loaderArgs := action + " " + ifname + " " + bpfProg
+		if pin_path != "" {
+			loaderArgs += " -p " + pin_path
+		}
+		logging.Infof("Loading XDP program using: xdp-loader %s", loaderArgs)
+
+		cmd := exec.Command("xdp-loader", strings.Split(loaderArgs, " ")...)
+		if err := cmd.Run(); err != nil {
+			logging.Errorf("error loading and pinning BPF program onto interface %v", err)
+			return errors.New("error loading and pinning BPF program onto interface")
+		}
 	}
 
 	return nil
@@ -111,6 +140,7 @@ func (r *handler) ConfigureBusyPoll(fd int, busyTimeout int, busyBudget int) err
 Cleanbpf is the GoLang wrapper for the C function Clean_bpf
 */
 func (r *handler) Cleanbpf(ifname string) error {
+
 	ret := C.Clean_bpf(C.CString(ifname))
 
 	if ret != 0 {

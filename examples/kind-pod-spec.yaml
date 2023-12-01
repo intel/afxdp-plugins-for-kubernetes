@@ -17,7 +17,7 @@ spec:
         add:
           - NET_RAW
           - IPC_LOCK
-          - BPF
+          - BPF                                # Only needed if kernel version <= 5.18
     resources:
       requests:
         afxdp/myPool: '1'                      # The resource requested needs to match the device plugin pool name / resource type
