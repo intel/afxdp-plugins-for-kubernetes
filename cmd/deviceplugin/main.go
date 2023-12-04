@@ -98,7 +98,7 @@ func main() {
 	}
 	logging.Infof("Host meets requirements")
 
-	//START THE SYNCER SERVER TODO CHECK BPF MAP
+	//Start the syncer server
 	dpCniSyncerServer, err := dpcnisyncerserver.NewSyncerServer()
 	if err != nil {
 		logging.Errorf("Error creating the DpCniSyncerServer")
@@ -143,7 +143,6 @@ func main() {
 			logging.Errorf("Termination error: %v", err)
 		}
 	}
-
 }
 
 func configureLogging(cfg deviceplugin.PluginConfig) error {

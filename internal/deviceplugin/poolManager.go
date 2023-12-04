@@ -107,8 +107,8 @@ func (pm *PoolManager) Init(config PoolConfig) error {
 	if pm.BpfMapPinningEnable {
 		var err error
 
-		logging.Infof("Creating new BPF Map manager %s %s", pm.DevicePrefix+"-maps/", pm.UID)
-		pm.Pbm.Manager, pm.Pbm.Path, err = pm.MapManagerFactory.CreateMapManager(pm.DevicePrefix+"-maps/", pm.UID)
+		logging.Infof("Creating new BPF Map manager %s %s", pm.Name, pm.UID)
+		pm.Pbm.Manager, err = pm.MapManagerFactory.CreateMapManager(pm.Name, pm.UID)
 		if err != nil {
 			logging.Errorf("Error new BPF Map manager: %v", err)
 			return err
@@ -138,6 +138,10 @@ func (pm *PoolManager) Terminate() error {
 
 	if pm.DpCniSyncerServer != nil {
 		pm.DpCniSyncerServer.StopGRPCSyncer()
+	}
+
+	if pm.BpfMapPinningEnable {
+		pm.Pbm.Manager.CleanupMapManager()
 	}
 
 	return nil
@@ -251,7 +255,7 @@ func (pm *PoolManager) Allocate(ctx context.Context,
 
 			if pm.BpfMapPinningEnable {
 				logging.Infof("Loading BPF program on device: %s and pinning the map", device.Name())
-				pinPath, err := pm.Pbm.Manager.CreateBPFFS(device.Name(), pm.Pbm.Path)
+				pinPath, err := pm.Pbm.Manager.CreateBPFFS()
 				if err != nil {
 					logging.Errorf("Error Creating the BPFFS: %v", err)
 					return &response, err

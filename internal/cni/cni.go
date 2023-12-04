@@ -338,6 +338,14 @@ func CmdDel(args *skel.CmdArgs) error {
 		}
 	}
 
+	if cfg.DPSyncer {
+		logging.Infof("cmdDel(): Asking Device Plugin to delete any BPF maps for %s", cfg.Device)
+		err := dpcnisyncer.DeleteNetDev(cfg.Device)
+		if err != nil {
+			logging.Errorf("cmdDel(): DeleteNetDev from Syncer Server Failed for %s: %v", cfg.Device, err)
+		}
+	}
+
 	if !cfg.SkipUnloadBpf {
 		logging.Infof("cmdDel(): removing BPF program from device")
 		if err := bpfHandler.Cleanbpf(cfg.Device); err != nil {
@@ -362,14 +370,6 @@ func CmdDel(args *skel.CmdArgs) error {
 					logging.Warningf("cmdDel(): failed to remove ethtool filter: %v", err)
 				}
 			}
-		}
-	}
-
-	if cfg.DPSyncer {
-		logging.Infof("cmdDel(): Asking Device Plugin to delete any BPF maps for %s", cfg.Device)
-		err := dpcnisyncer.DeleteNetDev(cfg.Device)
-		if err != nil {
-			logging.Errorf("cmdDel(): DeleteNetDev from Syncer Server Failed for %s: %v", cfg.Device, err)
 		}
 	}
 

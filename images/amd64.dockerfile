@@ -28,13 +28,14 @@ WORKDIR /usr/src/afxdp_k8s_plugins
 RUN apk add --no-cache build-base~=0.5-r3 \
 && apk add --no-cache libbsd-dev~=0.11.7 \
 && apk add --no-cache libxdp-dev~=1.2.10-r0 \
+&& apk add --no-cache libbpf-dev~=1.0.1-r0 \
 && apk add --no-cache llvm15~=15.0.7-r0 \
 && apk add --no-cache clang15~=15.0.7-r0 \
 && make builddp
 
 FROM amd64/alpine:3.18@sha256:25fad2a32ad1f6f510e528448ae1ec69a28ef81916a004d3629874104f8a7f70
 RUN apk --no-cache -U add iproute2-rdma~=6.3.0-r0 acl~=2.3 \
-      && apk add --no-cache libxdp~=1.2.10-r0
+      && apk add --no-cache xdp-tools~=1.2.10-r0
 COPY --from=cnibuilder /usr/src/afxdp_k8s_plugins/bin/afxdp /afxdp/afxdp
 COPY --from=dpbuilder /usr/src/afxdp_k8s_plugins/bin/afxdp-dp /afxdp/afxdp-dp
 COPY --from=dpbuilder /usr/src/afxdp_k8s_plugins/images/entrypoint.sh /afxdp/entrypoint.sh

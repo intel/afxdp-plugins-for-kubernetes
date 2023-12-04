@@ -84,6 +84,7 @@ var (
 	udsPodSock    = "/afxdp.sock"
 
 	/* BPF*/
+	pinMapBaseDir = "/var/run/afxdp_dp/"
 	bpfMapPodPath = "/tmp/afxdp_dp/"
 	xsk_map       = "/xsks_map"
 
@@ -222,6 +223,7 @@ type uds struct {
 }
 
 type bpf struct {
+	PinMapBaseDir string
 	BpfMapPodPath string
 	Xsk_map       string
 }
@@ -349,6 +351,7 @@ func init() {
 	}
 
 	Bpf = bpf{
+		PinMapBaseDir: pinMapBaseDir,
 		BpfMapPodPath: bpfMapPodPath,
 		Xsk_map:       xsk_map,
 	}

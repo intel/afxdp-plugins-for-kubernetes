@@ -13,12 +13,11 @@ spec:
       image:  quay.io/mtahhan/cndp-map-pinning:latest
       imagePullPolicy: IfNotPresent
       securityContext:
-        privileged: true
-          #capabilities:
-          #add:
-          #  - NET_RAW
-          #  - IPC_LOCK
-          #  - BPF
+        capabilities:
+          add:
+            - NET_RAW
+            - IPC_LOCK
+            #- BPF                                 # Only needed if Kernel version <= 5.18
       resources:
         requests:
           afxdp/myPool: '1'

@@ -411,6 +411,10 @@ UdsServerDisable is a Boolean configuration. If set to true, devices in this poo
 
 BpfMapPinningEnable is a Boolean configuration. If set to true, will use BPF map pinning instead of a UDS to share an XSK map with a pod. By default, this is set to false. Should set UdsServerDisable to true when using this configuration.
 
+> **_NOTE:_**  When using this setting it's important to adjust the securityContext for the DP Daemonset to `privileged: true` to allow for bidirectional propagation of the volume where the BPF maps are pinned. this will no longer be needed when the DP is integrated with bpfman. An example deamonset configuration is shown in [deamonset-pinning.yaml](./deployments/daemonset-pinning.yaml)
+
+> **_NOTE:_**  If the kernel is <= 5.18, CAP_BPF capability should be added to the container in the Pod.
+
 #### UdsTimeout
 
 UdsTimeout is an integer configuration. This value sets the amount of time, in seconds, that the UDS server will wait while there is no activity on the UDS. When this timeout limit is reached, the UDS server terminates and the UDS is deleted from the filesystem. This can be a useful setting, for example, in scenarios where large batches of pods are created together. Large batches of pods tend to take some time to spin up, so it might be beneficial to have the UDS server sit waiting a little longer for the pod to start. The maximum allowed value is 300 seconds (5 min). The minimum and default value is 30 seconds.
