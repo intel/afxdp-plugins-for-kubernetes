@@ -139,7 +139,7 @@ jobs:
       run: make image
 
     - name: Generate .tar image
-      run: docker save -o vul-image.tar localhost:5000/afxdp-device-plugin:latest
+      run: docker save -o vul-image.tar afxdp-device-plugin:latest
 
 
     - name: Run Trivy on tarballed image 
