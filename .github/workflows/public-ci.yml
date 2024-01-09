@@ -135,8 +135,8 @@ jobs:
         output: 'trivy-results.sarif'
         severity: 'CRITICAL'
 
-    - name: Build image
-      run: make image
+    - name: Build Docker image
+      run: make docker
 
     - name: Generate .tar image
       run: docker save -o vul-image.tar afxdp-device-plugin:latest
