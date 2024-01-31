@@ -130,7 +130,7 @@ e2efull: build
 e2edaemon: image
 	@echo "******   E2E Daemonset   ******"
 	@echo
-	cd test/e2e/ && ./e2e-test.sh --daemonset
+	cd test/e2e/ && ./e2e-test.sh --daemonset --uds && ./e2e-test.sh --daemonset --golang
 	@echo
 	@echo
 
