@@ -12,6 +12,8 @@ data:
           {
              "name":"myPool",
              "mode":"primary",
+             "UdsServerDisable": true,
+             "BpfMapPinningEnable": true,
              "drivers":[
                 {
                    "name":"i40e"
