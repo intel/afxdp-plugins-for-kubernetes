@@ -1,3 +1,20 @@
+Project is continued by Redhat, please visit
+
+ https://github.com/redhat-et/afxdp-plugins-for-kubernetes
+
+PROJECT NOT UNDER ACTIVE MANAGEMENT
+
+This project will no longer be maintained by Intel.
+
+Intel has ceased development and contributions including, but not limited to, maintenance, bug fixes, new releases, or updates, to this project.
+
+Intel no longer accepts patches to this project.
+
+If you have an ongoing need to use this project, are interested in independently developing it, or would like to maintain patches for the open source software community, please create your own fork of this project.
+
+Contact: webadmin@linux.intel.com
+
+
 [![GitHub Super-Linter](https://github.com/intel/afxdp-plugins-for-kubernetes/actions/workflows/public-ci.yml/badge.svg?branch=main)](https://github.com/marketplace/actions/super-linter) ![CodeQL](https://github.com/intel/afxdp-plugins-for-kubernetes/actions/workflows/codeql.yml/badge.svg?branch=main)  [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/intel/afxdp-plugins-for-kubernetes/badge)](https://api.securityscorecards.dev/projects/github.com/intel/afxdp-plugins-for-kubernetes) [![Go Report Card](https://goreportcard.com/badge/github.com/intel/afxdp-plugins-for-kubernetes)](https://goreportcard.com/report/github.com/intel/afxdp-plugins-for-kubernetes) [![Go Reference](https://pkg.go.dev/badge/github.com/intel/afxdp-plugins-for-kubernetes.svg)](https://pkg.go.dev/github.com/intel/afxdp-plugins-for-kubernetes)
 
 # AF_XDP Plugins for Kubernetes
