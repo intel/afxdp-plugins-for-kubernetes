@@ -16,12 +16,15 @@
 package main
 
 import (
-	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
-	"github.com/intel/afxdp-plugins-for-kubernetes/internal/uds"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/intel/afxdp-plugins-for-kubernetes/constants"
+	"github.com/intel/afxdp-plugins-for-kubernetes/internal/uds"
+	"github.com/intel/afxdp-plugins-for-kubernetes/pkg/goclient"
 )
 
 const (
@@ -33,6 +36,44 @@ const (
 var udsHandler uds.Handler
 
 func main() {
+	if os.Args[1] == "uds" {
+		udsTest()
+	} else if os.Args[1] == "golang" {
+		clientTest()
+	} else {
+		println("Unrecognized testing parameters.")
+	}
+}
+
+func timeout() {
+	println("Test App - Pausing for", timeoutDuration, "seconds to force timeout")
+	println("Test App - Expecting timeout error to occur")
+	time.Sleep(timeoutDuration * time.Second)
+	println("Test App - Exiting")
+	os.Exit(0)
+}
+
+func makeRequest(request string) {
+	println()
+	println("Test App - Request: " + request)
+
+	if err := udsHandler.Write(request, -1); err != nil {
+		println("Test App - Write error: ", err)
+	}
+
+	response, fd, err := udsHandler.Read()
+	if err != nil {
+		println("Test App - Read error: ", err)
+	}
+
+	println("Test App - Response: " + response)
+	if fd > 0 {
+		println("Test App - File Descriptor:", strconv.Itoa(fd))
+	}
+	println()
+}
+
+func udsTest() {
 	timeoutAfterConnect := false
 	timeoutBeforeConnect := false
 	// Command line argument to set timeout test
@@ -80,7 +121,6 @@ func main() {
 		cleanup()
 		os.Exit(1)
 	}
-	defer cleanup()
 
 	// connect and verify pod hostname
 	makeRequest("/connect, " + hostname)
@@ -114,32 +154,53 @@ func main() {
 	// finish
 	makeRequest("/fin")
 	time.Sleep(requestDelay)
+	cleanup()
 }
 
-func timeout() {
-	println("Test App - Pausing for", timeoutDuration, "seconds to force timeout")
-	println("Test App - Expecting timeout error to occur")
-	time.Sleep(timeoutDuration * time.Second)
-	println("Test App - Exiting")
-	os.Exit(0)
-}
+func clientTest() {
 
-func makeRequest(request string) {
-	println()
-	println("Test App - Request: " + request)
+	var clean2 uds.CleanupFunc
+	var fd int
 
-	if err := udsHandler.Write(request, -1); err != nil {
-		println("Test App - Write error: ", err)
+	//Get environment variable device values
+	devicesVar, exists := os.LookupEnv(constants.Devices.EnvVarList)
+	if !exists {
+		println("Test App Error: Devices env var does not exist")
+		os.Exit(1)
 	}
+	devices := strings.Split(devicesVar, " ")
 
-	response, fd, err := udsHandler.Read()
+	// Request Client Version
+	println("GO Library: Requesting client version from GO library")
+	ver := goclient.GetClientVersion()
+	fmt.Printf("GO Library: Client Version: %s \n \n", ver)
+	time.Sleep(requestDelay)
+
+	// Request Server Version
+	println("GO Library: Requesting server version from GO library")
+	ver, clean1, _ := goclient.GetServerVersion()
+	fmt.Printf("GO Library: Server Version: %s \n \n", ver)
+	time.Sleep(requestDelay)
+
+	// Request XSK map FD for all devices
+	println("GO Library: Requesting XSK map FD")
+	for _, dev := range devices {
+		fd, clean2, _ = goclient.RequestXSKmapFD(dev)
+		fmt.Printf("GO Library: XSK map FD request succeded for %s with fd %d \n \n", dev, fd)
+		// time.Sleep(requestDelay)
+	}
+	time.Sleep(requestDelay)
+
+	// Request XSK map FD for an unknown device
+	println("GO Library: Request XSk map FD for an unknown device")
+	fd, clean3, err := goclient.RequestXSKmapFD("bad-device")
 	if err != nil {
-		println("Test App - Read error: ", err)
+		fmt.Printf("GO Library: Returned value from unknown device: %d \n \n", fd)
 	}
+	time.Sleep(requestDelay)
 
-	println("Test App - Response: " + response)
-	if fd > 0 {
-		println("Test App - File Descriptor:", strconv.Itoa(fd))
-	}
-	println()
+	println("Cleaning up... \n")
+	clean1()
+	clean2()
+	clean3()
 }
