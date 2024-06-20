@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: afxdp-c-test
+  annotations:
+    k8s.v1.cni.cncf.io/networks: afxdp-e2e-test
+spec:
+  containers:
+  - name: afxdp-c
+    image: localhost:5000/afxdp-c-test:latest
+    securityContext:
+      privileged: true
+    imagePullPolicy: Always
+    command: ["tail", "-f", "/dev/null"]
+    resources:
+      requests:
+        afxdp/e2e: '1'
+      limits:
+        afxdp/e2e: '1'
+  restartPolicy: Never

@@ -19,6 +19,7 @@ workdir="."
 ciWorkdir="./../../.github/e2e"
 run_dp="./../../bin/afxdp-dp"
 full_run=false
+c_run=false
 daemonset=false
 soak=false
 ci_run=false
@@ -46,6 +47,7 @@ cleanup() {
 	echo "*****************************************************"
 	echo "Delete Pod"
 	kubectl delete pod --grace-period=0 --ignore-not-found=true afxdp-e2e-test &> /dev/null
+	kubectl delete pod --grace-period=0 --ignore-not-found=true afxdp-c-test &> /dev/null
 	kubectl delete pods -l app=afxdp-e2e -n default --grace-period=0 --ignore-not-found=true &> /dev/null
 	echo "Delete Test App"
 	rm -f ./udsTest &> /dev/null
@@ -80,6 +82,13 @@ build() {
 	go build -tags netgo -o udsTest ./udsTest.go
 	echo "***** Docker Image *****"
 	$container_tool build -t afxdp-e2e-test -f Dockerfile .
+	if [ "$c_run" = true ]; then 
+	echo "*****************************************************"
+	echo "*              Build C Image and Library            *"
+	echo "*****************************************************"
+	echo 
+	# ../../pkg/cclient/e2e-c-test.sh
+	fi
 }
 
 run() {
@@ -132,7 +141,7 @@ run_local_pods() {
 	echo "*          Run Pod: 1 container, 1 device           *"
 	echo "*****************************************************"
 	kubectl create -f $workdir/pod-1c1d.yaml
-	sleep 10
+	sleep 30
 	echo
 	echo "***** Netdevs attached to pod (ip a) *****"
 	echo
@@ -248,6 +257,37 @@ run_local_pods() {
 		echo
 		echo "***** Delete Pod *****"
 		kubectl delete pod --grace-period 0 --ignore-not-found=true afxdp-e2e-test &> /dev/null
+	fi
+
+	if [ "$c_run" = true ] 
+	then
+		echo
+		echo "******************************************************************"
+		echo "*         	 	Run Pod: C-E2E (after connect)                 *"
+		echo "******************************************************************"
+		echo
+		echo "***** C Library Test *****"
+		echo
+		kubectl create -f $workdir/pod-c-e2e.yaml
+		sleep 30
+		echo "***** Netdevs attached to pod (ip a) *****"
+		echo
+		kubectl exec -i afxdp-c-test -- ip a
+		sleep 2
+		echo
+		echo "***** Netdevs attached to pod (ip l) *****"
+		echo
+		kubectl exec -i afxdp-c-test -- ip l
+		sleep 2
+		echo
+		echo "***** Pod Env Vars *****"
+		echo
+		kubectl exec -i afxdp-c-test -- env
+		echo
+		kubectl exec -i afxdp-c-test --container afxdp-c -- /bin/cTest
+		echo
+		echo "***** Delete Pod *****"
+		kubectl delete pod --grace-period 0 --ignore-not-found=true afxdp-c-test &> /dev/null 
 	fi
 }
 
@@ -374,6 +414,9 @@ then
 			;;
 			-d|--daemonset)
 				daemonset=true
+			;;
+			-ce|--ce2e)
+				c_run=true
 			;;
 			-c|--ci)
 				ci_run=true
